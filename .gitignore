@@ -1,0 +1,34 @@
+# Gradle
+.gradle/
+build/
+**/build/
+android-sdk/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+*.log
+captures/
+local.properties
+
+# Android artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Generated / temporary files
+*.class
+*.jar
+*.keystore
+*.jks
+*.hprof
+*.tmp
+*.swp
+*.swo
+*.DS_Store
+
+# Misc
+out/
