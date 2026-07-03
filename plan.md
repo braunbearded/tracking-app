@@ -47,6 +47,7 @@ Der Code setzt diese Anforderungen bereits um:
 - Floating Action Button für neue Sessions oder Tracker
 - About-Dialog mit Repository- und Versionsdaten
 - Footer-Navigation mit zwei gleich breiten Touch-Flächen, damit die Klickbereiche bis an die Kanten reichen
+- Code-Struktur mit `HomeUi`, `SettingsUi`, `AppUi`, `TrackerFlowUi` und schlanker `MainActivity`
 
 Offen oder bewusst noch nicht vorgesehen:
 

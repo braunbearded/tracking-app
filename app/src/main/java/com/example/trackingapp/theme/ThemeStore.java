@@ -14,6 +14,7 @@ public final class ThemeStore {
     private static final String KEY_DARK_MODE = "dark_mode";
     private static final String KEY_THEME_MODE = "theme_mode";
     private static final String KEY_ACCENT_INDEX = "accent_index";
+    private static final String KEY_FONT_SCALE_INDEX = "font_scale_index";
 
     private static final int[] ACCENT_COLORS = {
             0xff2563eb,
@@ -28,6 +29,20 @@ public final class ThemeStore {
 
     private static final String[] ACCENT_NAMES = {
             "Blau", "Teal", "Grün", "Orange", "Rot", "Violett", "Pink", "Indigo"
+    };
+
+    private static final float[] FONT_SCALES = {
+            0.90f,
+            1.00f,
+            1.12f,
+            1.25f
+    };
+
+    private static final String[] FONT_SCALE_NAMES = {
+            "Klein",
+            "Standard",
+            "Groß",
+            "Sehr groß"
     };
 
     private final Context appContext;
@@ -89,6 +104,27 @@ public final class ThemeStore {
 
     public int accentCount() {
         return ACCENT_COLORS.length;
+    }
+
+    public int fontScaleIndex() {
+        int value = prefs.getInt(KEY_FONT_SCALE_INDEX, 1);
+        return value < 0 || value >= FONT_SCALES.length ? 1 : value;
+    }
+
+    public void setFontScaleIndex(int index) {
+        prefs.edit().putInt(KEY_FONT_SCALE_INDEX, index).apply();
+    }
+
+    public float fontScale() {
+        return FONT_SCALES[fontScaleIndex()];
+    }
+
+    public String fontScaleName(int index) {
+        return FONT_SCALE_NAMES[index];
+    }
+
+    public int fontScaleCount() {
+        return FONT_SCALES.length;
     }
 
     public int accentSoftColor() {
