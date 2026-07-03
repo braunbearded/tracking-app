@@ -34,6 +34,27 @@ Die App verwendet folgende fachliche Begriffe:
     ItemRecord
     Die gespeicherten Werte eines Items innerhalb einer Session.
 
+## 1.1 Aktueller Stand
+
+Der Code setzt diese Anforderungen bereits um:
+
+- Android-App ohne Google Play Services
+- SQLite als lokale Datenbasis
+- Material-3-orientierte Oberfläche
+- Startscreen mit `Sessions` und `Tracker`
+- Overflow-Menü mit `Einstellungen` und `Über die App`
+- Einstellungen für Darkmode und 8 Akzentfarben
+- Floating Action Button für neue Sessions oder Tracker
+- About-Dialog mit Repository- und Versionsdaten
+- Footer-Navigation mit zwei gleich breiten Touch-Flächen, damit die Klickbereiche bis an die Kanten reichen
+
+Offen oder bewusst noch nicht vorgesehen:
+
+- Import/Export
+- Sync
+- Statistikansichten
+- Duplizieren von Trackern oder Sessions
+
 ---
 
 ## 2. Grundidee

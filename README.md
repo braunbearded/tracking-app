@@ -72,4 +72,17 @@ This project does not currently include signing configuration. If you want a rel
 - `app/src/main/java/com/example/trackingapp/TrackerJsonRepository.java` JSON editor save path
 - `app/src/main/java/com/example/trackingapp/JsonUtil.java` JSON helpers
 - `app/src/main/java/com/example/trackingapp/Models.java` data model classes
+- `app/src/main/java/com/example/trackingapp/theme/ThemeStore.java` theme mode, accent color, and derived palette values
 
+## Current UI State
+
+The app currently follows a Material 3 style with a custom flow built in `MainActivity`:
+
+- top app bar with the app name and overflow menu
+- bottom navigation for `Sessions` and `Tracker`
+- floating action button for creating a new session or tracker
+- settings screen with dark mode and 8 accent colors
+- About dialog with repository, version, and build information
+- footer navigation uses two equal-width rectangular touch targets so the clickable area reaches the edges instead of a rounded inset shape
+
+The app remains Android-only and does not use Google Play services or Firebase.

@@ -1,17 +1,18 @@
 package com.example.trackingapp;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.ClipData;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.Intent;
 import android.os.Build;
 import android.graphics.Typeface;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.RippleDrawable;
+import android.content.res.ColorStateList;
+import android.net.Uri;
 import android.text.TextUtils;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,13 +21,12 @@ import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewParent;
-import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -43,26 +43,16 @@ import java.util.Locale;
 import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import com.example.trackingapp.theme.ThemeStore;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class MainActivity extends Activity {
-    private static final String PREFS_NAME = "app_settings";
-    private static final String KEY_DARK_MODE = "dark_mode";
-    private static final String KEY_ACCENT_INDEX = "accent_index";
-    private static final int[] ACCENT_COLORS = {
-            0xff2563eb,
-            0xff0f766e,
-            0xff15803d,
-            0xffea580c,
-            0xffdc2626,
-            0xff7c3aed,
-            0xffdb2777,
-            0xff4f46e5
-    };
-    private static final String[] ACCENT_NAMES = {
-            "Blau", "Teal", "Grün", "Orange", "Rot", "Violett", "Pink", "Indigo"
-    };
-
     private TrackingDatabase db;
+    private ThemeStore theme;
     private LinearLayout root;
     private int currentTab = 0;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -71,6 +61,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        theme = new ThemeStore(this);
         db = new TrackingDatabase(this);
         showHome(0);
     }
@@ -96,17 +87,17 @@ public class MainActivity extends Activity {
     }
 
     private Button button(String text, int fillColor, int textColor, int strokeColor) {
-        Button button = new Button(this);
+        MaterialButton button = new MaterialButton(this);
         button.setText(text);
         button.setAllCaps(false);
         button.setTextColor(textColor);
         button.setTextSize(14);
-        button.setPadding(px(14), px(12), px(14), px(12));
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(fillColor);
-        drawable.setCornerRadius(px(14));
-        drawable.setStroke(px(1), strokeColor);
-        button.setBackground(drawable);
+        button.setCornerRadius(px(24));
+        button.setPadding(px(16), px(12), px(16), px(12));
+        button.setBackgroundTintList(ColorStateList.valueOf(fillColor));
+        button.setStrokeWidth(px(1));
+        button.setStrokeColor(ColorStateList.valueOf(strokeColor));
+        button.setRippleColor(ColorStateList.valueOf(withAlpha(textColor, 0x22)));
         return button;
     }
 
@@ -123,7 +114,7 @@ public class MainActivity extends Activity {
     }
 
     private Button dangerButton(String text) {
-        return button(text, darkMode() ? 0xff3f1d1d : 0xfffff5f5, 0xffb42318, darkMode() ? 0xff7f1d1d : 0xfffecdca);
+        return button(text, theme.cautionFillColor(), 0xffb42318, theme.cautionStrokeColor());
     }
 
     private Button tabButton(String text, boolean selected) {
@@ -134,68 +125,60 @@ public class MainActivity extends Activity {
                 selected ? accentColor() : borderColor());
     }
 
-    private SharedPreferences prefs() {
-        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-    }
-
     private boolean darkMode() {
-        return prefs().getBoolean(KEY_DARK_MODE, false);
+        return theme.darkMode();
     }
 
     private void setDarkMode(boolean enabled) {
-        prefs().edit().putBoolean(KEY_DARK_MODE, enabled).apply();
+        theme.setDarkMode(enabled);
     }
 
     private int accentIndex() {
-        int value = prefs().getInt(KEY_ACCENT_INDEX, 0);
-        if (value < 0 || value >= ACCENT_COLORS.length) {
-            return 0;
-        }
-        return value;
+        return theme.accentIndex();
     }
 
     private void setAccentIndex(int index) {
-        prefs().edit().putInt(KEY_ACCENT_INDEX, index).apply();
+        theme.setAccentIndex(index);
     }
 
     private int accentColor() {
-        return ACCENT_COLORS[accentIndex()];
+        return theme.accentColor();
     }
 
     private int accentSoftColor() {
-        return withAlpha(accentColor(), darkMode() ? 0x33 : 0x18);
+        return theme.accentSoftColor();
     }
 
     private int bgColor() {
-        return darkMode() ? 0xff0b1220 : 0xfff8fafc;
+        return theme.backgroundColor();
     }
 
     private int surfaceColor() {
-        return darkMode() ? 0xff111827 : 0xffffffff;
+        return theme.surfaceColor();
     }
 
     private int surfaceAltColor() {
-        return darkMode() ? 0xff1f2937 : 0xfff9fafb;
+        return theme.surfaceAltColor();
     }
 
     private int primaryTextColor() {
-        return darkMode() ? 0xfff8fafc : 0xff101828;
+        return theme.primaryTextColor();
     }
 
     private int secondaryTextColor() {
-        return darkMode() ? 0xffcbd5e1 : 0xff475467;
+        return theme.secondaryTextColor();
     }
 
     private int mutedTextColor() {
-        return darkMode() ? 0xff94a3b8 : 0xff667085;
+        return theme.mutedTextColor();
     }
 
     private int borderColor() {
-        return darkMode() ? 0xff334155 : 0xffe4e7ec;
+        return theme.borderColor();
     }
 
     private int withAlpha(int color, int alpha) {
-        return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color));
+        return theme.withAlpha(color, alpha);
     }
 
     private void refreshHome() {
@@ -207,36 +190,34 @@ public class MainActivity extends Activity {
     }
 
     private View bottomNav(int selectedTab) {
-        LinearLayout bar = new LinearLayout(this);
-        bar.setOrientation(LinearLayout.HORIZONTAL);
-        bar.setWeightSum(2);
-        bar.setPadding(px(12), px(10), px(12), px(12));
-        bar.setBackgroundColor(surfaceColor());
-        bar.setElevation(px(8));
-
-        bar.addView(navItem(
-                "Sessions",
-                android.R.drawable.ic_menu_agenda,
-                selectedTab == 0,
-                v -> showHome(0)),
-                new LinearLayout.LayoutParams(0, -2, 1f));
-        bar.addView(navItem(
-                "Tracker",
-                android.R.drawable.ic_menu_sort_by_size,
-                selectedTab == 1,
-                v -> showHome(1)),
-                new LinearLayout.LayoutParams(0, -2, 1f));
-
-        return bar;
+        LinearLayout nav = new LinearLayout(this);
+        nav.setOrientation(LinearLayout.HORIZONTAL);
+        nav.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                px(76)));
+        nav.setBackgroundColor(theme.navigationBarColor());
+        nav.setElevation(px(8));
+        nav.addView(navItem("Sessions", android.R.drawable.ic_menu_agenda, selectedTab == 0, v -> showHome(0)),
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+        nav.addView(navItem("Tracker", android.R.drawable.ic_menu_sort_by_size, selectedTab == 1, v -> showHome(1)),
+                new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+        return nav;
     }
 
     private View navItem(String label, int iconRes, boolean selected, View.OnClickListener onClick) {
-        LinearLayout item = new LinearLayout(this);
-        item.setOrientation(LinearLayout.VERTICAL);
-        item.setGravity(Gravity.CENTER);
-        item.setPadding(px(12), px(10), px(12), px(10));
-        item.setBackground(makeRoundedCard(selected ? accentSoftColor() : surfaceColor(), selected ? accentColor() : borderColor()));
+        FrameLayout item = new FrameLayout(this);
+        item.setClickable(true);
+        item.setFocusable(true);
+        item.setBackground(squareRipple(theme.navigationBarColor(), withAlpha(accentColor(), 0x18)));
         item.setOnClickListener(onClick);
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setGravity(Gravity.CENTER);
+        content.setLayoutParams(new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        content.setPadding(0, px(10), 0, px(10));
 
         Drawable icon = getDrawable(iconRes);
         if (icon != null) {
@@ -244,19 +225,29 @@ public class MainActivity extends Activity {
             icon.setTint(selected ? accentColor() : mutedTextColor());
         }
 
-        TextView iconView = new TextView(this);
-        iconView.setTextSize(16);
-        iconView.setPadding(0, 0, 0, px(4));
-        iconView.setCompoundDrawablesWithIntrinsicBounds(null, icon, null, null);
-        item.addView(iconView);
+        ImageView iconView = new ImageView(this);
+        iconView.setImageDrawable(icon);
+        iconView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(px(22), px(22));
+        iconView.setLayoutParams(iconLp);
+        content.addView(iconView);
 
         TextView labelView = new TextView(this);
         labelView.setText(label);
         labelView.setTextSize(12);
-        labelView.setTypeface(Typeface.DEFAULT_BOLD);
+        labelView.setTypeface(selected ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
+        labelView.setIncludeFontPadding(false);
+        labelView.setSingleLine();
         labelView.setTextColor(selected ? accentColor() : mutedTextColor());
-        item.addView(labelView);
+        labelView.setGravity(Gravity.CENTER_HORIZONTAL);
+        LinearLayout.LayoutParams labelLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        labelLp.topMargin = px(4);
+        labelView.setLayoutParams(labelLp);
+        content.addView(labelView);
 
+        item.addView(content);
         return item;
     }
 
@@ -319,10 +310,10 @@ public class MainActivity extends Activity {
     }
 
     private View topAppBar() {
-        return appBar("Tracking App", false, null);
+        return appBar("Tracking App", false, null, true);
     }
 
-    private View appBar(String titleText, boolean showBack, Runnable onBack) {
+    private View appBar(String titleText, boolean showBack, Runnable onBack, boolean showOverflow) {
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
@@ -355,9 +346,11 @@ public class MainActivity extends Activity {
         titleLp.leftMargin = showBack ? px(12) : 0;
         bar.addView(title, titleLp);
 
-        Button overflow = overflowButton();
-        overflow.setOnClickListener(v -> showOverflowMenu(v));
-        bar.addView(overflow);
+        if (showOverflow) {
+            Button overflow = overflowButton();
+            overflow.setOnClickListener(v -> showOverflowMenu(v));
+            bar.addView(overflow);
+        }
 
         return bar;
     }
@@ -396,7 +389,7 @@ public class MainActivity extends Activity {
     private void showSettingsScreen() {
         base();
 
-        root.addView(appBar("Einstellungen", true, this::refreshHome));
+        root.addView(appBar("Einstellungen", true, this::refreshHome, false));
 
         ScrollView scrollView = new ScrollView(this);
         scrollView.setFillViewport(true);
@@ -421,11 +414,100 @@ public class MainActivity extends Activity {
     }
 
     private void showAboutDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Über Tracking App")
-                .setMessage("Lokale Android-App auf SQLite-Basis. Keine Google Play Services, kein Firebase.")
+        String versionName = "unknown";
+        long versionCode = 0;
+        try {
+            android.content.pm.PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            versionName = info.versionName == null ? "unknown" : info.versionName;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                versionCode = info.getLongVersionCode();
+            } else {
+                versionCode = info.versionCode;
+            }
+        } catch (Exception ignored) {
+        }
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setFillViewport(true);
+
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(px(4), px(4), px(4), px(0));
+        scrollView.addView(body);
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.VERTICAL);
+        header.setPadding(px(16), px(16), px(16), px(16));
+        header.setBackground(makeRoundedCard(accentColor(), accentColor()));
+        LinearLayout.LayoutParams headerLp = new LinearLayout.LayoutParams(-1, -2);
+        headerLp.bottomMargin = px(12);
+        body.addView(header, headerLp);
+
+        TextView intro = new TextView(this);
+        intro.setText("Über Tracking App");
+        intro.setTextSize(22);
+        intro.setTypeface(Typeface.DEFAULT_BOLD);
+        intro.setTextColor(Color.WHITE);
+        intro.setPadding(0, 0, 0, px(4));
+        header.addView(intro);
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Lokale Android-App auf SQLite-Basis. Keine Google Play Services, kein Firebase.");
+        subtitle.setTextSize(14);
+        subtitle.setTextColor(withAlpha(Color.WHITE, 0xcc));
+        header.addView(subtitle);
+
+        body.addView(aboutInfoCard("Repository", "braunbearded/tracking-app", true));
+        body.addView(aboutInfoCard("Version", versionName, false));
+        body.addView(aboutInfoCard("Build", String.valueOf(versionCode), false));
+
+        new MaterialAlertDialogBuilder(this)
+                .setView(scrollView)
                 .setPositiveButton("OK", null)
                 .show();
+    }
+
+    private View aboutInfoCard(String label, String value, boolean clickable) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.VERTICAL);
+        row.setPadding(px(16), px(12), px(16), px(12));
+        row.setBackground(makeRoundedCard(surfaceColor(), borderColor()));
+
+        TextView labelView = new TextView(this);
+        labelView.setText(label);
+        labelView.setTextSize(12);
+        labelView.setTextColor(mutedTextColor());
+        labelView.setPadding(0, 0, 0, px(4));
+        row.addView(labelView);
+
+        TextView valueView = new TextView(this);
+        valueView.setText(value);
+        valueView.setTextSize(15);
+        valueView.setTypeface(Typeface.DEFAULT_BOLD);
+        valueView.setTextColor(primaryTextColor());
+        row.addView(valueView);
+
+        if (clickable && "Repository".equals(label)) {
+            row.setClickable(true);
+            row.setFocusable(true);
+            row.setOnClickListener(v -> openUrl("https://github.com/braunbearded/tracking-app"));
+        }
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.bottomMargin = px(10);
+        row.setLayoutParams(lp);
+        if (clickable) {
+            row.setBackground(makeRoundedCard(surfaceAltColor(), borderColor()));
+        }
+        return row;
+    }
+
+    private void openUrl(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Exception e) {
+            Toast.makeText(this, "Link konnte nicht geöffnet werden", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private TextView settingsCardTitle(String text) {
@@ -447,28 +529,69 @@ public class MainActivity extends Activity {
     private View themeCard() {
         LinearLayout card = (LinearLayout) settingsCard();
 
-        TextView title = tv("Darkmode", 18);
+        TextView title = tv("Farbschema", 18);
         title.setPadding(0, 0, 0, px(4));
         card.addView(title);
 
         TextView subtitle = new TextView(this);
-        subtitle.setText("Schaltet zwischen hellem und dunklem Erscheinungsbild um.");
+        subtitle.setText("Wähle System, Hell oder Dunkel für die gesamte App.");
         subtitle.setTextSize(14);
         subtitle.setTextColor(secondaryTextColor());
         subtitle.setPadding(0, 0, 0, px(10));
         card.addView(subtitle);
 
-        CheckBox toggle = new CheckBox(this);
-        toggle.setText("Darkmode aktivieren");
-        toggle.setChecked(darkMode());
-        toggle.setTextColor(primaryTextColor());
-        toggle.setOnCheckedChangeListener((CompoundButton buttonView, boolean isChecked) -> {
-            setDarkMode(isChecked);
+        ChipGroup group = new ChipGroup(this);
+        group.setSingleSelection(true);
+        group.setSelectionRequired(true);
+        group.setChipSpacingHorizontal(px(8));
+        group.setChipSpacingVertical(px(8));
+
+        group.addView(themeModeChip("System", ThemeStore.THEME_SYSTEM));
+        group.addView(themeModeChip("Hell", ThemeStore.THEME_LIGHT));
+        group.addView(themeModeChip("Dunkel", ThemeStore.THEME_DARK));
+        group.check(themeModeChipId(theme.themeMode()));
+        group.setOnCheckedStateChangeListener((chipGroup, checkedIds) -> {
+            if (checkedIds.isEmpty()) {
+                return;
+            }
+            int checkedId = checkedIds.get(0);
+            if (checkedId == themeModeChipId(ThemeStore.THEME_SYSTEM)) {
+                theme.setThemeMode(ThemeStore.THEME_SYSTEM);
+            } else if (checkedId == themeModeChipId(ThemeStore.THEME_LIGHT)) {
+                theme.setThemeMode(ThemeStore.THEME_LIGHT);
+            } else if (checkedId == themeModeChipId(ThemeStore.THEME_DARK)) {
+                theme.setThemeMode(ThemeStore.THEME_DARK);
+            }
             refreshSettings();
         });
-        card.addView(toggle);
+        card.addView(group);
 
         return card;
+    }
+
+    private Chip themeModeChip(String label, int mode) {
+        Chip chip = new Chip(this);
+        chip.setId(themeModeChipId(mode));
+        chip.setText(label);
+        chip.setCheckable(true);
+        chip.setClickable(true);
+        chip.setTextColor(primaryTextColor());
+        chip.setChipBackgroundColor(ColorStateList.valueOf(surfaceAltColor()));
+        chip.setChipStrokeColor(ColorStateList.valueOf(borderColor()));
+        chip.setChipStrokeWidth(px(1));
+        chip.setCheckedIconVisible(false);
+        chip.setCheckedIcon(null);
+        chip.setElevation(px(0));
+        if (theme.themeMode() == mode) {
+            chip.setChipBackgroundColor(ColorStateList.valueOf(accentSoftColor()));
+            chip.setChipStrokeColor(ColorStateList.valueOf(accentColor()));
+            chip.setTextColor(accentColor());
+        }
+        return chip;
+    }
+
+    private int themeModeChipId(int mode) {
+        return 9000 + mode;
     }
 
     private View accentCard() {
@@ -489,6 +612,11 @@ public class MainActivity extends Activity {
 
             for (int col = 0; col < 4; col++) {
                 int index = rowIndex * 4 + col;
+                if (index >= theme.accentCount()) {
+                    View spacer = new View(this);
+                    row.addView(spacer, new LinearLayout.LayoutParams(0, 0, 1f));
+                    continue;
+                }
                 row.addView(accentOption(index), new LinearLayout.LayoutParams(0, -2, 1f));
             }
             card.addView(row);
@@ -499,14 +627,15 @@ public class MainActivity extends Activity {
 
     private Button accentOption(int index) {
         boolean selected = accentIndex() == index;
+        int accent = theme.accentColor(index);
         Button button = new Button(this);
         button.setAllCaps(false);
-        button.setText(ACCENT_NAMES[index]);
+        button.setText(theme.accentName(index));
         button.setTextSize(13);
-        button.setTextColor(selected ? accentColor() : primaryTextColor());
+        button.setTextColor(selected ? Color.WHITE : accent);
         button.setPadding(px(8), px(18), px(8), px(18));
-        int fillColor = selected ? accentSoftColor() : surfaceColor();
-        int strokeColor = selected ? accentColor() : borderColor();
+        int fillColor = selected ? accent : theme.accentSoftColor(index);
+        int strokeColor = accent;
         button.setBackground(makeRoundedCard(fillColor, strokeColor));
         button.setElevation(selected ? px(4) : 0);
         button.setOnClickListener(v -> {
@@ -651,9 +780,16 @@ public class MainActivity extends Activity {
     private GradientDrawable makeRoundedCard(int fillColor, int strokeColor) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(fillColor);
-        drawable.setCornerRadius(px(18));
+        drawable.setCornerRadius(px(28));
         drawable.setStroke(px(1), strokeColor);
         return drawable;
+    }
+
+    private Drawable squareRipple(int fillColor, int rippleColor) {
+        return new RippleDrawable(
+                ColorStateList.valueOf(rippleColor),
+                new ColorDrawable(fillColor),
+                new ColorDrawable(Color.WHITE));
     }
 
     private TextView chip(String text, int backgroundColor, int textColor) {
@@ -741,20 +877,20 @@ public class MainActivity extends Activity {
 
     private void chooseTracker() {
         List<Tracker> trackers = db.trackers();
-        Dialog dialog = new Dialog(this);
-        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
-        dialog.setCancelable(true);
-
-        LinearLayout scrim = new LinearLayout(this);
-        scrim.setOrientation(LinearLayout.VERTICAL);
-        scrim.setGravity(Gravity.BOTTOM);
-        scrim.setBackgroundColor(0x99000000);
-        scrim.setPadding(px(16), px(16), px(16), px(16));
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
 
         LinearLayout sheet = new LinearLayout(this);
         sheet.setOrientation(LinearLayout.VERTICAL);
-        sheet.setPadding(px(16), px(16), px(16), px(16));
-        sheet.setBackground(makeRoundedCard(surfaceColor(), borderColor()));
+        sheet.setPadding(px(16), px(12), px(16), px(20));
+        sheet.setBackgroundColor(surfaceColor());
+
+        View handle = new View(this);
+        LinearLayout.LayoutParams handleLp = new LinearLayout.LayoutParams(px(42), px(5));
+        handleLp.gravity = Gravity.CENTER_HORIZONTAL;
+        handleLp.bottomMargin = px(14);
+        handle.setLayoutParams(handleLp);
+        handle.setBackground(makeRoundedCard(surfaceAltColor(), borderColor()));
+        sheet.addView(handle);
 
         TextView title = tv("Tracker auswählen", 22);
         title.setPadding(0, 0, 0, px(4));
@@ -799,13 +935,7 @@ public class MainActivity extends Activity {
         cancelLp.topMargin = px(4);
         sheet.addView(cancel, cancelLp);
 
-        scrim.addView(sheet, new LinearLayout.LayoutParams(-1, -2));
-        dialog.setContentView(scrim);
-        Window window = dialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            window.setLayout(-1, -1);
-        }
+        dialog.setContentView(sheet);
         dialog.show();
     }
 

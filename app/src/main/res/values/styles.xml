@@ -1,6 +1,12 @@
 <resources>
-    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#2f6fed</item>
+        <item name="colorPrimary">#2563eb</item>
+        <item name="colorSecondary">#0f766e</item>
+        <item name="colorTertiary">#7c3aed</item>
+        <item name="colorSurface">#ffffff</item>
+        <item name="colorSurfaceVariant">#f1f5f9</item>
+        <item name="colorOnSurface">#101828</item>
+        <item name="colorOutline">#d0d5dd</item>
     </style>
 </resources>
