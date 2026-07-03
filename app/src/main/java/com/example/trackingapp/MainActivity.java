@@ -2,11 +2,16 @@ package com.example.trackingapp;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.ClipData;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Build;
+import android.graphics.Typeface;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.os.Bundle;
 import android.os.Handler;
@@ -15,14 +20,17 @@ import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewParent;
+import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -37,8 +45,26 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class MainActivity extends Activity {
+    private static final String PREFS_NAME = "app_settings";
+    private static final String KEY_DARK_MODE = "dark_mode";
+    private static final String KEY_ACCENT_INDEX = "accent_index";
+    private static final int[] ACCENT_COLORS = {
+            0xff2563eb,
+            0xff0f766e,
+            0xff15803d,
+            0xffea580c,
+            0xffdc2626,
+            0xff7c3aed,
+            0xffdb2777,
+            0xff4f46e5
+    };
+    private static final String[] ACCENT_NAMES = {
+            "Blau", "Teal", "Grün", "Orange", "Rot", "Violett", "Pink", "Indigo"
+    };
+
     private TrackingDatabase db;
     private LinearLayout root;
+    private int currentTab = 0;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Map<String, Long> timers = new HashMap<>();
 
@@ -61,6 +87,7 @@ public class MainActivity extends Activity {
         view.setText(text);
         view.setTextSize(sp);
         view.setPadding(16, 12, 16, 8);
+        view.setTextColor(primaryTextColor());
         return view;
     }
 
@@ -84,58 +111,409 @@ public class MainActivity extends Activity {
     }
 
     private Button primaryButton(String text) {
-        return button(text, 0xff1d4ed8, Color.WHITE, 0xff1d4ed8);
+        return button(text, accentColor(), Color.WHITE, accentColor());
     }
 
     private Button secondaryButton(String text) {
-        return button(text, 0xffffffff, 0xff1d2939, 0xffd0d5dd);
+        return button(text, surfaceColor(), primaryTextColor(), borderColor());
     }
 
     private Button ghostButton(String text) {
-        return button(text, 0xfff9fafb, 0xff344054, 0xffe4e7ec);
+        return button(text, surfaceAltColor(), primaryTextColor(), borderColor());
     }
 
     private Button dangerButton(String text) {
-        return button(text, 0xfffff5f5, 0xffb42318, 0xfffecdca);
+        return button(text, darkMode() ? 0xff3f1d1d : 0xfffff5f5, 0xffb42318, darkMode() ? 0xff7f1d1d : 0xfffecdca);
     }
 
     private Button tabButton(String text, boolean selected) {
         return button(
                 text,
-                selected ? 0xffdbeafe : 0xffffffff,
-                selected ? 0xff1d4ed8 : 0xff667085,
-                selected ? 0xff93c5fd : 0xffd0d5dd);
+                selected ? accentSoftColor() : surfaceColor(),
+                selected ? accentColor() : mutedTextColor(),
+                selected ? accentColor() : borderColor());
+    }
+
+    private SharedPreferences prefs() {
+        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+    }
+
+    private boolean darkMode() {
+        return prefs().getBoolean(KEY_DARK_MODE, false);
+    }
+
+    private void setDarkMode(boolean enabled) {
+        prefs().edit().putBoolean(KEY_DARK_MODE, enabled).apply();
+    }
+
+    private int accentIndex() {
+        int value = prefs().getInt(KEY_ACCENT_INDEX, 0);
+        if (value < 0 || value >= ACCENT_COLORS.length) {
+            return 0;
+        }
+        return value;
+    }
+
+    private void setAccentIndex(int index) {
+        prefs().edit().putInt(KEY_ACCENT_INDEX, index).apply();
+    }
+
+    private int accentColor() {
+        return ACCENT_COLORS[accentIndex()];
+    }
+
+    private int accentSoftColor() {
+        return withAlpha(accentColor(), darkMode() ? 0x33 : 0x18);
+    }
+
+    private int bgColor() {
+        return darkMode() ? 0xff0b1220 : 0xfff8fafc;
+    }
+
+    private int surfaceColor() {
+        return darkMode() ? 0xff111827 : 0xffffffff;
+    }
+
+    private int surfaceAltColor() {
+        return darkMode() ? 0xff1f2937 : 0xfff9fafb;
+    }
+
+    private int primaryTextColor() {
+        return darkMode() ? 0xfff8fafc : 0xff101828;
+    }
+
+    private int secondaryTextColor() {
+        return darkMode() ? 0xffcbd5e1 : 0xff475467;
+    }
+
+    private int mutedTextColor() {
+        return darkMode() ? 0xff94a3b8 : 0xff667085;
+    }
+
+    private int borderColor() {
+        return darkMode() ? 0xff334155 : 0xffe4e7ec;
+    }
+
+    private int withAlpha(int color, int alpha) {
+        return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color));
+    }
+
+    private void refreshHome() {
+        showHome(currentTab);
+    }
+
+    private void refreshSettings() {
+        showSettingsScreen();
+    }
+
+    private View bottomNav(int selectedTab) {
+        LinearLayout bar = new LinearLayout(this);
+        bar.setOrientation(LinearLayout.HORIZONTAL);
+        bar.setWeightSum(2);
+        bar.setPadding(px(12), px(10), px(12), px(12));
+        bar.setBackgroundColor(surfaceColor());
+        bar.setElevation(px(8));
+
+        bar.addView(navItem(
+                "Sessions",
+                android.R.drawable.ic_menu_agenda,
+                selectedTab == 0,
+                v -> showHome(0)),
+                new LinearLayout.LayoutParams(0, -2, 1f));
+        bar.addView(navItem(
+                "Tracker",
+                android.R.drawable.ic_menu_sort_by_size,
+                selectedTab == 1,
+                v -> showHome(1)),
+                new LinearLayout.LayoutParams(0, -2, 1f));
+
+        return bar;
+    }
+
+    private View navItem(String label, int iconRes, boolean selected, View.OnClickListener onClick) {
+        LinearLayout item = new LinearLayout(this);
+        item.setOrientation(LinearLayout.VERTICAL);
+        item.setGravity(Gravity.CENTER);
+        item.setPadding(px(12), px(10), px(12), px(10));
+        item.setBackground(makeRoundedCard(selected ? accentSoftColor() : surfaceColor(), selected ? accentColor() : borderColor()));
+        item.setOnClickListener(onClick);
+
+        Drawable icon = getDrawable(iconRes);
+        if (icon != null) {
+            icon = icon.mutate();
+            icon.setTint(selected ? accentColor() : mutedTextColor());
+        }
+
+        TextView iconView = new TextView(this);
+        iconView.setTextSize(16);
+        iconView.setPadding(0, 0, 0, px(4));
+        iconView.setCompoundDrawablesWithIntrinsicBounds(null, icon, null, null);
+        item.addView(iconView);
+
+        TextView labelView = new TextView(this);
+        labelView.setText(label);
+        labelView.setTextSize(12);
+        labelView.setTypeface(Typeface.DEFAULT_BOLD);
+        labelView.setTextColor(selected ? accentColor() : mutedTextColor());
+        item.addView(labelView);
+
+        return item;
+    }
+
+    private Button floatingActionButton(int tab) {
+        Button fab = new Button(this);
+        fab.setText("+");
+        fab.setAllCaps(false);
+        fab.setTextSize(28);
+        fab.setTypeface(Typeface.DEFAULT_BOLD);
+        fab.setTextColor(0xffffffff);
+        fab.setBackground(makeRoundedCard(accentColor(), accentColor()));
+        fab.setElevation(px(10));
+        fab.setMinWidth(px(56));
+        fab.setMinHeight(px(56));
+        fab.setPadding(0, 0, 0, px(4));
+
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(px(56), px(56), Gravity.END | Gravity.BOTTOM);
+        lp.rightMargin = px(20);
+        lp.bottomMargin = px(20);
+        fab.setLayoutParams(lp);
+        fab.setOnClickListener(v -> {
+            if (tab == 0) {
+                chooseTracker();
+            } else {
+                createTracker();
+            }
+        });
+        return fab;
     }
 
     private void base() {
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(bgColor());
         setContentView(root);
     }
 
     private void showHome(int tab) {
+        currentTab = tab;
         base();
 
-        LinearLayout tabs = new LinearLayout(this);
-        tabs.setWeightSum(2);
+        root.addView(topAppBar());
 
-        Button sessionsTab = tabButton("Sessions", tab == 0);
-        Button trackerTab = tabButton("Tracker", tab == 1);
-        tabs.addView(sessionsTab, new LinearLayout.LayoutParams(0, -2, 1));
-        tabs.addView(trackerTab, new LinearLayout.LayoutParams(0, -2, 1));
-        root.addView(tabs);
+        FrameLayout content = new FrameLayout(this);
+        LinearLayout.LayoutParams contentLp = new LinearLayout.LayoutParams(-1, 0, 1);
+        root.addView(content, contentLp);
 
         FrameLayout body = new FrameLayout(this);
-        root.addView(body, new LinearLayout.LayoutParams(-1, 0, 1));
-
-        sessionsTab.setOnClickListener(v -> showHome(0));
-        trackerTab.setOnClickListener(v -> showHome(1));
+        content.addView(body, new FrameLayout.LayoutParams(-1, -1));
 
         if (tab == 0) {
             sessions(body);
         } else {
             trackers(body);
         }
+
+        content.addView(floatingActionButton(tab));
+
+        root.addView(bottomNav(tab));
+    }
+
+    private View topAppBar() {
+        return appBar("Tracking App", false, null);
+    }
+
+    private View appBar(String titleText, boolean showBack, Runnable onBack) {
+        LinearLayout bar = new LinearLayout(this);
+        bar.setOrientation(LinearLayout.HORIZONTAL);
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setMinimumHeight(px(64));
+        bar.setPadding(px(16), px(18), px(12), px(14));
+        bar.setBackgroundColor(accentColor());
+        bar.setElevation(px(4));
+
+        if (showBack) {
+            Button back = button("←", withAlpha(0xffffffff, 0x22), Color.WHITE, withAlpha(0xffffffff, 0x22));
+            back.setTextSize(20);
+            back.setMinWidth(px(44));
+            back.setMinHeight(px(44));
+            back.setPadding(px(10), 0, px(10), 0);
+            back.setOnClickListener(v -> {
+                if (onBack != null) {
+                    onBack.run();
+                }
+            });
+            bar.addView(back);
+        }
+
+        TextView title = new TextView(this);
+        title.setText(titleText);
+        title.setTextSize(22);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextColor(0xffffffff);
+
+        LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, -2, 1f);
+        titleLp.leftMargin = showBack ? px(12) : 0;
+        bar.addView(title, titleLp);
+
+        Button overflow = overflowButton();
+        overflow.setOnClickListener(v -> showOverflowMenu(v));
+        bar.addView(overflow);
+
+        return bar;
+    }
+
+    private Button overflowButton() {
+        Button button = new Button(this);
+        button.setText("⋮");
+        button.setAllCaps(false);
+        button.setTextSize(24);
+        button.setTextColor(0xffffffff);
+        button.setMinWidth(px(44));
+        button.setMinHeight(px(44));
+        button.setPadding(px(10), 0, px(10), 0);
+        button.setBackground(makeRoundedCard(withAlpha(accentColor(), 0x33), withAlpha(0xffffffff, 0x66)));
+        return button;
+    }
+
+    private void showOverflowMenu(View anchor) {
+        PopupMenu menu = new PopupMenu(this, anchor, Gravity.END);
+        menu.getMenu().add(0, 1, 0, "Einstellungen");
+        menu.getMenu().add(0, 2, 1, "Über die App");
+        menu.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) {
+                showSettingsScreen();
+                return true;
+            }
+            if (item.getItemId() == 2) {
+                showAboutDialog();
+                return true;
+            }
+            return false;
+        });
+        menu.show();
+    }
+
+    private void showSettingsScreen() {
+        base();
+
+        root.addView(appBar("Einstellungen", true, this::refreshHome));
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setFillViewport(true);
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(px(16), px(16), px(16), px(104));
+        scrollView.addView(box);
+
+        TextView intro = tv("Passe das Erscheinungsbild der App an.", 16);
+        intro.setTextColor(secondaryTextColor());
+        intro.setPadding(0, 0, 0, px(16));
+        box.addView(intro);
+
+        box.addView(settingsCardTitle("Darstellung"));
+        box.addView(themeCard());
+
+        box.addView(settingsCardTitle("Akzentfarbe"));
+        box.addView(accentCard());
+
+        root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
+    }
+
+    private void showAboutDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Über Tracking App")
+                .setMessage("Lokale Android-App auf SQLite-Basis. Keine Google Play Services, kein Firebase.")
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
+    private TextView settingsCardTitle(String text) {
+        TextView title = tv(text, 12);
+        title.setTextColor(mutedTextColor());
+        title.setPadding(0, 0, 0, px(6));
+        return title;
+    }
+
+    private View settingsCard() {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(px(16), px(16), px(16), px(16));
+        card.setBackground(makeRoundedCard(surfaceColor(), borderColor()));
+        card.setElevation(px(2));
+        return card;
+    }
+
+    private View themeCard() {
+        LinearLayout card = (LinearLayout) settingsCard();
+
+        TextView title = tv("Darkmode", 18);
+        title.setPadding(0, 0, 0, px(4));
+        card.addView(title);
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Schaltet zwischen hellem und dunklem Erscheinungsbild um.");
+        subtitle.setTextSize(14);
+        subtitle.setTextColor(secondaryTextColor());
+        subtitle.setPadding(0, 0, 0, px(10));
+        card.addView(subtitle);
+
+        CheckBox toggle = new CheckBox(this);
+        toggle.setText("Darkmode aktivieren");
+        toggle.setChecked(darkMode());
+        toggle.setTextColor(primaryTextColor());
+        toggle.setOnCheckedChangeListener((CompoundButton buttonView, boolean isChecked) -> {
+            setDarkMode(isChecked);
+            refreshSettings();
+        });
+        card.addView(toggle);
+
+        return card;
+    }
+
+    private View accentCard() {
+        LinearLayout card = (LinearLayout) settingsCard();
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Wähle eine Akzentfarbe für Header, Auswahl und Primäraktionen.");
+        subtitle.setTextSize(14);
+        subtitle.setTextColor(secondaryTextColor());
+        subtitle.setPadding(0, 0, 0, px(12));
+        card.addView(subtitle);
+
+        for (int rowIndex = 0; rowIndex < 2; rowIndex++) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setWeightSum(4);
+            row.setPadding(0, 0, 0, px(10));
+
+            for (int col = 0; col < 4; col++) {
+                int index = rowIndex * 4 + col;
+                row.addView(accentOption(index), new LinearLayout.LayoutParams(0, -2, 1f));
+            }
+            card.addView(row);
+        }
+
+        return card;
+    }
+
+    private Button accentOption(int index) {
+        boolean selected = accentIndex() == index;
+        Button button = new Button(this);
+        button.setAllCaps(false);
+        button.setText(ACCENT_NAMES[index]);
+        button.setTextSize(13);
+        button.setTextColor(selected ? accentColor() : primaryTextColor());
+        button.setPadding(px(8), px(18), px(8), px(18));
+        int fillColor = selected ? accentSoftColor() : surfaceColor();
+        int strokeColor = selected ? accentColor() : borderColor();
+        button.setBackground(makeRoundedCard(fillColor, strokeColor));
+        button.setElevation(selected ? px(4) : 0);
+        button.setOnClickListener(v -> {
+            setAccentIndex(index);
+            refreshSettings();
+        });
+        return button;
     }
 
     private void sessions(FrameLayout body) {
@@ -144,13 +522,8 @@ public class MainActivity extends Activity {
 
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(px(16), px(16), px(16), px(20));
+        box.setPadding(px(16), px(12), px(16), px(104));
         scrollView.addView(box);
-
-        TextView eyebrow = tv("SESSIONS", 12);
-        eyebrow.setTextColor(0xff667085);
-        eyebrow.setPadding(0, 0, 0, px(4));
-        box.addView(eyebrow);
 
         TextView title = tv("Deine Läufe", 28);
         title.setPadding(0, 0, 0, px(4));
@@ -159,14 +532,9 @@ public class MainActivity extends Activity {
         TextView subtitle = new TextView(this);
         subtitle.setText("Alle Sessions über alle Tracker hinweg. Tippe eine Session an, um sie zu öffnen.");
         subtitle.setTextSize(14);
-        subtitle.setTextColor(0xff475467);
+        subtitle.setTextColor(secondaryTextColor());
         subtitle.setPadding(0, 0, 0, px(16));
         box.addView(subtitle);
-
-        Button add = primaryButton("Neue Session starten");
-        box.addView(add, new LinearLayout.LayoutParams(-1, -2));
-        ((LinearLayout.LayoutParams) add.getLayoutParams()).bottomMargin = px(18);
-        add.setOnClickListener(v -> chooseTracker());
 
         for (Session session : db.sessions()) {
             Tracker tracker = db.readTracker(session.trackerId);
@@ -179,11 +547,11 @@ public class MainActivity extends Activity {
             LinearLayout card = new LinearLayout(this);
             card.setOrientation(LinearLayout.VERTICAL);
             card.setPadding(px(16), px(16), px(16), px(16));
-            card.setBackground(makeRoundedCard(open ? 0xffffffff : 0xfffcfcfd, 0xffd0d5dd));
+            card.setBackground(makeRoundedCard(surfaceColor(), borderColor()));
             card.setElevation(px(2));
 
             View statusStripe = new View(this);
-            statusStripe.setBackgroundColor(open ? 0xff1d4ed8 : 0xff667085);
+            statusStripe.setBackgroundColor(open ? accentColor() : mutedTextColor());
             LinearLayout.LayoutParams stripeLp = new LinearLayout.LayoutParams(px(36), px(4));
             stripeLp.bottomMargin = px(12);
             card.addView(statusStripe, stripeLp);
@@ -200,13 +568,13 @@ public class MainActivity extends Activity {
             TextView leftMeta = new TextView(this);
             leftMeta.setText(date(session.createdAt));
             leftMeta.setTextSize(13);
-            leftMeta.setTextColor(0xff667085);
+            leftMeta.setTextColor(mutedTextColor());
             metaRow.addView(leftMeta, new LinearLayout.LayoutParams(0, -2, 1));
 
             TextView rightMeta = new TextView(this);
             rightMeta.setText(recordCount + "/" + tracker.items.size() + " Items");
             rightMeta.setTextSize(13);
-            rightMeta.setTextColor(0xff667085);
+            rightMeta.setTextColor(mutedTextColor());
             rightMeta.setGravity(Gravity.END);
             metaRow.addView(rightMeta, new LinearLayout.LayoutParams(0, -2, 1));
             card.addView(metaRow);
@@ -215,14 +583,14 @@ public class MainActivity extends Activity {
             chipRow.setOrientation(LinearLayout.HORIZONTAL);
             chipRow.setPadding(0, 0, 0, px(12));
 
-            chipRow.addView(chip(session.status.equals("open") ? "Offen" : "Abgeschlossen", open ? 0xffdbeafe : 0xffeaecf0, open ? 0xff1d4ed8 : 0xff344054));
-            chipRow.addView(chip(recordCount + "/" + tracker.items.size(), 0xffecfdf3, 0xff027a48));
+            chipRow.addView(chip(session.status.equals("open") ? "Offen" : "Abgeschlossen", open ? accentSoftColor() : surfaceAltColor(), open ? accentColor() : primaryTextColor()));
+            chipRow.addView(chip(recordCount + "/" + tracker.items.size(), accentSoftColor(), accentColor()));
             card.addView(chipRow);
 
             TextView preview = new TextView(this);
             preview.setText(preview(session.id));
             preview.setTextSize(14);
-            preview.setTextColor(0xff344054);
+            preview.setTextColor(primaryTextColor());
             preview.setLineSpacing(0f, 1.15f);
             preview.setMaxLines(2);
             preview.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -238,7 +606,7 @@ public class MainActivity extends Activity {
             LinearLayout empty = new LinearLayout(this);
             empty.setOrientation(LinearLayout.VERTICAL);
             empty.setPadding(px(16), px(16), px(16), px(16));
-            empty.setBackground(makeRoundedCard(0xfff9fafb, 0xffe4e7ec));
+            empty.setBackground(makeRoundedCard(surfaceAltColor(), borderColor()));
 
             TextView emptyTitle = tv("Noch keine Sessions vorhanden", 18);
             emptyTitle.setPadding(0, 0, 0, px(4));
@@ -247,7 +615,7 @@ public class MainActivity extends Activity {
             TextView emptyBody = new TextView(this);
             emptyBody.setText("Starte eine neue Session, um erste Werte zu erfassen und die Historie aufzubauen.");
             emptyBody.setTextSize(14);
-            emptyBody.setTextColor(0xff475467);
+            emptyBody.setTextColor(secondaryTextColor());
             empty.addView(emptyBody);
 
             LinearLayout.LayoutParams emptyLp = new LinearLayout.LayoutParams(-1, -2);
@@ -310,7 +678,7 @@ public class MainActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(24, 20, 24, 20);
-        card.setBackgroundColor(0xfff2f4f8);
+        card.setBackgroundColor(surfaceAltColor());
 
         TextView title = tv(readOnly ? "Abgeschlossener Stand" : "Aktueller Session-Stand", 16);
         title.setPadding(0, 0, 0, 6);
@@ -319,7 +687,7 @@ public class MainActivity extends Activity {
         TextView body = new TextView(this);
         body.setText(summaryText(values, item));
         body.setTextSize(14);
-        body.setTextColor(0xff3a4554);
+        body.setTextColor(primaryTextColor());
         card.addView(body);
 
         TextView hint = new TextView(this);
@@ -327,7 +695,7 @@ public class MainActivity extends Activity {
                 ? "Read-only. Werte sind unveränderlich."
                 : "Änderungen werden beim Zurück- oder Weitergehen gespeichert.");
         hint.setTextSize(12);
-        hint.setTextColor(0xff667085);
+        hint.setTextColor(mutedTextColor());
         hint.setPadding(0, 8, 0, 0);
         card.addView(hint);
 
@@ -373,20 +741,109 @@ public class MainActivity extends Activity {
 
     private void chooseTracker() {
         List<Tracker> trackers = db.trackers();
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        dialog.setCancelable(true);
+
+        LinearLayout scrim = new LinearLayout(this);
+        scrim.setOrientation(LinearLayout.VERTICAL);
+        scrim.setGravity(Gravity.BOTTOM);
+        scrim.setBackgroundColor(0x99000000);
+        scrim.setPadding(px(16), px(16), px(16), px(16));
+
+        LinearLayout sheet = new LinearLayout(this);
+        sheet.setOrientation(LinearLayout.VERTICAL);
+        sheet.setPadding(px(16), px(16), px(16), px(16));
+        sheet.setBackground(makeRoundedCard(surfaceColor(), borderColor()));
+
+        TextView title = tv("Tracker auswählen", 22);
+        title.setPadding(0, 0, 0, px(4));
+        sheet.addView(title);
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText(trackers.isEmpty()
+                ? "Lege zuerst einen Tracker an."
+                : "Wähle einen Tracker für die neue Session.");
+        subtitle.setTextSize(14);
+        subtitle.setTextColor(secondaryTextColor());
+        subtitle.setPadding(0, 0, 0, px(16));
+        sheet.addView(subtitle);
+
         if (trackers.isEmpty()) {
-            Toast.makeText(this, "Keine Tracker vorhanden", Toast.LENGTH_SHORT).show();
-            return;
+            Button create = primaryButton("Neuen Tracker anlegen");
+            create.setOnClickListener(v -> {
+                dialog.dismiss();
+                createTracker();
+            });
+            sheet.addView(create, new LinearLayout.LayoutParams(-1, -2));
+        } else {
+            for (Tracker tracker : trackers) {
+                View item = selectionRow(
+                        tracker.name,
+                        tracker.description == null || tracker.description.trim().isEmpty()
+                                ? "Ohne Beschreibung"
+                                : tracker.description);
+                item.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    openSession(db.createSession(tracker.id));
+                });
+                LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
+                rowLp.bottomMargin = px(10);
+                sheet.addView(item, rowLp);
+            }
         }
 
-        String[] names = new String[trackers.size()];
-        for (int i = 0; i < trackers.size(); i++) {
-            names[i] = trackers.get(i).name;
-        }
+        Button cancel = secondaryButton("Abbrechen");
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        LinearLayout.LayoutParams cancelLp = new LinearLayout.LayoutParams(-1, -2);
+        cancelLp.topMargin = px(4);
+        sheet.addView(cancel, cancelLp);
 
-        new AlertDialog.Builder(this)
-                .setTitle("Tracker auswählen")
-                .setItems(names, (dialog, which) -> openSession(db.createSession(trackers.get(which).id)))
-                .show();
+        scrim.addView(sheet, new LinearLayout.LayoutParams(-1, -2));
+        dialog.setContentView(scrim);
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.setLayout(-1, -1);
+        }
+        dialog.show();
+    }
+
+    private View selectionRow(String title, String subtitle) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(px(16), px(14), px(16), px(14));
+        row.setBackground(makeRoundedCard(surfaceAltColor(), borderColor()));
+
+        LinearLayout text = new LinearLayout(this);
+        text.setOrientation(LinearLayout.VERTICAL);
+
+        TextView rowTitle = new TextView(this);
+        rowTitle.setText(title);
+        rowTitle.setTextSize(16);
+        rowTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        rowTitle.setTextColor(primaryTextColor());
+        text.addView(rowTitle);
+
+        TextView rowSubtitle = new TextView(this);
+        rowSubtitle.setText(subtitle);
+        rowSubtitle.setTextSize(13);
+        rowSubtitle.setTextColor(mutedTextColor());
+        rowSubtitle.setPadding(0, px(2), 0, 0);
+        text.addView(rowSubtitle);
+
+        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(0, -2, 1f);
+        row.addView(text, textLp);
+
+        TextView arrow = new TextView(this);
+        arrow.setText("›");
+        arrow.setTextSize(22);
+        arrow.setTextColor(mutedTextColor());
+        arrow.setPadding(px(10), 0, 0, 0);
+        row.addView(arrow);
+
+        return row;
     }
 
     private void trackers(FrameLayout body) {
@@ -395,11 +852,11 @@ public class MainActivity extends Activity {
 
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(px(16), px(16), px(16), px(20));
+        box.setPadding(px(16), px(16), px(16), px(104));
         scrollView.addView(box);
 
         TextView eyebrow = tv("TRACKER", 12);
-        eyebrow.setTextColor(0xff667085);
+        eyebrow.setTextColor(mutedTextColor());
         eyebrow.setPadding(0, 0, 0, px(4));
         box.addView(eyebrow);
 
@@ -410,21 +867,16 @@ public class MainActivity extends Activity {
         TextView subtitle = new TextView(this);
         subtitle.setText("Verwalte Vorlagen, Items und Felder für deine Sessions.");
         subtitle.setTextSize(14);
-        subtitle.setTextColor(0xff475467);
+        subtitle.setTextColor(secondaryTextColor());
         subtitle.setPadding(0, 0, 0, px(16));
         box.addView(subtitle);
-
-        Button add = primaryButton("Neuer Tracker");
-        box.addView(add, new LinearLayout.LayoutParams(-1, -2));
-        ((LinearLayout.LayoutParams) add.getLayoutParams()).bottomMargin = px(18);
-        add.setOnClickListener(v -> createTracker());
 
         List<Tracker> trackers = db.trackers();
         if (trackers.isEmpty()) {
             LinearLayout empty = new LinearLayout(this);
             empty.setOrientation(LinearLayout.VERTICAL);
             empty.setPadding(px(16), px(16), px(16), px(16));
-            empty.setBackground(makeRoundedCard(0xfff9fafb, 0xffe4e7ec));
+            empty.setBackground(makeRoundedCard(surfaceAltColor(), borderColor()));
 
             TextView emptyTitle = tv("Noch keine Tracker vorhanden", 18);
             emptyTitle.setPadding(0, 0, 0, px(4));
@@ -433,7 +885,7 @@ public class MainActivity extends Activity {
             TextView emptyBody = new TextView(this);
             emptyBody.setText("Lege einen Tracker an, um Items und Fields für deine Sessions zu definieren.");
             emptyBody.setTextSize(14);
-            emptyBody.setTextColor(0xff475467);
+            emptyBody.setTextColor(secondaryTextColor());
             empty.addView(emptyBody);
 
             box.addView(empty);
@@ -448,11 +900,11 @@ public class MainActivity extends Activity {
                 LinearLayout card = new LinearLayout(this);
                 card.setOrientation(LinearLayout.VERTICAL);
                 card.setPadding(px(16), px(16), px(16), px(16));
-                card.setBackground(makeRoundedCard(0xffffffff, 0xffd0d5dd));
+                card.setBackground(makeRoundedCard(surfaceColor(), borderColor()));
                 card.setElevation(px(2));
 
                 View stripe = new View(this);
-                stripe.setBackgroundColor(0xff7c3aed);
+                stripe.setBackgroundColor(accentColor());
                 LinearLayout.LayoutParams stripeLp = new LinearLayout.LayoutParams(px(36), px(4));
                 stripeLp.bottomMargin = px(12);
                 card.addView(stripe, stripeLp);
@@ -468,15 +920,15 @@ public class MainActivity extends Activity {
                 TextView meta = new TextView(this);
                 meta.setText(itemCount + " Items · " + fieldCount + " Fields");
                 meta.setTextSize(13);
-                meta.setTextColor(0xff667085);
+                meta.setTextColor(mutedTextColor());
                 metaRow.addView(meta);
                 card.addView(metaRow);
 
                 LinearLayout chipRow = new LinearLayout(this);
                 chipRow.setOrientation(LinearLayout.HORIZONTAL);
                 chipRow.setPadding(0, 0, 0, px(12));
-                chipRow.addView(chip(itemCount == 0 ? "Leer" : itemCount + " Items", itemCount == 0 ? 0xfffef3c7 : 0xffecfdf3, itemCount == 0 ? 0xffb54708 : 0xff027a48));
-                chipRow.addView(chip(fieldCount + " Fields", 0xffeff6ff, 0xff1d4ed8));
+                chipRow.addView(chip(itemCount == 0 ? "Leer" : itemCount + " Items", itemCount == 0 ? withAlpha(accentColor(), 0x18) : accentSoftColor(), itemCount == 0 ? primaryTextColor() : accentColor()));
+                chipRow.addView(chip(fieldCount + " Fields", accentSoftColor(), accentColor()));
                 card.addView(chipRow);
 
                 TextView preview = new TextView(this);
@@ -484,7 +936,7 @@ public class MainActivity extends Activity {
                         ? "Keine Beschreibung vorhanden."
                         : tracker.description);
                 preview.setTextSize(14);
-                preview.setTextColor(0xff344054);
+                preview.setTextColor(primaryTextColor());
                 preview.setLineSpacing(0f, 1.15f);
                 preview.setMaxLines(2);
                 preview.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -496,7 +948,6 @@ public class MainActivity extends Activity {
                 box.addView(card, cardLp);
             }
         }
-
         body.addView(scrollView);
     }
 
@@ -533,10 +984,10 @@ public class MainActivity extends Activity {
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.VERTICAL);
         header.setPadding(px(16), px(16), px(16), px(12));
-        header.setBackgroundColor(0xfff8fafc);
+        header.setBackgroundColor(bgColor());
 
         TextView eyebrow = tv(isNew ? "NEUER TRACKER" : "TRACKER BEARBEITEN", 12);
-        eyebrow.setTextColor(0xff667085);
+        eyebrow.setTextColor(mutedTextColor());
         eyebrow.setPadding(0, 0, 0, px(4));
         header.addView(eyebrow);
 
@@ -547,7 +998,7 @@ public class MainActivity extends Activity {
         TextView subtitle = new TextView(this);
         subtitle.setText("Name, Beschreibung, Items und Fields direkt im Formular pflegen.");
         subtitle.setTextSize(14);
-        subtitle.setTextColor(0xff475467);
+        subtitle.setTextColor(secondaryTextColor());
         header.addView(subtitle);
 
         root.addView(header);
@@ -576,7 +1027,7 @@ public class MainActivity extends Activity {
             LinearLayout empty = new LinearLayout(this);
             empty.setOrientation(LinearLayout.VERTICAL);
             empty.setPadding(px(16), px(16), px(16), px(16));
-            empty.setBackground(makeRoundedCard(0xfff9fafb, 0xffe4e7ec));
+            empty.setBackground(makeRoundedCard(surfaceAltColor(), borderColor()));
 
             TextView emptyTitle = tv("Noch keine Items angelegt", 18);
             emptyTitle.setPadding(0, 0, 0, px(4));
@@ -585,7 +1036,7 @@ public class MainActivity extends Activity {
             TextView emptyBody = new TextView(this);
             emptyBody.setText("Tippe auf \"Item hinzufügen\" und lege dann darunter die Fields an.");
             emptyBody.setTextSize(14);
-            emptyBody.setTextColor(0xff475467);
+            emptyBody.setTextColor(secondaryTextColor());
             empty.addView(emptyBody);
 
             itemsContainer.addView(empty);
@@ -644,7 +1095,7 @@ public class MainActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(px(16), px(16), px(16), px(16));
-        card.setBackground(makeRoundedCard(0xfffafafa, 0xffe4e7ec));
+        card.setBackground(makeRoundedCard(surfaceAltColor(), borderColor()));
 
         LinearLayout cardHeader = new LinearLayout(this);
         cardHeader.setOrientation(LinearLayout.HORIZONTAL);
@@ -724,7 +1175,7 @@ public class MainActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.VERTICAL);
         row.setPadding(px(12), px(12), px(12), px(12));
-        row.setBackground(makeRoundedCard(0xffffffff, 0xffe4e7ec));
+        row.setBackground(makeRoundedCard(surfaceColor(), borderColor()));
         LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
         rowLp.bottomMargin = px(12);
 
@@ -776,6 +1227,7 @@ public class MainActivity extends Activity {
         CheckBox required = new CheckBox(this);
         required.setText("Required");
         required.setChecked(field != null && field.required);
+        required.setTextColor(primaryTextColor());
         views.requiredCheck = required;
         optionsRow.addView(required);
         row.addView(optionsRow);
@@ -783,6 +1235,7 @@ public class MainActivity extends Activity {
         CheckBox prefill = new CheckBox(this);
         prefill.setText("Prefill from previous");
         prefill.setChecked(field != null && field.prefillFromPrevious);
+        prefill.setTextColor(primaryTextColor());
         views.prefillCheck = prefill;
         row.addView(prefill);
 
@@ -838,7 +1291,7 @@ public class MainActivity extends Activity {
         TextView title = new TextView(this);
         title.setText(label);
         title.setTextSize(12);
-        title.setTextColor(0xff667085);
+        title.setTextColor(mutedTextColor());
         title.setPadding(0, 0, 0, px(4));
         group.addView(title);
         group.addView(view);
@@ -851,7 +1304,9 @@ public class MainActivity extends Activity {
         input.setHint(label);
         input.setInputType(inputType);
         input.setPadding(px(12), px(12), px(12), px(12));
-        input.setBackground(makeRoundedCard(0xffffffff, 0xffd0d5dd));
+        input.setBackground(makeRoundedCard(surfaceColor(), borderColor()));
+        input.setTextColor(primaryTextColor());
+        input.setHintTextColor(mutedTextColor());
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = px(12);
         input.setLayoutParams(lp);
@@ -963,10 +1418,10 @@ public class MainActivity extends Activity {
             Map<String, View> inputs = new HashMap<>();
             inputsByItem.put(item.id, inputs);
 
-            LinearLayout card = new LinearLayout(this);
-            card.setOrientation(LinearLayout.VERTICAL);
-            card.setPadding(20, 20, 20, 20);
-            card.setBackgroundColor(0xfff2f4f8);
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(20, 20, 20, 20);
+        card.setBackgroundColor(surfaceAltColor());
             LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
             cardLp.bottomMargin = 20;
 
@@ -1068,6 +1523,8 @@ public class MainActivity extends Activity {
         if ("string".equals(field.type)) {
             EditText editText = new EditText(this);
             editText.setText(value == null ? "" : String.valueOf(value));
+            editText.setTextColor(primaryTextColor());
+            editText.setHintTextColor(mutedTextColor());
             editText.setEnabled(!readOnly);
             box.addView(editText);
             inputs.put(field.key, editText);
@@ -1116,6 +1573,8 @@ public class MainActivity extends Activity {
         editText.setInputType("int".equals(field.type)
                 ? InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED
                 : InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
+        editText.setTextColor(primaryTextColor());
+        editText.setHintTextColor(mutedTextColor());
         editText.setEnabled(!readOnly);
         minus.setEnabled(!readOnly);
         plus.setEnabled(!readOnly);
@@ -1228,6 +1687,7 @@ public class MainActivity extends Activity {
         button.setTag(value);
         button.setChecked(checked);
         button.setTextSize(14);
+        button.setTextColor(primaryTextColor());
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
         lp.rightMargin = px(12);
         button.setLayoutParams(lp);
@@ -1261,7 +1721,7 @@ public class MainActivity extends Activity {
         handle.setOrientation(LinearLayout.VERTICAL);
         handle.setGravity(Gravity.CENTER);
         handle.setPadding(px(10), px(8), px(10), px(8));
-        handle.setBackground(makeRoundedCard(0xfff2f4f7, 0xffd0d5dd));
+        handle.setBackground(makeRoundedCard(surfaceAltColor(), borderColor()));
         handle.setContentDescription("Verschieben");
         handle.setClickable(true);
         handle.setFocusable(true);
@@ -1273,7 +1733,7 @@ public class MainActivity extends Activity {
                 lp.bottomMargin = px(3);
             }
             bar.setLayoutParams(lp);
-            bar.setBackgroundColor(0xff667085);
+            bar.setBackgroundColor(mutedTextColor());
             handle.addView(bar);
         }
 
