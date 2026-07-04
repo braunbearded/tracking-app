@@ -87,18 +87,16 @@ public final class TrackerFlowUi {
         handle.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
         sheet.addView(handle);
 
-        TextView title = ui.tv("Tracker auswählen", 22);
-        title.setPadding(0, 0, 0, ui.px(4));
-        sheet.addView(title);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText(trackers.isEmpty()
-                ? "Lege zuerst einen Tracker an."
-                : "Wähle einen Tracker für die neue Session.");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        subtitle.setPadding(0, 0, 0, ui.px(16));
-        sheet.addView(subtitle);
+        View hero = heroCard(
+                "NEUE SESSION",
+                "Tracker auswählen",
+                trackers.isEmpty()
+                        ? "Lege zuerst einen Tracker an."
+                        : "Wähle einen Tracker für die neue Session.",
+                trackers.isEmpty() ? "Kein Tracker" : "Neue Session");
+        LinearLayout.LayoutParams heroLp = new LinearLayout.LayoutParams(-1, -2);
+        heroLp.bottomMargin = ui.px(16);
+        sheet.addView(hero, heroLp);
 
         if (trackers.isEmpty()) {
             Button create = ui.primaryButton("Neuen Tracker anlegen");
@@ -222,23 +220,15 @@ public final class TrackerFlowUi {
 
         LinearLayout header = new LinearLayout(activity);
         header.setOrientation(LinearLayout.VERTICAL);
-        header.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(12));
+        header.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(0));
         header.setBackgroundColor(theme.backgroundColor());
 
-        TextView eyebrow = ui.tv(isNew ? "NEUER TRACKER" : "TRACKER BEARBEITEN", 12);
-        eyebrow.setTextColor(theme.mutedTextColor());
-        eyebrow.setPadding(0, 0, 0, ui.px(4));
-        header.addView(eyebrow);
-
-        TextView title = ui.tv(isNew ? "Tracker anlegen" : "Tracker bearbeiten", 24);
-        title.setPadding(0, 0, 0, ui.px(4));
-        header.addView(title);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText("Name, Beschreibung, Items und Fields direkt im Formular pflegen.");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        header.addView(subtitle);
+        View hero = heroCard(
+                isNew ? "NEUER TRACKER" : "TRACKER BEARBEITEN",
+                isNew ? "Tracker anlegen" : "Tracker bearbeiten",
+                "Name, Beschreibung, Items und Fields direkt im Formular pflegen.",
+                isNew ? "Neu" : "Bestehend");
+        header.addView(hero);
 
         root.addView(header);
 
@@ -246,12 +236,26 @@ public final class TrackerFlowUi {
         scrollView.setFillViewport(true);
         LinearLayout body = new LinearLayout(activity);
         body.setOrientation(LinearLayout.VERTICAL);
-        body.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
+        body.setPadding(ui.px(16), ui.px(0), ui.px(16), ui.px(16));
         scrollView.addView(body);
 
         TrackerEditorForm form = buildTrackerEditorForm(tracker);
-        body.addView(form.nameInput);
-        body.addView(form.descriptionInput);
+
+        LinearLayout formCard = ui.settingsCard();
+        TextView formTitle = ui.tv("Grunddaten", 18);
+        formTitle.setPadding(0, 0, 0, ui.px(4));
+        formCard.addView(formTitle);
+
+        TextView formSubtitle = new TextView(activity);
+        formSubtitle.setText("Name und Beschreibung bilden die Basis für neue Sessions.");
+        formSubtitle.setTextSize(ui.sp(14));
+        formSubtitle.setTextColor(theme.secondaryTextColor());
+        formSubtitle.setPadding(0, 0, 0, ui.px(12));
+        formCard.addView(formSubtitle);
+
+        formCard.addView(form.nameInput);
+        formCard.addView(form.descriptionInput);
+        body.addView(formCard);
 
         Button addItem = ui.primaryButton("Item hinzufügen");
         LinearLayout.LayoutParams addItemLp = new LinearLayout.LayoutParams(-1, -2);
@@ -321,9 +325,19 @@ public final class TrackerFlowUi {
         ScrollView scrollView = new ScrollView(activity);
         LinearLayout box = new LinearLayout(activity);
         box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(ui.px(16), ui.px(8), ui.px(16), ui.px(16));
         scrollView.addView(box);
 
-        root.addView(ui.tv(tracker.name + " · " + session.status, 20));
+        View hero = heroCard(
+                "SESSION",
+                tracker.name,
+                "Erfasse die Werte für diese Session und speichere Änderungen unterwegs.",
+                session.status.equals("open") ? "Offen" : "Abgeschlossen");
+        LinearLayout.LayoutParams heroLp = new LinearLayout.LayoutParams(-1, -2);
+        heroLp.leftMargin = ui.px(16);
+        heroLp.topMargin = ui.px(16);
+        heroLp.rightMargin = ui.px(16);
+        root.addView(hero, heroLp);
 
         Map<Long, Map<String, View>> inputsByItem = new LinkedHashMap<>();
         for (int itemIndex = 0; itemIndex < tracker.items.size(); itemIndex++) {
@@ -374,6 +388,36 @@ public final class TrackerFlowUi {
             }
             backToSessions.run();
         });
+    }
+
+    private View heroCard(String eyebrowText, String titleText, String subtitleText, String chipText) {
+        LinearLayout hero = new LinearLayout(activity);
+        hero.setOrientation(LinearLayout.VERTICAL);
+        hero.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
+        hero.setBackground(ui.makeRoundedCard(theme.accentColor(), theme.accentColor()));
+
+        TextView eyebrow = ui.tv(eyebrowText, 12);
+        eyebrow.setTextColor(theme.withAlpha(Color.WHITE, 0xaa));
+        eyebrow.setPadding(0, 0, 0, ui.px(4));
+        hero.addView(eyebrow);
+
+        TextView title = ui.tv(titleText, 24);
+        title.setTextColor(Color.WHITE);
+        title.setPadding(0, 0, 0, ui.px(4));
+        hero.addView(title);
+
+        TextView subtitle = new TextView(activity);
+        subtitle.setText(subtitleText);
+        subtitle.setTextSize(ui.sp(14));
+        subtitle.setTextColor(theme.withAlpha(Color.WHITE, 0xcc));
+        subtitle.setPadding(0, 0, 0, ui.px(12));
+        hero.addView(subtitle);
+
+        if (chipText != null && !chipText.isEmpty()) {
+            hero.addView(ui.chip(chipText, theme.withAlpha(Color.WHITE, 0x22), Color.WHITE));
+        }
+
+        return hero;
     }
 
     private void saveSessionDraft(Session session, Tracker tracker, Map<Long, Map<String, View>> inputsByItem) {
@@ -614,7 +658,7 @@ public final class TrackerFlowUi {
             } else if ("duration".equals(field.type)) {
                 builder.append(formatMs(toLong(value)));
             } else if ("float".equals(field.type)) {
-                builder.append(String.format(Locale.US, "%." + field.decimals + "f", toDouble(value)));
+                builder.append(String.format(Locale.US, "% ." + field.decimals + "f", toDouble(value)));
             } else {
                 builder.append(String.valueOf(value));
             }
