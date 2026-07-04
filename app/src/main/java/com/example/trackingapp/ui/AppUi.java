@@ -43,7 +43,7 @@ public final class AppUi {
         button.setAllCaps(false);
         button.setTextColor(textColor);
         button.setTextSize(sp(14));
-        button.setCornerRadius(px(24));
+        button.setCornerRadius(px(16));
         button.setPadding(px(16), px(12), px(16), px(12));
         button.setBackgroundTintList(ColorStateList.valueOf(fillColor));
         button.setStrokeWidth(px(1));
@@ -230,7 +230,7 @@ public final class AppUi {
 
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(backgroundColor);
-        drawable.setCornerRadius(px(999));
+        drawable.setCornerRadius(px(16));
         chip.setBackground(drawable);
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
@@ -242,7 +242,7 @@ public final class AppUi {
     public GradientDrawable makeRoundedCard(int fillColor, int strokeColor) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(fillColor);
-        drawable.setCornerRadius(px(28));
+        drawable.setCornerRadius(px(12));
         drawable.setStroke(px(1), strokeColor);
         return drawable;
     }
