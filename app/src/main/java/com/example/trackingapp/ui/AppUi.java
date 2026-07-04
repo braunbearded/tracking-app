@@ -81,7 +81,7 @@ public final class AppUi {
         nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                px(76)));
+                px(68)));
         nav.setBackgroundColor(theme.navigationBarColor());
         nav.setElevation(px(8));
         nav.addView(navItem("Sessions", android.R.drawable.ic_menu_agenda, sessionsSelected, onSessions),
@@ -104,7 +104,7 @@ public final class AppUi {
         content.setLayoutParams(new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
-        content.setPadding(0, px(10), 0, px(10));
+        content.setPadding(0, px(8), 0, px(8));
 
         Drawable icon = activity.getDrawable(iconRes);
         if (icon != null) {
@@ -115,12 +115,12 @@ public final class AppUi {
         ImageView iconView = new ImageView(activity);
         iconView.setImageDrawable(icon);
         iconView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(px(22), px(22));
+        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(px(20), px(20));
         content.addView(iconView, iconLp);
 
         TextView labelView = new TextView(activity);
         labelView.setText(label);
-        labelView.setTextSize(sp(12));
+        labelView.setTextSize(sp(11));
         labelView.setTypeface(selected ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
         labelView.setIncludeFontPadding(false);
         labelView.setSingleLine();
@@ -160,8 +160,8 @@ public final class AppUi {
         LinearLayout bar = new LinearLayout(activity);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setMinimumHeight(px(64));
-        bar.setPadding(px(16), px(18), px(12), px(14));
+        bar.setMinimumHeight(px(56));
+        bar.setPadding(px(14), px(12), px(12), px(12));
         bar.setBackgroundColor(theme.accentColor());
         bar.setElevation(px(4));
 
@@ -181,7 +181,7 @@ public final class AppUi {
 
         TextView title = new TextView(activity);
         title.setText(titleText);
-        title.setTextSize(sp(22));
+        title.setTextSize(sp(20));
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setTextColor(0xffffffff);
         LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, -2, 1f);
