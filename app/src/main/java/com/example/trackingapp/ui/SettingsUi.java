@@ -14,6 +14,7 @@ import com.example.trackingapp.theme.ThemeStore;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.shape.ShapeAppearanceModel;
 
 public final class SettingsUi {
     private final Activity activity;
@@ -40,11 +41,6 @@ public final class SettingsUi {
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(104));
         scrollView.addView(box);
-
-        TextView intro = ui.tv("Passe das Erscheinungsbild der App an.", 16);
-        intro.setTextColor(theme.secondaryTextColor());
-        intro.setPadding(0, 0, 0, ui.px(16));
-        box.addView(intro);
 
         box.addView(ui.settingsCardTitle("Darstellung"));
         box.addView(themeCard());
@@ -80,27 +76,11 @@ public final class SettingsUi {
         body.setPadding(ui.px(4), ui.px(4), ui.px(4), ui.px(0));
         scrollView.addView(body);
 
-        LinearLayout header = new LinearLayout(activity);
-        header.setOrientation(LinearLayout.VERTICAL);
-        header.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
-        header.setBackground(ui.makeRoundedCard(theme.accentColor(), theme.accentColor()));
+        LinearLayout header = ui.contentCard();
+        ui.addSectionHeader(header, "ÜBER", "Tracking App", null);
         LinearLayout.LayoutParams headerLp = new LinearLayout.LayoutParams(-1, -2);
         headerLp.bottomMargin = ui.px(12);
         body.addView(header, headerLp);
-
-        TextView intro = new TextView(activity);
-        intro.setText("Über Tracking App");
-        intro.setTextSize(ui.sp(22));
-        intro.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        intro.setTextColor(android.graphics.Color.WHITE);
-        intro.setPadding(0, 0, 0, ui.px(4));
-        header.addView(intro);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText("Lokale Android-App auf SQLite-Basis. Keine Google Play Services, kein Firebase.");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.withAlpha(android.graphics.Color.WHITE, 0xcc));
-        header.addView(subtitle);
 
         body.addView(aboutInfoCard("Repository", "braunbearded/tracking-app", true));
         body.addView(aboutInfoCard("Version", versionName, false));
@@ -113,18 +93,8 @@ public final class SettingsUi {
     }
 
     private View aboutInfoCard(String label, String value, boolean clickable) {
-        LinearLayout row = new LinearLayout(activity);
-        row.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout row = ui.contentCard();
         row.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(12));
-        row.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
-
-        TextView labelView = new TextView(activity);
-        labelView.setText(label);
-        labelView.setTextSize(ui.sp(12));
-        labelView.setTextColor(theme.mutedTextColor());
-        labelView.setPadding(0, 0, 0, ui.px(4));
-        row.addView(labelView);
-
         TextView valueView = new TextView(activity);
         valueView.setText(value);
         valueView.setTextSize(ui.sp(15));
@@ -146,18 +116,8 @@ public final class SettingsUi {
     }
 
     private View themeCard() {
-        LinearLayout card = ui.settingsCard();
-
-        TextView title = ui.tv("Farbschema", 18);
-        title.setPadding(0, 0, 0, ui.px(4));
-        card.addView(title);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText("Wähle System, Hell oder Dunkel für die gesamte App.");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        subtitle.setPadding(0, 0, 0, ui.px(10));
-        card.addView(subtitle);
+        LinearLayout card = ui.contentCard();
+        ui.addSectionHeader(card, "DARSTELLUNG", "Farbschema", null);
 
         ChipGroup group = new ChipGroup(activity);
         group.setSingleSelection(true);
@@ -188,18 +148,8 @@ public final class SettingsUi {
     }
 
     private View fontCard() {
-        LinearLayout card = ui.settingsCard();
-
-        TextView title = ui.tv("Schriftgröße", 18);
-        title.setPadding(0, 0, 0, ui.px(4));
-        card.addView(title);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText("Skaliert die wichtigsten Texte und Überschriften in der gesamten App.");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        subtitle.setPadding(0, 0, 0, ui.px(10));
-        card.addView(subtitle);
+        LinearLayout card = ui.contentCard();
+        ui.addSectionHeader(card, "SCHRIFT", "Schriftgröße", null);
 
         ChipGroup group = new ChipGroup(activity);
         group.setSingleSelection(true);
@@ -251,20 +201,17 @@ public final class SettingsUi {
         chip.setChipBackgroundColor(ColorStateList.valueOf(selected ? theme.accentSoftColor() : theme.surfaceAltColor()));
         chip.setChipStrokeColor(ColorStateList.valueOf(selected ? theme.accentColor() : theme.borderColor()));
         chip.setChipStrokeWidth(ui.px(1));
+        chip.setShapeAppearanceModel(ShapeAppearanceModel.builder()
+                .setAllCornerSizes(ui.px(8))
+                .build());
         chip.setCheckedIconVisible(false);
         chip.setCheckedIcon(null);
         chip.setElevation(ui.px(0));
     }
 
     private View accentCard() {
-        LinearLayout card = ui.settingsCard();
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText("Wähle eine Akzentfarbe für Header, Auswahl und Primäraktionen.");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        subtitle.setPadding(0, 0, 0, ui.px(12));
-        card.addView(subtitle);
+        LinearLayout card = ui.contentCard();
+        ui.addSectionHeader(card, "AKZENTFARBE", "Akzentfarbe", null);
 
         for (int rowIndex = 0; rowIndex < 2; rowIndex++) {
             LinearLayout row = new LinearLayout(activity);

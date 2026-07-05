@@ -236,6 +236,33 @@ final class TrackingDatabase extends SQLiteOpenHelper {
         getWritableDatabase().update("sessions", values, "id=?", new String[]{String.valueOf(sessionId)});
     }
 
+    void deleteSession(long sessionId) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            db.delete("item_records", "sessionId=?", new String[]{String.valueOf(sessionId)});
+            db.delete("sessions", "id=?", new String[]{String.valueOf(sessionId)});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    void deleteTracker(long trackerId) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            db.delete("item_records", "trackerId=?", new String[]{String.valueOf(trackerId)});
+            db.delete("sessions", "trackerId=?", new String[]{String.valueOf(trackerId)});
+            db.delete("fields", "itemId IN (SELECT id FROM items WHERE trackerId=?)", new String[]{String.valueOf(trackerId)});
+            db.delete("items", "trackerId=?", new String[]{String.valueOf(trackerId)});
+            db.delete("trackers", "id=?", new String[]{String.valueOf(trackerId)});
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
     Map<Long, ItemRecord> records(long sessionId) {
         Map<Long, ItemRecord> records = new HashMap<>();
         Cursor cursor = getReadableDatabase().rawQuery(

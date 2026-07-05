@@ -20,6 +20,10 @@ import com.example.trackingapp.theme.ThemeStore;
 import com.google.android.material.button.MaterialButton;
 
 public final class AppUi {
+    private static final int CARD_RADIUS_DP = 4;
+    private static final int CONTROL_RADIUS_DP = 6;
+    private static final int CHIP_RADIUS_DP = 4;
+
     private final Activity activity;
     private final ThemeStore theme;
 
@@ -43,11 +47,10 @@ public final class AppUi {
         button.setAllCaps(false);
         button.setTextColor(textColor);
         button.setTextSize(sp(14));
-        button.setCornerRadius(px(16));
+        button.setCornerRadius(px(CONTROL_RADIUS_DP));
         button.setPadding(px(16), px(12), px(16), px(12));
         button.setBackgroundTintList(ColorStateList.valueOf(fillColor));
-        button.setStrokeWidth(px(1));
-        button.setStrokeColor(ColorStateList.valueOf(strokeColor));
+        button.setStrokeWidth(0);
         button.setRippleColor(ColorStateList.valueOf(theme.withAlpha(textColor, 0x22)));
         return button;
     }
@@ -162,11 +165,11 @@ public final class AppUi {
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setMinimumHeight(px(56));
         bar.setPadding(px(14), px(12), px(12), px(12));
-        bar.setBackgroundColor(theme.accentColor());
-        bar.setElevation(px(4));
+        bar.setBackgroundColor(theme.surfaceColor());
+        bar.setElevation(px(1));
 
         if (showBack) {
-            Button back = button("←", theme.withAlpha(0xffffffff, 0x22), Color.WHITE, theme.withAlpha(0xffffffff, 0x22));
+            Button back = button("←", theme.surfaceAltColor(), theme.primaryTextColor(), theme.borderColor());
             back.setTextSize(sp(20));
             back.setMinWidth(px(44));
             back.setMinHeight(px(44));
@@ -183,21 +186,17 @@ public final class AppUi {
         title.setText(titleText);
         title.setTextSize(sp(20));
         title.setTypeface(Typeface.DEFAULT_BOLD);
-        title.setTextColor(0xffffffff);
+        title.setTextColor(theme.primaryTextColor());
         LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, -2, 1f);
         titleLp.leftMargin = showBack ? px(12) : 0;
         bar.addView(title, titleLp);
 
         if (showOverflow) {
-            Button overflow = new Button(activity);
-            overflow.setText("⋮");
-            overflow.setAllCaps(false);
+            Button overflow = button("⋮", theme.surfaceAltColor(), theme.primaryTextColor(), theme.borderColor());
             overflow.setTextSize(sp(24));
-            overflow.setTextColor(0xffffffff);
             overflow.setMinWidth(px(44));
             overflow.setMinHeight(px(44));
             overflow.setPadding(px(10), 0, px(10), 0);
-            overflow.setBackground(makeRoundedCard(theme.withAlpha(theme.accentColor(), 0x33), theme.withAlpha(0xffffffff, 0x66)));
             overflow.setOnClickListener(overflowClick);
             bar.addView(overflow);
         }
@@ -221,6 +220,60 @@ public final class AppUi {
         return card;
     }
 
+    public LinearLayout contentCard() {
+        return settingsCard();
+    }
+
+    public void addSectionHeader(LinearLayout container, String eyebrowText, String titleText, String subtitleText) {
+        if (eyebrowText != null && !eyebrowText.isEmpty()) {
+            container.addView(chip(eyebrowText, theme.surfaceAltColor(), theme.mutedTextColor()));
+        }
+
+        TextView title = tv(titleText, 18);
+        title.setPadding(0, eyebrowText == null || eyebrowText.isEmpty() ? 0 : px(4), 0, px(4));
+        container.addView(title);
+
+        if (subtitleText != null && !subtitleText.isEmpty()) {
+            TextView subtitle = new TextView(activity);
+            subtitle.setText(subtitleText);
+            subtitle.setTextSize(sp(14));
+            subtitle.setTextColor(theme.secondaryTextColor());
+            subtitle.setPadding(0, 0, 0, px(12));
+            container.addView(subtitle);
+        }
+    }
+
+    public LinearLayout metaRow(String left, String right) {
+        LinearLayout metaRow = new LinearLayout(activity);
+        metaRow.setOrientation(LinearLayout.HORIZONTAL);
+        metaRow.setWeightSum(2);
+        metaRow.setPadding(0, 0, 0, px(12));
+
+        TextView leftMeta = new TextView(activity);
+        leftMeta.setText(left);
+        leftMeta.setTextSize(sp(13));
+        leftMeta.setTextColor(theme.mutedTextColor());
+        metaRow.addView(leftMeta, new LinearLayout.LayoutParams(0, -2, 1));
+
+        TextView rightMeta = new TextView(activity);
+        rightMeta.setText(right);
+        rightMeta.setTextSize(sp(13));
+        rightMeta.setTextColor(theme.mutedTextColor());
+        rightMeta.setGravity(Gravity.END);
+        metaRow.addView(rightMeta, new LinearLayout.LayoutParams(0, -2, 1));
+        return metaRow;
+    }
+
+    public LinearLayout chipRow(View... chips) {
+        LinearLayout chipRow = new LinearLayout(activity);
+        chipRow.setOrientation(LinearLayout.HORIZONTAL);
+        chipRow.setPadding(0, 0, 0, px(12));
+        for (View chip : chips) {
+            chipRow.addView(chip);
+        }
+        return chipRow;
+    }
+
     public TextView chip(String text, int backgroundColor, int textColor) {
         TextView chip = new TextView(activity);
         chip.setText(text);
@@ -230,7 +283,7 @@ public final class AppUi {
 
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(backgroundColor);
-        drawable.setCornerRadius(px(16));
+        drawable.setCornerRadius(px(CHIP_RADIUS_DP));
         chip.setBackground(drawable);
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
@@ -242,8 +295,7 @@ public final class AppUi {
     public GradientDrawable makeRoundedCard(int fillColor, int strokeColor) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(fillColor);
-        drawable.setCornerRadius(px(12));
-        drawable.setStroke(px(1), strokeColor);
+        drawable.setCornerRadius(px(CARD_RADIUS_DP));
         return drawable;
     }
 
