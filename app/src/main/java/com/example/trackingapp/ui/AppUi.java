@@ -50,8 +50,7 @@ public final class AppUi {
         button.setCornerRadius(px(CONTROL_RADIUS_DP));
         button.setPadding(px(16), px(12), px(16), px(12));
         button.setBackgroundTintList(ColorStateList.valueOf(fillColor));
-        button.setStrokeWidth(px(1));
-        button.setStrokeColor(ColorStateList.valueOf(strokeColor));
+        button.setStrokeWidth(0);
         button.setRippleColor(ColorStateList.valueOf(theme.withAlpha(textColor, 0x22)));
         return button;
     }
@@ -297,7 +296,6 @@ public final class AppUi {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(fillColor);
         drawable.setCornerRadius(px(CARD_RADIUS_DP));
-        drawable.setStroke(px(1), strokeColor);
         return drawable;
     }
 

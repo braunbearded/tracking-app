@@ -99,14 +99,21 @@ public final class SettingsUi {
 
     private View aboutInfoCard(String label, String value, boolean clickable) {
         LinearLayout row = ui.contentCard();
-        ui.addSectionHeader(row, "INFO", label, null);
+        row.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(12));
 
         TextView labelView = new TextView(activity);
-        labelView.setText(value);
-        labelView.setTextSize(ui.sp(15));
-        labelView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        labelView.setTextColor(theme.primaryTextColor());
+        labelView.setText(label);
+        labelView.setTextSize(ui.sp(12));
+        labelView.setTextColor(theme.mutedTextColor());
+        labelView.setPadding(0, 0, 0, ui.px(4));
         row.addView(labelView);
+
+        TextView valueView = new TextView(activity);
+        valueView.setText(value);
+        valueView.setTextSize(ui.sp(15));
+        valueView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        valueView.setTextColor(theme.primaryTextColor());
+        row.addView(valueView);
 
         if (clickable && "Repository".equals(label)) {
             row.setClickable(true);

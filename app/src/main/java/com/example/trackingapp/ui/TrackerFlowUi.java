@@ -76,27 +76,21 @@ public final class TrackerFlowUi {
 
         LinearLayout sheet = new LinearLayout(activity);
         sheet.setOrientation(LinearLayout.VERTICAL);
-        sheet.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(20));
+        sheet.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(20));
         sheet.setBackgroundColor(theme.surfaceColor());
 
-        View handle = new View(activity);
-        LinearLayout.LayoutParams handleLp = new LinearLayout.LayoutParams(ui.px(42), ui.px(5));
-        handleLp.gravity = Gravity.CENTER_HORIZONTAL;
-        handleLp.bottomMargin = ui.px(14);
-        handle.setLayoutParams(handleLp);
-        handle.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
-        sheet.addView(handle);
+        TextView title = ui.tv("Tracker auswählen", 18);
+        title.setPadding(0, 0, 0, ui.px(4));
+        sheet.addView(title);
 
-        View hero = heroCard(
-                "NEUE SESSION",
-                "Tracker auswählen",
-                trackers.isEmpty()
-                        ? "Lege zuerst einen Tracker an."
-                        : "Wähle einen Tracker für die neue Session.",
-                trackers.isEmpty() ? "Kein Tracker" : "Neue Session");
-        LinearLayout.LayoutParams heroLp = new LinearLayout.LayoutParams(-1, -2);
-        heroLp.bottomMargin = ui.px(16);
-        sheet.addView(hero, heroLp);
+        TextView subtitle = new TextView(activity);
+        subtitle.setText(trackers.isEmpty()
+                ? "Lege zuerst einen Tracker an."
+                : "Wähle einen Tracker für die neue Session.");
+        subtitle.setTextSize(ui.sp(14));
+        subtitle.setTextColor(theme.secondaryTextColor());
+        subtitle.setPadding(0, 0, 0, ui.px(16));
+        sheet.addView(subtitle);
 
         if (trackers.isEmpty()) {
             Button create = ui.primaryButton("Neuen Tracker anlegen");

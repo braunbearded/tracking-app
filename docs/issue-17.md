@@ -9,6 +9,8 @@ What changed:
 - All primary surface cards now use the same anatomy: eyebrow, title, subtitle, meta, and content.
 - Start screen cards, tracker/session editor cards, and settings/about cards now follow that same structure.
 - Top-level hero and about surfaces now use the same restrained card treatment as the rest of the app.
+- Borders were removed from cards and button surfaces where possible to keep the UI cleaner.
+- The new-session chooser was simplified to a text header and list instead of a nested hero card.
 
 Validation:
 - `./gradlew assembleDebug`
