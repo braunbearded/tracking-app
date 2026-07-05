@@ -31,8 +31,8 @@ public final class HomeUi {
     public void renderSessions(FrameLayout body) {
         ScrollView scrollView = createScrollView();
         LinearLayout box = createListBox(scrollView);
-        addScreenHeader(box, null, "Deine Läufe",
-                "Alle Sessions über alle Tracker hinweg. Tippe eine Session an, um sie zu öffnen.");
+        box.addView(screenHeader(null, "Deine Läufe",
+                "Alle Sessions über alle Tracker hinweg. Tippe eine Session an, um sie zu öffnen."));
 
         java.util.List<Session> sessions = db.sessions();
         for (Session session : sessions) {
@@ -43,31 +43,18 @@ public final class HomeUi {
 
             int recordCount = db.recordCount(session.id);
             boolean open = "open".equals(session.status);
-            LinearLayout card = createCard(theme.surfaceColor());
-            addEyebrow(card, "SESSION");
-
-            TextView trackerName = ui.tv(tracker.name, 18);
-            trackerName.setPadding(0, 0, 0, ui.px(2));
-            card.addView(trackerName);
-
-            TextView trackerDescription = new TextView(activity);
-            trackerDescription.setText(tracker.description == null || tracker.description.trim().isEmpty()
+            LinearLayout card = createCard();
+            ui.addSectionHeader(card, "SESSION", tracker.name, tracker.description == null || tracker.description.trim().isEmpty()
                     ? "Ohne Beschreibung"
                     : tracker.description);
-            trackerDescription.setTextSize(ui.sp(14));
-            trackerDescription.setTextColor(theme.secondaryTextColor());
-            trackerDescription.setPadding(0, 0, 0, ui.px(12));
-            trackerDescription.setMaxLines(2);
-            trackerDescription.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            card.addView(trackerDescription);
 
-            addMetaRow(card, date(session.createdAt), recordCount + "/" + tracker.items.size() + " Items");
-            addChipRow(card,
+            card.addView(ui.metaRow(date(session.createdAt), recordCount + "/" + tracker.items.size() + " Items"));
+            card.addView(ui.chipRow(
                     ui.chip(session.status.equals("open") ? "Offen" : "Abgeschlossen",
                             open ? theme.accentSoftColor() : theme.surfaceAltColor(),
                             open ? theme.accentColor() : theme.primaryTextColor()),
                     ui.chip(recordCount + "/" + tracker.items.size(),
-                            theme.accentSoftColor(), theme.accentColor()));
+                            theme.accentSoftColor(), theme.accentColor())));
 
             TextView preview = new TextView(activity);
             preview.setText(preview(session.id));
@@ -94,8 +81,8 @@ public final class HomeUi {
     public void renderTrackers(FrameLayout body) {
         ScrollView scrollView = createScrollView();
         LinearLayout box = createListBox(scrollView);
-        addScreenHeader(box, "TRACKER", "Deine Tracker",
-                "Hier verwaltest du die Vorlagen für neue Sessions.");
+        box.addView(screenHeader("TRACKER", "Deine Tracker",
+                "Hier verwaltest du die Vorlagen für neue Sessions."));
 
         java.util.List<Tracker> trackers = db.trackers();
         for (Tracker tracker : trackers) {
@@ -105,30 +92,18 @@ public final class HomeUi {
                 fieldCount += item.fields.size();
             }
 
-            LinearLayout card = createCard(theme.surfaceColor());
-            addEyebrow(card, "TRACKER");
+            LinearLayout card = createCard();
+            ui.addSectionHeader(card, "TRACKER", tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name,
+                    tracker.description == null || tracker.description.trim().isEmpty()
+                            ? "Keine Beschreibung vorhanden."
+                            : tracker.description);
 
-            TextView trackerName = ui.tv(tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name, 18);
-            trackerName.setPadding(0, 0, 0, ui.px(2));
-            card.addView(trackerName);
-
-            TextView trackerDescription = new TextView(activity);
-            trackerDescription.setText(tracker.description == null || tracker.description.trim().isEmpty()
-                    ? "Keine Beschreibung vorhanden."
-                    : tracker.description);
-            trackerDescription.setTextSize(ui.sp(14));
-            trackerDescription.setTextColor(theme.secondaryTextColor());
-            trackerDescription.setPadding(0, 0, 0, ui.px(12));
-            trackerDescription.setMaxLines(2);
-            trackerDescription.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            card.addView(trackerDescription);
-
-            addMetaRow(card, itemCount + " Items", fieldCount + " Fields");
-            addChipRow(card,
+            card.addView(ui.metaRow(itemCount + " Items", fieldCount + " Fields"));
+            card.addView(ui.chipRow(
                     ui.chip(itemCount == 0 ? "Leer" : itemCount + " Items",
                             itemCount == 0 ? theme.withAlpha(theme.accentColor(), 0x18) : theme.accentSoftColor(),
                             itemCount == 0 ? theme.primaryTextColor() : theme.accentColor()),
-                    ui.chip(fieldCount + " Fields", theme.accentSoftColor(), theme.accentColor()));
+                    ui.chip(fieldCount + " Fields", theme.accentSoftColor(), theme.accentColor())));
 
             TextView preview = new TextView(activity);
             preview.setText(firstItemPreview(tracker));
@@ -160,68 +135,23 @@ public final class HomeUi {
         return box;
     }
 
-    private void addScreenHeader(LinearLayout box, String eyebrowText, String titleText, String subtitleText) {
-        if (eyebrowText != null && !eyebrowText.isEmpty()) {
-            TextView eyebrow = ui.tv(eyebrowText, 12);
-            eyebrow.setTextColor(theme.mutedTextColor());
-            eyebrow.setPadding(0, 0, 0, ui.px(4));
-            box.addView(eyebrow);
-        }
-
-        TextView title = ui.tv(titleText, 28);
-        title.setPadding(0, 0, 0, ui.px(4));
-        box.addView(title);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText(subtitleText);
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        subtitle.setPadding(0, 0, 0, ui.px(16));
-        box.addView(subtitle);
-    }
-
-    private LinearLayout createCard(int fillColor) {
+    private LinearLayout screenHeader(String eyebrowText, String titleText, String subtitleText) {
         LinearLayout card = new LinearLayout(activity);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
-        card.setBackground(ui.makeRoundedCard(fillColor, theme.borderColor()));
+        card.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
         card.setElevation(ui.px(1));
+        ui.addSectionHeader(card, eyebrowText, titleText, subtitleText);
         return card;
     }
 
-    private void addEyebrow(LinearLayout card, String text) {
-        card.addView(ui.chip(text, theme.surfaceAltColor(), theme.mutedTextColor()));
-    }
-
-    private void addMetaRow(LinearLayout card, String left, String right) {
-        LinearLayout metaRow = new LinearLayout(activity);
-        metaRow.setOrientation(LinearLayout.HORIZONTAL);
-        metaRow.setWeightSum(2);
-        metaRow.setPadding(0, 0, 0, ui.px(12));
-
-        TextView leftMeta = new TextView(activity);
-        leftMeta.setText(left);
-        leftMeta.setTextSize(ui.sp(13));
-        leftMeta.setTextColor(theme.mutedTextColor());
-        metaRow.addView(leftMeta, new LinearLayout.LayoutParams(0, -2, 1));
-
-        TextView rightMeta = new TextView(activity);
-        rightMeta.setText(right);
-        rightMeta.setTextSize(ui.sp(13));
-        rightMeta.setTextColor(theme.mutedTextColor());
-        rightMeta.setGravity(android.view.Gravity.END);
-        metaRow.addView(rightMeta, new LinearLayout.LayoutParams(0, -2, 1));
-        card.addView(metaRow);
-    }
-
-    private void addChipRow(LinearLayout card, View... chips) {
-        LinearLayout chipRow = new LinearLayout(activity);
-        chipRow.setOrientation(LinearLayout.HORIZONTAL);
-        chipRow.setPadding(0, 0, 0, ui.px(12));
-        for (View chip : chips) {
-            chipRow.addView(chip);
-        }
-        card.addView(chipRow);
+    private LinearLayout createCard() {
+        LinearLayout card = new LinearLayout(activity);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
+        card.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
+        card.setElevation(ui.px(1));
+        return card;
     }
 
     private LinearLayout.LayoutParams cardLayoutParams() {

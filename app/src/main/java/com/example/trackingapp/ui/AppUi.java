@@ -221,6 +221,60 @@ public final class AppUi {
         return card;
     }
 
+    public LinearLayout contentCard() {
+        return settingsCard();
+    }
+
+    public void addSectionHeader(LinearLayout container, String eyebrowText, String titleText, String subtitleText) {
+        if (eyebrowText != null && !eyebrowText.isEmpty()) {
+            container.addView(chip(eyebrowText, theme.surfaceAltColor(), theme.mutedTextColor()));
+        }
+
+        TextView title = tv(titleText, 18);
+        title.setPadding(0, eyebrowText == null || eyebrowText.isEmpty() ? 0 : px(4), 0, px(4));
+        container.addView(title);
+
+        if (subtitleText != null && !subtitleText.isEmpty()) {
+            TextView subtitle = new TextView(activity);
+            subtitle.setText(subtitleText);
+            subtitle.setTextSize(sp(14));
+            subtitle.setTextColor(theme.secondaryTextColor());
+            subtitle.setPadding(0, 0, 0, px(12));
+            container.addView(subtitle);
+        }
+    }
+
+    public LinearLayout metaRow(String left, String right) {
+        LinearLayout metaRow = new LinearLayout(activity);
+        metaRow.setOrientation(LinearLayout.HORIZONTAL);
+        metaRow.setWeightSum(2);
+        metaRow.setPadding(0, 0, 0, px(12));
+
+        TextView leftMeta = new TextView(activity);
+        leftMeta.setText(left);
+        leftMeta.setTextSize(sp(13));
+        leftMeta.setTextColor(theme.mutedTextColor());
+        metaRow.addView(leftMeta, new LinearLayout.LayoutParams(0, -2, 1));
+
+        TextView rightMeta = new TextView(activity);
+        rightMeta.setText(right);
+        rightMeta.setTextSize(sp(13));
+        rightMeta.setTextColor(theme.mutedTextColor());
+        rightMeta.setGravity(Gravity.END);
+        metaRow.addView(rightMeta, new LinearLayout.LayoutParams(0, -2, 1));
+        return metaRow;
+    }
+
+    public LinearLayout chipRow(View... chips) {
+        LinearLayout chipRow = new LinearLayout(activity);
+        chipRow.setOrientation(LinearLayout.HORIZONTAL);
+        chipRow.setPadding(0, 0, 0, px(12));
+        for (View chip : chips) {
+            chipRow.addView(chip);
+        }
+        return chipRow;
+    }
+
     public TextView chip(String text, int backgroundColor, int textColor) {
         TextView chip = new TextView(activity);
         chip.setText(text);

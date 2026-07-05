@@ -241,17 +241,9 @@ public final class TrackerFlowUi {
 
         TrackerEditorForm form = buildTrackerEditorForm(tracker);
 
-        LinearLayout formCard = ui.settingsCard();
-        TextView formTitle = ui.tv("Grunddaten", 18);
-        formTitle.setPadding(0, 0, 0, ui.px(4));
-        formCard.addView(formTitle);
-
-        TextView formSubtitle = new TextView(activity);
-        formSubtitle.setText("Name und Beschreibung bilden die Basis für neue Sessions.");
-        formSubtitle.setTextSize(ui.sp(14));
-        formSubtitle.setTextColor(theme.secondaryTextColor());
-        formSubtitle.setPadding(0, 0, 0, ui.px(12));
-        formCard.addView(formSubtitle);
+        LinearLayout formCard = ui.contentCard();
+        ui.addSectionHeader(formCard, "GRUNDDATEN", "Name und Beschreibung",
+                "Name und Beschreibung bilden die Basis für neue Sessions.");
 
         formCard.addView(form.nameInput);
         formCard.addView(form.descriptionInput);
@@ -267,20 +259,9 @@ public final class TrackerFlowUi {
         body.addView(itemsContainer, new LinearLayout.LayoutParams(-1, -2));
 
         if (tracker.items.isEmpty()) {
-            LinearLayout empty = new LinearLayout(activity);
-            empty.setOrientation(LinearLayout.VERTICAL);
-            empty.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
-            empty.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
-
-            TextView emptyTitle = ui.tv("Noch keine Items angelegt", 18);
-            emptyTitle.setPadding(0, 0, 0, ui.px(4));
-            empty.addView(emptyTitle);
-
-            TextView emptyBody = new TextView(activity);
-            emptyBody.setText("Tippe auf \"Item hinzufügen\" und lege dann darunter die Fields an.");
-            emptyBody.setTextSize(ui.sp(14));
-            emptyBody.setTextColor(theme.secondaryTextColor());
-            empty.addView(emptyBody);
+            LinearLayout empty = ui.contentCard();
+            ui.addSectionHeader(empty, "ITEMS", "Noch keine Items angelegt",
+                    "Tippe auf \"Item hinzufügen\" und lege dann darunter die Fields an.");
 
             itemsContainer.addView(empty);
         } else {
@@ -346,14 +327,12 @@ public final class TrackerFlowUi {
             Map<String, View> inputs = new HashMap<>();
             inputsByItem.put(item.id, inputs);
 
-            LinearLayout card = new LinearLayout(activity);
-            card.setOrientation(LinearLayout.VERTICAL);
-            card.setPadding(ui.px(20), ui.px(20), ui.px(20), ui.px(20));
-            card.setBackgroundColor(theme.surfaceAltColor());
+            LinearLayout card = ui.contentCard();
             LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
             cardLp.bottomMargin = ui.px(20);
 
-            card.addView(ui.tv((itemIndex + 1) + ". " + item.title, 18));
+            ui.addSectionHeader(card, "ITEM " + (itemIndex + 1), item.title,
+                    readOnly ? "Read-only. Werte sind unveränderlich." : "Änderungen werden beim Zurück- oder Weitergehen gespeichert.");
             card.addView(summaryCard(readOnly, values, item));
 
             for (FieldDefinition field : item.fields) {
@@ -391,33 +370,8 @@ public final class TrackerFlowUi {
     }
 
     private View heroCard(String eyebrowText, String titleText, String subtitleText, String chipText) {
-        LinearLayout hero = new LinearLayout(activity);
-        hero.setOrientation(LinearLayout.VERTICAL);
-        hero.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
-        hero.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
-
-        View accentBar = new View(activity);
-        accentBar.setBackgroundColor(theme.accentColor());
-        LinearLayout.LayoutParams accentLp = new LinearLayout.LayoutParams(-1, ui.px(4));
-        accentLp.bottomMargin = ui.px(12);
-        hero.addView(accentBar, accentLp);
-
-        TextView eyebrow = ui.tv(eyebrowText, 12);
-        eyebrow.setTextColor(theme.accentColor());
-        eyebrow.setPadding(0, 0, 0, ui.px(4));
-        hero.addView(eyebrow);
-
-        TextView title = ui.tv(titleText, 24);
-        title.setTextColor(theme.primaryTextColor());
-        title.setPadding(0, 0, 0, ui.px(4));
-        hero.addView(title);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText(subtitleText);
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        subtitle.setPadding(0, 0, 0, ui.px(12));
-        hero.addView(subtitle);
+        LinearLayout hero = ui.contentCard();
+        ui.addSectionHeader(hero, eyebrowText, titleText, subtitleText);
 
         if (chipText != null && !chipText.isEmpty()) {
             hero.addView(ui.chip(chipText, theme.accentSoftColor(), theme.accentColor()));
@@ -623,29 +577,18 @@ public final class TrackerFlowUi {
     }
 
     private View summaryCard(boolean readOnly, Map<String, Object> values, Item item) {
-        LinearLayout card = new LinearLayout(activity);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(ui.px(24), ui.px(20), ui.px(24), ui.px(20));
-        card.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
-
-        TextView title = ui.tv(readOnly ? "Abgeschlossener Stand" : "Aktueller Session-Stand", 16);
-        title.setPadding(0, 0, 0, ui.px(6));
-        card.addView(title);
+        LinearLayout card = ui.contentCard();
+        ui.addSectionHeader(card, "ÜBERSICHT",
+                readOnly ? "Abgeschlossener Stand" : "Aktueller Session-Stand",
+                readOnly
+                        ? "Read-only. Werte sind unveränderlich."
+                        : "Änderungen werden beim Zurück- oder Weitergehen gespeichert.");
 
         TextView body = new TextView(activity);
         body.setText(summaryText(values, item));
         body.setTextSize(ui.sp(14));
         body.setTextColor(theme.primaryTextColor());
         card.addView(body);
-
-        TextView hint = new TextView(activity);
-        hint.setText(readOnly
-                ? "Read-only. Werte sind unveränderlich."
-                : "Änderungen werden beim Zurück- oder Weitergehen gespeichert.");
-        hint.setTextSize(ui.sp(12));
-        hint.setTextColor(theme.mutedTextColor());
-        hint.setPadding(0, ui.px(8), 0, 0);
-        card.addView(hint);
 
         return card;
     }
@@ -701,24 +644,18 @@ public final class TrackerFlowUi {
             container.removeAllViews();
         }
 
-        LinearLayout card = new LinearLayout(activity);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
-        card.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
-
-        LinearLayout cardHeader = new LinearLayout(activity);
-        cardHeader.setOrientation(LinearLayout.HORIZONTAL);
-        cardHeader.setWeightSum(2);
-
-        TextView label = ui.tv("Item", 18);
-        cardHeader.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout card = ui.contentCard();
+        ui.addSectionHeader(card, "ITEM", item == null ? "Neues Item" : item.title,
+                "Drag and drop zum Umordnen. Felder werden darunter gepflegt.");
 
         View drag = dragHandle();
-        cardHeader.addView(drag);
-
         Button remove = ui.dangerButton("Entfernen");
-        cardHeader.addView(remove);
-        card.addView(cardHeader);
+        LinearLayout actionRow = new LinearLayout(activity);
+        actionRow.setOrientation(LinearLayout.HORIZONTAL);
+        actionRow.addView(new View(activity), new LinearLayout.LayoutParams(0, -2, 1));
+        actionRow.addView(drag);
+        actionRow.addView(remove);
+        card.addView(actionRow);
 
         views.titleInput = labeledInput("Titel", item == null ? "" : item.title, InputType.TYPE_CLASS_TEXT);
         card.addView(views.titleInput);
@@ -781,27 +718,20 @@ public final class TrackerFlowUi {
     private FieldEditorViews addFieldEditor(LinearLayout container, List<FieldEditorViews> fieldEditors, FieldDefinition field) {
         FieldEditorViews views = new FieldEditorViews();
 
-        LinearLayout row = new LinearLayout(activity);
-        row.setOrientation(LinearLayout.VERTICAL);
-        row.setPadding(ui.px(12), ui.px(12), ui.px(12), ui.px(12));
-        row.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
+        LinearLayout row = ui.contentCard();
+        ui.addSectionHeader(row, "FIELD", field == null ? "Neues Field" : field.label,
+                "Typ, Default und Sichtbarkeit werden hier festgelegt.");
         LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
         rowLp.bottomMargin = ui.px(12);
 
-        LinearLayout topRow = new LinearLayout(activity);
-        topRow.setOrientation(LinearLayout.HORIZONTAL);
-        topRow.setWeightSum(2);
-
-        TextView heading = ui.tv(field == null ? "Neues Field" : field.label, 16);
-        heading.setPadding(0, 0, 0, 0);
-        topRow.addView(heading, new LinearLayout.LayoutParams(0, -2, 1));
-
         View drag = dragHandle();
-        topRow.addView(drag);
-
         Button remove = ui.dangerButton("Entfernen");
-        topRow.addView(remove);
-        row.addView(topRow);
+        LinearLayout actionRow = new LinearLayout(activity);
+        actionRow.setOrientation(LinearLayout.HORIZONTAL);
+        actionRow.addView(new View(activity), new LinearLayout.LayoutParams(0, -2, 1));
+        actionRow.addView(drag);
+        actionRow.addView(remove);
+        row.addView(actionRow);
 
         views.keyInput = labeledInput("Key", field == null ? "" : field.key, InputType.TYPE_CLASS_TEXT);
         views.labelInput = labeledInput("Label", field == null ? "" : field.label, InputType.TYPE_CLASS_TEXT);

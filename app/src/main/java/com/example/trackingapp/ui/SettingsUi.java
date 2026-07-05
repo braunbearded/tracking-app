@@ -81,33 +81,11 @@ public final class SettingsUi {
         body.setPadding(ui.px(4), ui.px(4), ui.px(4), ui.px(0));
         scrollView.addView(body);
 
-        LinearLayout header = new LinearLayout(activity);
-        header.setOrientation(LinearLayout.VERTICAL);
-        header.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
-        header.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
+        LinearLayout header = ui.contentCard();
+        ui.addSectionHeader(header, "ÜBER", "Tracking App", "Lokale Android-App auf SQLite-Basis. Keine Google Play Services, kein Firebase.");
         LinearLayout.LayoutParams headerLp = new LinearLayout.LayoutParams(-1, -2);
         headerLp.bottomMargin = ui.px(12);
         body.addView(header, headerLp);
-
-        View accentBar = new View(activity);
-        accentBar.setBackgroundColor(theme.accentColor());
-        LinearLayout.LayoutParams accentLp = new LinearLayout.LayoutParams(-1, ui.px(4));
-        accentLp.bottomMargin = ui.px(12);
-        header.addView(accentBar, accentLp);
-
-        TextView intro = new TextView(activity);
-        intro.setText("Über Tracking App");
-        intro.setTextSize(ui.sp(22));
-        intro.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        intro.setTextColor(theme.primaryTextColor());
-        intro.setPadding(0, 0, 0, ui.px(4));
-        header.addView(intro);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText("Lokale Android-App auf SQLite-Basis. Keine Google Play Services, kein Firebase.");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        header.addView(subtitle);
 
         body.addView(aboutInfoCard("Repository", "braunbearded/tracking-app", true));
         body.addView(aboutInfoCard("Version", versionName, false));
@@ -120,24 +98,15 @@ public final class SettingsUi {
     }
 
     private View aboutInfoCard(String label, String value, boolean clickable) {
-        LinearLayout row = new LinearLayout(activity);
-        row.setOrientation(LinearLayout.VERTICAL);
-        row.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(12));
-        row.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
+        LinearLayout row = ui.contentCard();
+        ui.addSectionHeader(row, "INFO", label, null);
 
         TextView labelView = new TextView(activity);
-        labelView.setText(label);
-        labelView.setTextSize(ui.sp(12));
-        labelView.setTextColor(theme.mutedTextColor());
-        labelView.setPadding(0, 0, 0, ui.px(4));
+        labelView.setText(value);
+        labelView.setTextSize(ui.sp(15));
+        labelView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        labelView.setTextColor(theme.primaryTextColor());
         row.addView(labelView);
-
-        TextView valueView = new TextView(activity);
-        valueView.setText(value);
-        valueView.setTextSize(ui.sp(15));
-        valueView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        valueView.setTextColor(theme.primaryTextColor());
-        row.addView(valueView);
 
         if (clickable && "Repository".equals(label)) {
             row.setClickable(true);
@@ -153,18 +122,8 @@ public final class SettingsUi {
     }
 
     private View themeCard() {
-        LinearLayout card = ui.settingsCard();
-
-        TextView title = ui.tv("Farbschema", 18);
-        title.setPadding(0, 0, 0, ui.px(4));
-        card.addView(title);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText("Wähle System, Hell oder Dunkel für die gesamte App.");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        subtitle.setPadding(0, 0, 0, ui.px(10));
-        card.addView(subtitle);
+        LinearLayout card = ui.contentCard();
+        ui.addSectionHeader(card, "DARSTELLUNG", "Farbschema", "Wähle System, Hell oder Dunkel für die gesamte App.");
 
         ChipGroup group = new ChipGroup(activity);
         group.setSingleSelection(true);
@@ -195,18 +154,8 @@ public final class SettingsUi {
     }
 
     private View fontCard() {
-        LinearLayout card = ui.settingsCard();
-
-        TextView title = ui.tv("Schriftgröße", 18);
-        title.setPadding(0, 0, 0, ui.px(4));
-        card.addView(title);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText("Skaliert die wichtigsten Texte und Überschriften in der gesamten App.");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        subtitle.setPadding(0, 0, 0, ui.px(10));
-        card.addView(subtitle);
+        LinearLayout card = ui.contentCard();
+        ui.addSectionHeader(card, "SCHRIFT", "Schriftgröße", "Skaliert die wichtigsten Texte und Überschriften in der gesamten App.");
 
         ChipGroup group = new ChipGroup(activity);
         group.setSingleSelection(true);
@@ -267,14 +216,8 @@ public final class SettingsUi {
     }
 
     private View accentCard() {
-        LinearLayout card = ui.settingsCard();
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText("Wähle eine Akzentfarbe für Header, Auswahl und Primäraktionen.");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        subtitle.setPadding(0, 0, 0, ui.px(12));
-        card.addView(subtitle);
+        LinearLayout card = ui.contentCard();
+        ui.addSectionHeader(card, "AKZENTFARBE", "Akzentfarbe", "Wähle eine Akzentfarbe für Header, Auswahl und Primäraktionen.");
 
         for (int rowIndex = 0; rowIndex < 2; rowIndex++) {
             LinearLayout row = new LinearLayout(activity);
