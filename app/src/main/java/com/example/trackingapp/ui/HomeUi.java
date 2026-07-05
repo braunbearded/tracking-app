@@ -1,6 +1,7 @@
 package com.example.trackingapp;
 
 import android.app.Activity;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -43,45 +44,30 @@ public final class HomeUi {
             int recordCount = db.recordCount(session.id);
             boolean open = "open".equals(session.status);
             LinearLayout card = createCard(theme.surfaceColor());
+            addEyebrow(card, "SESSION");
 
-            android.view.View statusStripe = new android.view.View(activity);
-            statusStripe.setBackgroundColor(open ? theme.accentColor() : theme.mutedTextColor());
-            LinearLayout.LayoutParams stripeLp = new LinearLayout.LayoutParams(ui.px(36), ui.px(4));
-            stripeLp.bottomMargin = ui.px(12);
-            card.addView(statusStripe, stripeLp);
-
-            TextView trackerName = ui.tv(tracker.name, 20);
+            TextView trackerName = ui.tv(tracker.name, 18);
             trackerName.setPadding(0, 0, 0, ui.px(2));
             card.addView(trackerName);
 
-            LinearLayout metaRow = new LinearLayout(activity);
-            metaRow.setOrientation(LinearLayout.HORIZONTAL);
-            metaRow.setWeightSum(2);
-            metaRow.setPadding(0, 0, 0, ui.px(12));
+            TextView trackerDescription = new TextView(activity);
+            trackerDescription.setText(tracker.description == null || tracker.description.trim().isEmpty()
+                    ? "Ohne Beschreibung"
+                    : tracker.description);
+            trackerDescription.setTextSize(ui.sp(14));
+            trackerDescription.setTextColor(theme.secondaryTextColor());
+            trackerDescription.setPadding(0, 0, 0, ui.px(12));
+            trackerDescription.setMaxLines(2);
+            trackerDescription.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            card.addView(trackerDescription);
 
-            TextView leftMeta = new TextView(activity);
-            leftMeta.setText(date(session.createdAt));
-            leftMeta.setTextSize(ui.sp(13));
-            leftMeta.setTextColor(theme.mutedTextColor());
-            metaRow.addView(leftMeta, new LinearLayout.LayoutParams(0, -2, 1));
-
-            TextView rightMeta = new TextView(activity);
-            rightMeta.setText(recordCount + "/" + tracker.items.size() + " Items");
-            rightMeta.setTextSize(ui.sp(13));
-            rightMeta.setTextColor(theme.mutedTextColor());
-            rightMeta.setGravity(android.view.Gravity.END);
-            metaRow.addView(rightMeta, new LinearLayout.LayoutParams(0, -2, 1));
-            card.addView(metaRow);
-
-            LinearLayout chipRow = new LinearLayout(activity);
-            chipRow.setOrientation(LinearLayout.HORIZONTAL);
-            chipRow.setPadding(0, 0, 0, ui.px(12));
-            chipRow.addView(ui.chip(session.status.equals("open") ? "Offen" : "Abgeschlossen",
-                    open ? theme.accentSoftColor() : theme.surfaceAltColor(),
-                    open ? theme.accentColor() : theme.primaryTextColor()));
-            chipRow.addView(ui.chip(recordCount + "/" + tracker.items.size(),
-                    theme.accentSoftColor(), theme.accentColor()));
-            card.addView(chipRow);
+            addMetaRow(card, date(session.createdAt), recordCount + "/" + tracker.items.size() + " Items");
+            addChipRow(card,
+                    ui.chip(session.status.equals("open") ? "Offen" : "Abgeschlossen",
+                            open ? theme.accentSoftColor() : theme.surfaceAltColor(),
+                            open ? theme.accentColor() : theme.primaryTextColor()),
+                    ui.chip(recordCount + "/" + tracker.items.size(),
+                            theme.accentSoftColor(), theme.accentColor()));
 
             TextView preview = new TextView(activity);
             preview.setText(preview(session.id));
@@ -120,34 +106,32 @@ public final class HomeUi {
             }
 
             LinearLayout card = createCard(theme.surfaceColor());
+            addEyebrow(card, "TRACKER");
 
-            TextView trackerName = ui.tv(tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name, 20);
+            TextView trackerName = ui.tv(tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name, 18);
             trackerName.setPadding(0, 0, 0, ui.px(2));
             card.addView(trackerName);
 
-            LinearLayout metaRow = new LinearLayout(activity);
-            metaRow.setOrientation(LinearLayout.HORIZONTAL);
-            metaRow.setPadding(0, 0, 0, ui.px(12));
-            TextView meta = new TextView(activity);
-            meta.setText(itemCount + " Items · " + fieldCount + " Fields");
-            meta.setTextSize(ui.sp(13));
-            meta.setTextColor(theme.mutedTextColor());
-            metaRow.addView(meta);
-            card.addView(metaRow);
-
-            LinearLayout chipRow = new LinearLayout(activity);
-            chipRow.setOrientation(LinearLayout.HORIZONTAL);
-            chipRow.setPadding(0, 0, 0, ui.px(12));
-            chipRow.addView(ui.chip(itemCount == 0 ? "Leer" : itemCount + " Items",
-                    itemCount == 0 ? theme.withAlpha(theme.accentColor(), 0x18) : theme.accentSoftColor(),
-                    itemCount == 0 ? theme.primaryTextColor() : theme.accentColor()));
-            chipRow.addView(ui.chip(fieldCount + " Fields", theme.accentSoftColor(), theme.accentColor()));
-            card.addView(chipRow);
-
-            TextView preview = new TextView(activity);
-            preview.setText(tracker.description == null || tracker.description.trim().isEmpty()
+            TextView trackerDescription = new TextView(activity);
+            trackerDescription.setText(tracker.description == null || tracker.description.trim().isEmpty()
                     ? "Keine Beschreibung vorhanden."
                     : tracker.description);
+            trackerDescription.setTextSize(ui.sp(14));
+            trackerDescription.setTextColor(theme.secondaryTextColor());
+            trackerDescription.setPadding(0, 0, 0, ui.px(12));
+            trackerDescription.setMaxLines(2);
+            trackerDescription.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            card.addView(trackerDescription);
+
+            addMetaRow(card, itemCount + " Items", fieldCount + " Fields");
+            addChipRow(card,
+                    ui.chip(itemCount == 0 ? "Leer" : itemCount + " Items",
+                            itemCount == 0 ? theme.withAlpha(theme.accentColor(), 0x18) : theme.accentSoftColor(),
+                            itemCount == 0 ? theme.primaryTextColor() : theme.accentColor()),
+                    ui.chip(fieldCount + " Fields", theme.accentSoftColor(), theme.accentColor()));
+
+            TextView preview = new TextView(activity);
+            preview.setText(firstItemPreview(tracker));
             preview.setTextSize(ui.sp(14));
             preview.setTextColor(theme.primaryTextColor());
             preview.setLineSpacing(0f, 1.15f);
@@ -201,8 +185,43 @@ public final class HomeUi {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
         card.setBackground(ui.makeRoundedCard(fillColor, theme.borderColor()));
-        card.setElevation(ui.px(2));
+        card.setElevation(ui.px(1));
         return card;
+    }
+
+    private void addEyebrow(LinearLayout card, String text) {
+        card.addView(ui.chip(text, theme.surfaceAltColor(), theme.mutedTextColor()));
+    }
+
+    private void addMetaRow(LinearLayout card, String left, String right) {
+        LinearLayout metaRow = new LinearLayout(activity);
+        metaRow.setOrientation(LinearLayout.HORIZONTAL);
+        metaRow.setWeightSum(2);
+        metaRow.setPadding(0, 0, 0, ui.px(12));
+
+        TextView leftMeta = new TextView(activity);
+        leftMeta.setText(left);
+        leftMeta.setTextSize(ui.sp(13));
+        leftMeta.setTextColor(theme.mutedTextColor());
+        metaRow.addView(leftMeta, new LinearLayout.LayoutParams(0, -2, 1));
+
+        TextView rightMeta = new TextView(activity);
+        rightMeta.setText(right);
+        rightMeta.setTextSize(ui.sp(13));
+        rightMeta.setTextColor(theme.mutedTextColor());
+        rightMeta.setGravity(android.view.Gravity.END);
+        metaRow.addView(rightMeta, new LinearLayout.LayoutParams(0, -2, 1));
+        card.addView(metaRow);
+    }
+
+    private void addChipRow(LinearLayout card, View... chips) {
+        LinearLayout chipRow = new LinearLayout(activity);
+        chipRow.setOrientation(LinearLayout.HORIZONTAL);
+        chipRow.setPadding(0, 0, 0, ui.px(12));
+        for (View chip : chips) {
+            chipRow.addView(chip);
+        }
+        card.addView(chipRow);
     }
 
     private LinearLayout.LayoutParams cardLayoutParams() {
@@ -240,6 +259,24 @@ public final class HomeUi {
                 builder.append(" | ");
             }
             builder.append(record.valuesJson);
+            if (builder.length() > 90) {
+                break;
+            }
+        }
+        return builder.toString();
+    }
+
+    private String firstItemPreview(Tracker tracker) {
+        if (tracker.items.isEmpty()) {
+            return "Noch keine Items angelegt.";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (Item item : tracker.items) {
+            if (builder.length() > 0) {
+                builder.append(" · ");
+            }
+            builder.append(item.title == null || item.title.trim().isEmpty() ? "Ohne Titel" : item.title);
             if (builder.length() > 90) {
                 break;
             }

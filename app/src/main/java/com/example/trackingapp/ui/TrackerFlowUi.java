@@ -394,27 +394,33 @@ public final class TrackerFlowUi {
         LinearLayout hero = new LinearLayout(activity);
         hero.setOrientation(LinearLayout.VERTICAL);
         hero.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
-        hero.setBackground(ui.makeRoundedCard(theme.accentColor(), theme.accentColor()));
+        hero.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
+
+        View accentBar = new View(activity);
+        accentBar.setBackgroundColor(theme.accentColor());
+        LinearLayout.LayoutParams accentLp = new LinearLayout.LayoutParams(-1, ui.px(4));
+        accentLp.bottomMargin = ui.px(12);
+        hero.addView(accentBar, accentLp);
 
         TextView eyebrow = ui.tv(eyebrowText, 12);
-        eyebrow.setTextColor(theme.withAlpha(Color.WHITE, 0xaa));
+        eyebrow.setTextColor(theme.accentColor());
         eyebrow.setPadding(0, 0, 0, ui.px(4));
         hero.addView(eyebrow);
 
         TextView title = ui.tv(titleText, 24);
-        title.setTextColor(Color.WHITE);
+        title.setTextColor(theme.primaryTextColor());
         title.setPadding(0, 0, 0, ui.px(4));
         hero.addView(title);
 
         TextView subtitle = new TextView(activity);
         subtitle.setText(subtitleText);
         subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.withAlpha(Color.WHITE, 0xcc));
+        subtitle.setTextColor(theme.secondaryTextColor());
         subtitle.setPadding(0, 0, 0, ui.px(12));
         hero.addView(subtitle);
 
         if (chipText != null && !chipText.isEmpty()) {
-            hero.addView(ui.chip(chipText, theme.withAlpha(Color.WHITE, 0x22), Color.WHITE));
+            hero.addView(ui.chip(chipText, theme.accentSoftColor(), theme.accentColor()));
         }
 
         return hero;
@@ -620,7 +626,7 @@ public final class TrackerFlowUi {
         LinearLayout card = new LinearLayout(activity);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(ui.px(24), ui.px(20), ui.px(24), ui.px(20));
-        card.setBackgroundColor(theme.surfaceAltColor());
+        card.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
 
         TextView title = ui.tv(readOnly ? "Abgeschlossener Stand" : "Aktueller Session-Stand", 16);
         title.setPadding(0, 0, 0, ui.px(6));
@@ -658,7 +664,7 @@ public final class TrackerFlowUi {
             } else if ("duration".equals(field.type)) {
                 builder.append(formatMs(toLong(value)));
             } else if ("float".equals(field.type)) {
-                builder.append(String.format(Locale.US, "% ." + field.decimals + "f", toDouble(value)));
+                builder.append(String.format(Locale.US, "%." + field.decimals + "f", toDouble(value)));
             } else {
                 builder.append(String.valueOf(value));
             }

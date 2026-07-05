@@ -14,6 +14,7 @@ import com.example.trackingapp.theme.ThemeStore;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.shape.ShapeAppearanceModel;
 
 public final class SettingsUi {
     private final Activity activity;
@@ -83,23 +84,29 @@ public final class SettingsUi {
         LinearLayout header = new LinearLayout(activity);
         header.setOrientation(LinearLayout.VERTICAL);
         header.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
-        header.setBackground(ui.makeRoundedCard(theme.accentColor(), theme.accentColor()));
+        header.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
         LinearLayout.LayoutParams headerLp = new LinearLayout.LayoutParams(-1, -2);
         headerLp.bottomMargin = ui.px(12);
         body.addView(header, headerLp);
+
+        View accentBar = new View(activity);
+        accentBar.setBackgroundColor(theme.accentColor());
+        LinearLayout.LayoutParams accentLp = new LinearLayout.LayoutParams(-1, ui.px(4));
+        accentLp.bottomMargin = ui.px(12);
+        header.addView(accentBar, accentLp);
 
         TextView intro = new TextView(activity);
         intro.setText("Über Tracking App");
         intro.setTextSize(ui.sp(22));
         intro.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        intro.setTextColor(android.graphics.Color.WHITE);
+        intro.setTextColor(theme.primaryTextColor());
         intro.setPadding(0, 0, 0, ui.px(4));
         header.addView(intro);
 
         TextView subtitle = new TextView(activity);
         subtitle.setText("Lokale Android-App auf SQLite-Basis. Keine Google Play Services, kein Firebase.");
         subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.withAlpha(android.graphics.Color.WHITE, 0xcc));
+        subtitle.setTextColor(theme.secondaryTextColor());
         header.addView(subtitle);
 
         body.addView(aboutInfoCard("Repository", "braunbearded/tracking-app", true));
@@ -251,6 +258,9 @@ public final class SettingsUi {
         chip.setChipBackgroundColor(ColorStateList.valueOf(selected ? theme.accentSoftColor() : theme.surfaceAltColor()));
         chip.setChipStrokeColor(ColorStateList.valueOf(selected ? theme.accentColor() : theme.borderColor()));
         chip.setChipStrokeWidth(ui.px(1));
+        chip.setShapeAppearanceModel(ShapeAppearanceModel.builder()
+                .setAllCornerSizes(ui.px(8))
+                .build());
         chip.setCheckedIconVisible(false);
         chip.setCheckedIcon(null);
         chip.setElevation(ui.px(0));
