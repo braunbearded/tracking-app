@@ -31,7 +31,6 @@ public final class HomeUi {
     public void renderSessions(FrameLayout body) {
         ScrollView scrollView = createScrollView();
         LinearLayout box = createListBox(scrollView);
-        box.addView(screenHeader(null, "Deine Läufe"));
 
         java.util.List<Session> sessions = db.sessions();
         for (Session session : sessions) {
@@ -41,17 +40,12 @@ public final class HomeUi {
             }
 
             int recordCount = db.recordCount(session.id);
-            boolean open = "open".equals(session.status);
             LinearLayout card = createCard();
             ui.addSectionHeader(card, null, tracker.name, null);
 
             card.addView(ui.metaRow(date(session.createdAt), recordCount + "/" + tracker.items.size() + " Items"));
-            card.addView(ui.chipRow(
-                    ui.chip(session.status.equals("open") ? "Offen" : "Abgeschlossen",
-                            open ? theme.accentSoftColor() : theme.surfaceAltColor(),
-                            open ? theme.accentColor() : theme.primaryTextColor()),
-                    ui.chip(recordCount + "/" + tracker.items.size(),
-                            theme.accentSoftColor(), theme.accentColor())));
+            card.addView(ui.chipRow(ui.chip(recordCount + "/" + tracker.items.size(),
+                    theme.accentSoftColor(), theme.accentColor())));
 
             TextView preview = new TextView(activity);
             preview.setText(preview(session.id));
@@ -76,7 +70,6 @@ public final class HomeUi {
     public void renderTrackers(FrameLayout body) {
         ScrollView scrollView = createScrollView();
         LinearLayout box = createListBox(scrollView);
-        box.addView(screenHeader("TRACKER", "Tracker"));
 
         java.util.List<Tracker> trackers = db.trackers();
         for (Tracker tracker : trackers) {
@@ -89,12 +82,11 @@ public final class HomeUi {
             LinearLayout card = createCard();
             ui.addSectionHeader(card, null, tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name, null);
 
-            card.addView(ui.metaRow(itemCount + " Items", fieldCount + " Fields"));
+            card.addView(ui.metaRow("", fieldCount + " Fields"));
             card.addView(ui.chipRow(
                     ui.chip(itemCount == 0 ? "Leer" : itemCount + " Items",
                             itemCount == 0 ? theme.withAlpha(theme.accentColor(), 0x18) : theme.accentSoftColor(),
-                            itemCount == 0 ? theme.primaryTextColor() : theme.accentColor()),
-                    ui.chip(fieldCount + " Fields", theme.accentSoftColor(), theme.accentColor())));
+                            itemCount == 0 ? theme.primaryTextColor() : theme.accentColor())));
 
             TextView preview = new TextView(activity);
             preview.setText(firstItemPreview(tracker));
@@ -124,16 +116,6 @@ public final class HomeUi {
         box.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(104));
         scrollView.addView(box);
         return box;
-    }
-
-    private LinearLayout screenHeader(String eyebrowText, String titleText) {
-        LinearLayout card = new LinearLayout(activity);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
-        card.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
-        card.setElevation(ui.px(1));
-        ui.addSectionHeader(card, eyebrowText, titleText, null);
-        return card;
     }
 
     private LinearLayout createCard() {

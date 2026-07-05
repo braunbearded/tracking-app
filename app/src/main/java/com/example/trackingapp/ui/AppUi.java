@@ -296,6 +296,7 @@ public final class AppUi {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(fillColor);
         drawable.setCornerRadius(px(CARD_RADIUS_DP));
+        drawable.setStroke(px(1), strokeColor);
         return drawable;
     }
 

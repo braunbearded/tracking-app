@@ -39,7 +39,6 @@ final class Session {
     long trackerId;
     long createdAt;
     long updatedAt;
-    String status;
 }
 
 final class ItemRecord {

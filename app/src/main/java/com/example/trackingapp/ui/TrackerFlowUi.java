@@ -98,7 +98,12 @@ public final class TrackerFlowUi {
                 View item = selectionRow(tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name);
                 item.setOnClickListener(v -> {
                     dialog.dismiss();
-                    openSession(db.createSession(tracker.id));
+                    long sessionId = db.createSession(tracker.id);
+                    if (sessionId == -1) {
+                        Toast.makeText(activity, "Session konnte nicht angelegt werden", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    openSession(sessionId);
                 });
                 LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
                 rowLp.bottomMargin = ui.px(10);
@@ -175,15 +180,7 @@ public final class TrackerFlowUi {
             return;
         }
 
-        Map<Long, ItemRecord> records = db.records(sessionId);
-        int startIndex = 0;
-        for (int i = 0; i < tracker.items.size(); i++) {
-            if (!records.containsKey(tracker.items.get(i).id)) {
-                startIndex = i;
-                break;
-            }
-        }
-        showItem(session, tracker, startIndex);
+        showItem(session, tracker);
     }
 
     private void openTrackerEditor(long id, Tracker tracker, boolean isNew) {
@@ -205,7 +202,7 @@ public final class TrackerFlowUi {
 
         TrackerEditorForm form = buildTrackerEditorForm(tracker);
         LinearLayout formCard = ui.contentCard();
-        ui.addSectionHeader(formCard, "GRUNDDATEN", "Grunddaten", null);
+        ui.addSectionHeader(formCard, null, "Grunddaten", null);
 
         formCard.addView(form.nameInput);
         formCard.addView(form.descriptionInput);
@@ -232,6 +229,9 @@ public final class TrackerFlowUi {
                 String json = trackerEditorToJson(form);
                 if (trackerIdRef[0] == -1) {
                     trackerIdRef[0] = TrackerJsonRepository.saveTracker(db, -1, json, true);
+                    if (trackerIdRef[0] == -1) {
+                        throw new IllegalStateException("Tracker konnte nicht gespeichert werden");
+                    }
                 } else {
                     TrackerJsonRepository.updateTracker(db, trackerIdRef[0], json);
                 }
@@ -261,12 +261,11 @@ public final class TrackerFlowUi {
         attachTrackerAutosave(form, scheduleSave);
     }
 
-    private void showItem(Session session, Tracker tracker, int index) {
+    private void showItem(Session session, Tracker tracker) {
         base();
-        boolean readOnly = "completed".equals(session.status);
         Map<Long, Map<String, View>> inputsByItem = new LinkedHashMap<>();
         root.addView(ui.appBar(tracker.name == null || tracker.name.trim().isEmpty() ? "Session" : tracker.name,
-                false, null, true, v -> showSessionMenu(v, session, tracker, inputsByItem)));
+                false, null, true, v -> showSessionMenu(v, session)));
         ScrollView scrollView = new ScrollView(activity);
         LinearLayout box = new LinearLayout(activity);
         box.setOrientation(LinearLayout.VERTICAL);
@@ -283,10 +282,10 @@ public final class TrackerFlowUi {
             LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
             cardLp.bottomMargin = ui.px(20);
 
-            ui.addSectionHeader(card, "ITEM " + (itemIndex + 1), item.title, null);
+            ui.addSectionHeader(card, null, item.title, null);
 
             for (FieldDefinition field : item.fields) {
-                fieldControl(card, field, values, inputs, readOnly, () -> saveSessionItem(session, item, inputs));
+                fieldControl(card, field, values, inputs, false, () -> saveSessionItem(session, item, inputs));
             }
 
             box.addView(card, cardLp);
@@ -310,7 +309,7 @@ public final class TrackerFlowUi {
         for (FieldDefinition field : item.fields) {
             Object value = TrackingDatabase.NO_PREVIOUS;
             if (field.prefillFromPrevious) {
-                value = db.previousValue(session.trackerId, session.id, session.createdAt, item.id, field.key);
+                value = db.previousValue(session.trackerId, item.id, field.key);
             }
             if (!field.prefillFromPrevious || value == TrackingDatabase.NO_PREVIOUS) {
                 value = parse(field.defaultValue, field.type);
@@ -556,7 +555,7 @@ public final class TrackerFlowUi {
         }
 
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, "ITEM", item == null ? "Neues Item" : item.title, null);
+        ui.addSectionHeader(card, null, item == null ? "Neues Item" : item.title, null);
 
         View drag = dragHandle();
         Button remove = ui.dangerButton("Entfernen");
@@ -634,7 +633,7 @@ public final class TrackerFlowUi {
         FieldEditorViews views = new FieldEditorViews();
 
         LinearLayout row = ui.contentCard();
-        ui.addSectionHeader(row, "FIELD", field == null ? "Neues Field" : field.label, null);
+        ui.addSectionHeader(row, null, field == null ? "Neues Field" : field.label, null);
         LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
         rowLp.bottomMargin = ui.px(12);
 
@@ -1034,16 +1033,10 @@ public final class TrackerFlowUi {
     }
 
     private void saveSessionItem(Session session, Item item, Map<String, View> inputs) {
-        if (!"open".equals(session.status)) {
-            return;
-        }
         db.saveRecord(session, item.id, readInputs(item, inputs));
     }
 
     private void saveSessionItems(Session session, Tracker tracker, Map<Long, Map<String, View>> inputsByItem) {
-        if (!"open".equals(session.status)) {
-            return;
-        }
         for (Item item : tracker.items) {
             Map<String, View> inputs = inputsByItem.get(item.id);
             if (inputs != null) {
@@ -1067,22 +1060,10 @@ public final class TrackerFlowUi {
         menu.show();
     }
 
-    private void showSessionMenu(View anchor, Session session, Tracker tracker, Map<Long, Map<String, View>> inputsByItem) {
+    private void showSessionMenu(View anchor, Session session) {
         PopupMenu menu = new PopupMenu(activity, anchor, Gravity.END);
-        if ("open".equals(session.status)) {
-            menu.getMenu().add(0, 1, 0, "Session abschließen");
-            menu.getMenu().add(0, 2, 1, "Session löschen");
-        } else {
-            menu.getMenu().add(0, 2, 0, "Session löschen");
-        }
+        menu.getMenu().add(0, 2, 0, "Session löschen");
         menu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == 1) {
-                saveSessionItems(session, tracker, inputsByItem);
-                db.complete(session.id);
-                clearTimers();
-                backToSessions.run();
-                return true;
-            }
             if (item.getItemId() == 2) {
                 confirmDeleteSession(session.id);
                 return true;

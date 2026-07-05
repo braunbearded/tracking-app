@@ -16,7 +16,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
     static final Object NO_PREVIOUS = new Object();
 
     TrackingDatabase(Context context) {
-        super(context, "tracking.sqlite", null, 1);
+        super(context, "tracking.sqlite", null, 2);
     }
 
     @Override
@@ -28,12 +28,31 @@ final class TrackingDatabase extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE trackers(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,description TEXT,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE items(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,title TEXT NOT NULL,sortOrder INTEGER NOT NULL,FOREIGN KEY(trackerId) REFERENCES trackers(id) ON DELETE CASCADE)");
         db.execSQL("CREATE TABLE fields(id INTEGER PRIMARY KEY AUTOINCREMENT,itemId INTEGER NOT NULL,fieldKey TEXT NOT NULL,label TEXT NOT NULL,type TEXT NOT NULL,sortOrder INTEGER NOT NULL,defaultValue TEXT,incrementValue REAL,decimals INTEGER,unit TEXT,required INTEGER NOT NULL,prefillFromPrevious INTEGER NOT NULL,FOREIGN KEY(itemId) REFERENCES items(id) ON DELETE CASCADE)");
-        db.execSQL("CREATE TABLE sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,status TEXT NOT NULL CHECK(status IN ('open','completed')),FOREIGN KEY(trackerId) REFERENCES trackers(id))");
+        db.execSQL("CREATE TABLE sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,FOREIGN KEY(trackerId) REFERENCES trackers(id))");
         db.execSQL("CREATE TABLE item_records(id INTEGER PRIMARY KEY AUTOINCREMENT,sessionId INTEGER NOT NULL,trackerId INTEGER NOT NULL,itemId INTEGER NOT NULL,valuesJson TEXT NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,UNIQUE(sessionId,itemId),FOREIGN KEY(sessionId) REFERENCES sessions(id),FOREIGN KEY(itemId) REFERENCES items(id))");
         seed(db);
     }
 
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {}
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (oldVersion < 2) {
+            migrateSessionsTable(db);
+        }
+    }
+
+    private void migrateSessionsTable(SQLiteDatabase db) {
+        db.setForeignKeyConstraintsEnabled(false);
+        db.beginTransaction();
+        try {
+            db.execSQL("CREATE TABLE sessions_new(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,FOREIGN KEY(trackerId) REFERENCES trackers(id))");
+            db.execSQL("INSERT INTO sessions_new(id,trackerId,createdAt,updatedAt) SELECT id,trackerId,createdAt,updatedAt FROM sessions");
+            db.execSQL("DROP TABLE sessions");
+            db.execSQL("ALTER TABLE sessions_new RENAME TO sessions");
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+            db.setForeignKeyConstraintsEnabled(true);
+        }
+    }
 
     private long now() {
         return System.currentTimeMillis();
@@ -180,7 +199,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
     List<Session> sessions() {
         List<Session> sessions = new ArrayList<>();
         Cursor cursor = getReadableDatabase().rawQuery(
-                "SELECT id,trackerId,createdAt,updatedAt,status FROM sessions ORDER BY createdAt DESC",
+                "SELECT id,trackerId,createdAt,updatedAt FROM sessions ORDER BY createdAt DESC",
                 null);
         try {
             while (cursor.moveToNext()) {
@@ -189,7 +208,6 @@ final class TrackingDatabase extends SQLiteOpenHelper {
                 session.trackerId = cursor.getLong(1);
                 session.createdAt = cursor.getLong(2);
                 session.updatedAt = cursor.getLong(3);
-                session.status = cursor.getString(4);
                 sessions.add(session);
             }
         } finally {
@@ -200,7 +218,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
 
     Session session(long id) {
         Cursor cursor = getReadableDatabase().rawQuery(
-                "SELECT id,trackerId,createdAt,updatedAt,status FROM sessions WHERE id=?",
+                "SELECT id,trackerId,createdAt,updatedAt FROM sessions WHERE id=?",
                 new String[]{String.valueOf(id)});
         try {
             if (!cursor.moveToFirst()) {
@@ -212,7 +230,6 @@ final class TrackingDatabase extends SQLiteOpenHelper {
             session.trackerId = cursor.getLong(1);
             session.createdAt = cursor.getLong(2);
             session.updatedAt = cursor.getLong(3);
-            session.status = cursor.getString(4);
             return session;
         } finally {
             cursor.close();
@@ -225,15 +242,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
         values.put("trackerId", trackerId);
         values.put("createdAt", now);
         values.put("updatedAt", now);
-        values.put("status", "open");
         return getWritableDatabase().insert("sessions", null, values);
-    }
-
-    void complete(long sessionId) {
-        ContentValues values = new ContentValues();
-        values.put("status", "completed");
-        values.put("updatedAt", now());
-        getWritableDatabase().update("sessions", values, "id=?", new String[]{String.valueOf(sessionId)});
     }
 
     void deleteSession(long sessionId) {
@@ -287,10 +296,6 @@ final class TrackingDatabase extends SQLiteOpenHelper {
     }
 
     void saveRecord(Session session, long itemId, Map<String, Object> values) {
-        if (!"open".equals(session.status)) {
-            return;
-        }
-
         long now = now();
         ContentValues valuesToSave = new ContentValues();
         valuesToSave.put("sessionId", session.id);
@@ -310,14 +315,12 @@ final class TrackingDatabase extends SQLiteOpenHelper {
         getWritableDatabase().update("sessions", sessionValues, "id=?", new String[]{String.valueOf(session.id)});
     }
 
-    Object previousValue(long trackerId, long beforeSessionId, long beforeSessionCreatedAt, long itemId, String key) {
+    Object previousValue(long trackerId, long itemId, String key) {
         Cursor cursor = getReadableDatabase().rawQuery(
-                "SELECT r.valuesJson FROM item_records r JOIN sessions s ON s.id=r.sessionId WHERE r.trackerId=? AND r.itemId=? AND s.createdAt<? AND s.id<>? ORDER BY s.createdAt DESC LIMIT 1",
+                "SELECT r.valuesJson FROM item_records r JOIN sessions s ON s.id=r.sessionId WHERE r.trackerId=? AND r.itemId=? ORDER BY s.createdAt DESC, r.updatedAt DESC LIMIT 1",
                 new String[]{
                         String.valueOf(trackerId),
-                        String.valueOf(itemId),
-                        String.valueOf(beforeSessionCreatedAt),
-                        String.valueOf(beforeSessionId)
+                        String.valueOf(itemId)
                 });
         try {
             if (!cursor.moveToFirst()) {
