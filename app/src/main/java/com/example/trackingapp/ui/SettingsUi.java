@@ -42,11 +42,6 @@ public final class SettingsUi {
         box.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(104));
         scrollView.addView(box);
 
-        TextView intro = ui.tv("Passe das Erscheinungsbild der App an.", 16);
-        intro.setTextColor(theme.secondaryTextColor());
-        intro.setPadding(0, 0, 0, ui.px(16));
-        box.addView(intro);
-
         box.addView(ui.settingsCardTitle("Darstellung"));
         box.addView(themeCard());
 
@@ -82,7 +77,7 @@ public final class SettingsUi {
         scrollView.addView(body);
 
         LinearLayout header = ui.contentCard();
-        ui.addSectionHeader(header, "ÜBER", "Tracking App", "Lokale Android-App auf SQLite-Basis. Keine Google Play Services, kein Firebase.");
+        ui.addSectionHeader(header, "ÜBER", "Tracking App", null);
         LinearLayout.LayoutParams headerLp = new LinearLayout.LayoutParams(-1, -2);
         headerLp.bottomMargin = ui.px(12);
         body.addView(header, headerLp);
@@ -100,14 +95,6 @@ public final class SettingsUi {
     private View aboutInfoCard(String label, String value, boolean clickable) {
         LinearLayout row = ui.contentCard();
         row.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(12));
-
-        TextView labelView = new TextView(activity);
-        labelView.setText(label);
-        labelView.setTextSize(ui.sp(12));
-        labelView.setTextColor(theme.mutedTextColor());
-        labelView.setPadding(0, 0, 0, ui.px(4));
-        row.addView(labelView);
-
         TextView valueView = new TextView(activity);
         valueView.setText(value);
         valueView.setTextSize(ui.sp(15));
@@ -130,7 +117,7 @@ public final class SettingsUi {
 
     private View themeCard() {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, "DARSTELLUNG", "Farbschema", "Wähle System, Hell oder Dunkel für die gesamte App.");
+        ui.addSectionHeader(card, "DARSTELLUNG", "Farbschema", null);
 
         ChipGroup group = new ChipGroup(activity);
         group.setSingleSelection(true);
@@ -162,7 +149,7 @@ public final class SettingsUi {
 
     private View fontCard() {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, "SCHRIFT", "Schriftgröße", "Skaliert die wichtigsten Texte und Überschriften in der gesamten App.");
+        ui.addSectionHeader(card, "SCHRIFT", "Schriftgröße", null);
 
         ChipGroup group = new ChipGroup(activity);
         group.setSingleSelection(true);
@@ -224,7 +211,7 @@ public final class SettingsUi {
 
     private View accentCard() {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, "AKZENTFARBE", "Akzentfarbe", "Wähle eine Akzentfarbe für Header, Auswahl und Primäraktionen.");
+        ui.addSectionHeader(card, "AKZENTFARBE", "Akzentfarbe", null);
 
         for (int rowIndex = 0; rowIndex < 2; rowIndex++) {
             LinearLayout row = new LinearLayout(activity);

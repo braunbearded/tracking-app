@@ -6,11 +6,12 @@ What changed:
 - Card and container radius moved from `28dp` to `4dp`.
 - Shared button radius moved from `24dp` to `6dp`.
 - Small chip-style labels moved from a fully pill-shaped radius to `4dp`.
-- All primary surface cards now use the same anatomy: eyebrow, title, subtitle, meta, and content.
-- Start screen cards, tracker/session editor cards, and settings/about cards now follow that same structure.
-- Top-level hero and about surfaces now use the same restrained card treatment as the rest of the app.
+- Primary surfaces now use the same restrained card anatomy with eyebrow, title, meta, and content.
+- Start screen, tracker/session editor, and settings/about screens now share the same visual language.
+- Tracker and session screens now use the shared top app bar with contextual actions like delete/complete.
+- Explanatory copy and duplicate save actions were removed in favor of direct autosave on change.
 - Borders were removed from cards and button surfaces where possible to keep the UI cleaner.
-- The new-session chooser was simplified to a text header and list instead of a nested hero card.
+- The new-session chooser was simplified to a plain text header and list.
 
 Validation:
 - `./gradlew assembleDebug`

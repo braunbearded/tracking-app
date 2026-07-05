@@ -31,8 +31,7 @@ public final class HomeUi {
     public void renderSessions(FrameLayout body) {
         ScrollView scrollView = createScrollView();
         LinearLayout box = createListBox(scrollView);
-        box.addView(screenHeader(null, "Deine Läufe",
-                "Alle Sessions über alle Tracker hinweg. Tippe eine Session an, um sie zu öffnen."));
+        box.addView(screenHeader(null, "Deine Läufe"));
 
         java.util.List<Session> sessions = db.sessions();
         for (Session session : sessions) {
@@ -44,9 +43,7 @@ public final class HomeUi {
             int recordCount = db.recordCount(session.id);
             boolean open = "open".equals(session.status);
             LinearLayout card = createCard();
-            ui.addSectionHeader(card, "SESSION", tracker.name, tracker.description == null || tracker.description.trim().isEmpty()
-                    ? "Ohne Beschreibung"
-                    : tracker.description);
+            ui.addSectionHeader(card, null, tracker.name, null);
 
             card.addView(ui.metaRow(date(session.createdAt), recordCount + "/" + tracker.items.size() + " Items"));
             card.addView(ui.chipRow(
@@ -70,9 +67,7 @@ public final class HomeUi {
         }
 
         if (sessions.isEmpty()) {
-            box.addView(emptyState(
-                    "Noch keine Sessions vorhanden",
-                    "Starte eine neue Session, um erste Werte zu erfassen und die Historie aufzubauen."));
+            box.addView(emptyState("Noch keine Sessions vorhanden", null));
         }
 
         body.addView(scrollView);
@@ -81,8 +76,7 @@ public final class HomeUi {
     public void renderTrackers(FrameLayout body) {
         ScrollView scrollView = createScrollView();
         LinearLayout box = createListBox(scrollView);
-        box.addView(screenHeader("TRACKER", "Deine Tracker",
-                "Hier verwaltest du die Vorlagen für neue Sessions."));
+        box.addView(screenHeader("TRACKER", "Tracker"));
 
         java.util.List<Tracker> trackers = db.trackers();
         for (Tracker tracker : trackers) {
@@ -93,10 +87,7 @@ public final class HomeUi {
             }
 
             LinearLayout card = createCard();
-            ui.addSectionHeader(card, "TRACKER", tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name,
-                    tracker.description == null || tracker.description.trim().isEmpty()
-                            ? "Keine Beschreibung vorhanden."
-                            : tracker.description);
+            ui.addSectionHeader(card, null, tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name, null);
 
             card.addView(ui.metaRow(itemCount + " Items", fieldCount + " Fields"));
             card.addView(ui.chipRow(
@@ -135,13 +126,13 @@ public final class HomeUi {
         return box;
     }
 
-    private LinearLayout screenHeader(String eyebrowText, String titleText, String subtitleText) {
+    private LinearLayout screenHeader(String eyebrowText, String titleText) {
         LinearLayout card = new LinearLayout(activity);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
         card.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
         card.setElevation(ui.px(1));
-        ui.addSectionHeader(card, eyebrowText, titleText, subtitleText);
+        ui.addSectionHeader(card, eyebrowText, titleText, null);
         return card;
     }
 
@@ -170,11 +161,13 @@ public final class HomeUi {
         emptyTitle.setPadding(0, 0, 0, ui.px(4));
         empty.addView(emptyTitle);
 
-        TextView emptyBody = new TextView(activity);
-        emptyBody.setText(bodyText);
-        emptyBody.setTextSize(ui.sp(14));
-        emptyBody.setTextColor(theme.secondaryTextColor());
-        empty.addView(emptyBody);
+        if (bodyText != null && !bodyText.isEmpty()) {
+            TextView emptyBody = new TextView(activity);
+            emptyBody.setText(bodyText);
+            emptyBody.setTextSize(ui.sp(14));
+            emptyBody.setTextColor(theme.secondaryTextColor());
+            empty.addView(emptyBody);
+        }
 
         LinearLayout.LayoutParams emptyLp = new LinearLayout.LayoutParams(-1, -2);
         emptyLp.topMargin = ui.px(4);
