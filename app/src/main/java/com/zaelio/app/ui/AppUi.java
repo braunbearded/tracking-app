@@ -1,4 +1,4 @@
-package com.example.trackingapp.ui;
+package com.zaelio.app.ui;
 
 import android.app.Activity;
 import android.content.res.ColorStateList;
@@ -16,8 +16,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.example.trackingapp.R;
-import com.example.trackingapp.theme.ThemeStore;
+import com.zaelio.app.R;
+import com.zaelio.app.theme.ThemeStore;
 import com.google.android.material.button.MaterialButton;
 
 public final class AppUi {

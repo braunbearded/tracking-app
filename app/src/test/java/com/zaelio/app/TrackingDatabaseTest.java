@@ -1,4 +1,4 @@
-package com.example.trackingapp;
+package com.zaelio.app;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -42,6 +42,7 @@ public class TrackingDatabaseTest {
         assertEquals("Training", tracker.name);
         assertEquals(4, tracker.fields.size());
         assertEquals(4, tracker.items.size());
+        assertEquals("standard", tracker.fields.get(0).inputSize);
     }
 
     @Test

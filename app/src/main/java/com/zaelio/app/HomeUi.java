@@ -1,4 +1,4 @@
-package com.example.trackingapp;
+package com.zaelio.app;
 
 import android.app.Activity;
 import android.view.MotionEvent;
@@ -8,8 +8,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import com.example.trackingapp.theme.ThemeStore;
-import com.example.trackingapp.ui.AppUi;
+import com.zaelio.app.theme.ThemeStore;
+import com.zaelio.app.ui.AppUi;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public final class HomeUi {

@@ -1,4 +1,4 @@
-package com.example.trackingapp;
+package com.zaelio.app;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +25,7 @@ final class FieldDefinition {
     int order;
     boolean required;
     int decimals = 1;
+    String inputSize = "standard";
     boolean prefillFromPrevious;
 }
 

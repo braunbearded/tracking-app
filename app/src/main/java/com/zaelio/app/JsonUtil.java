@@ -1,4 +1,4 @@
-package com.example.trackingapp;
+package com.zaelio.app;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -55,6 +55,7 @@ final class JsonUtil {
                 fieldJson.put("defaultValue", field.defaultValue == null ? JSONObject.NULL : field.defaultValue);
                 fieldJson.put("increment", field.increment);
                 fieldJson.put("unit", field.unit == null ? "" : field.unit);
+                fieldJson.put("inputSize", field.inputSize == null ? "standard" : field.inputSize);
                 fieldJson.put("required", field.required);
                 fieldJson.put("prefillFromPrevious", field.prefillFromPrevious);
                 fields.put(fieldJson);
@@ -81,6 +82,7 @@ final class JsonUtil {
             fieldJson.put("defaultValue", "");
             fieldJson.put("increment", 1);
             fieldJson.put("unit", "");
+            fieldJson.put("inputSize", "standard");
             fieldJson.put("required", false);
             fieldJson.put("prefillFromPrevious", false);
             fields.put(fieldJson);

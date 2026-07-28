@@ -1,4 +1,4 @@
-package com.example.trackingapp.theme;
+package com.zaelio.app.theme;
 
 import android.content.res.Configuration;
 import android.content.Context;
@@ -15,6 +15,7 @@ public final class ThemeStore {
     private static final String KEY_THEME_MODE = "theme_mode";
     private static final String KEY_ACCENT_INDEX = "accent_index";
     private static final String KEY_FONT_SCALE_INDEX = "font_scale_index";
+    private static final String KEY_FIELD_SIZE_INDEX = "field_size_index";
 
     private static final int[] ACCENT_COLORS = {
             0xff2563eb,
@@ -43,6 +44,18 @@ public final class ThemeStore {
             "Standard",
             "Groß",
             "Sehr groß"
+    };
+
+    private static final String[] FIELD_SIZE_KEYS = {
+            "compact",
+            "standard",
+            "large"
+    };
+
+    private static final String[] FIELD_SIZE_NAMES = {
+            "Kompakt",
+            "Standard",
+            "Groß"
     };
 
     private final Context appContext;
@@ -125,6 +138,27 @@ public final class ThemeStore {
 
     public int fontScaleCount() {
         return FONT_SCALES.length;
+    }
+
+    public int fieldSizeIndex() {
+        int value = prefs.getInt(KEY_FIELD_SIZE_INDEX, 1);
+        return value < 0 || value >= FIELD_SIZE_KEYS.length ? 1 : value;
+    }
+
+    public void setFieldSizeIndex(int index) {
+        prefs.edit().putInt(KEY_FIELD_SIZE_INDEX, index).apply();
+    }
+
+    public String fieldSize() {
+        return FIELD_SIZE_KEYS[fieldSizeIndex()];
+    }
+
+    public String fieldSizeName(int index) {
+        return FIELD_SIZE_NAMES[index];
+    }
+
+    public int fieldSizeCount() {
+        return FIELD_SIZE_KEYS.length;
     }
 
     public int accentSoftColor() {

@@ -1,4 +1,4 @@
-package com.example.trackingapp;
+package com.zaelio.app;
 
 import android.app.Activity;
 import android.content.ClipData;
@@ -31,8 +31,8 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.trackingapp.theme.ThemeStore;
-import com.example.trackingapp.ui.AppUi;
+import com.zaelio.app.theme.ThemeStore;
+import com.zaelio.app.ui.AppUi;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -359,14 +359,19 @@ public final class TrackerFlowUi {
             editText.setText(value == null ? "" : String.valueOf(value));
             editText.setTextColor(theme.primaryTextColor());
             editText.setHintTextColor(theme.mutedTextColor());
+            editText.setSingleLine(false);
+            editText.setMinLines(stringMinLines(field));
+            editText.setMaxLines(stringMaxLines(field));
+            editText.setGravity(Gravity.TOP | Gravity.START);
+            editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
             editText.setMinHeight(ui.px(48));
-            editText.setPadding(ui.px(12), 0, ui.px(12), 0);
+            editText.setPadding(ui.px(12), ui.px(10), ui.px(12), ui.px(10));
             editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
             editText.setEnabled(!readOnly);
             if (!readOnly) {
                 watchTextChange(editText, onChange);
             }
-            fieldBox.addView(editText, new LinearLayout.LayoutParams(-1, ui.px(48)));
+            fieldBox.addView(editText, new LinearLayout.LayoutParams(-1, -2));
             inputs.put(field.key, editText);
             return;
         }
@@ -378,40 +383,38 @@ public final class TrackerFlowUi {
             display.setTextColor(theme.primaryTextColor());
             display.setGravity(Gravity.CENTER);
             display.setTag(toLong(value));
-            fieldBox.addView(display, new LinearLayout.LayoutParams(-1, ui.px(48)));
+            int timerHeight = numericHeight(field);
+            fieldBox.addView(display, new LinearLayout.LayoutParams(-1, timerHeight));
 
             LinearLayout row = new LinearLayout(activity);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            Button start = ui.secondaryButton("Start");
-            Button stop = ui.secondaryButton("Stop");
+            Button toggle = timers.containsKey(field.key) ? ui.dangerButton("Stop") : ui.primaryButton("Start");
             Button reset = ui.ghostButton("Reset");
-            LinearLayout.LayoutParams startLp = new LinearLayout.LayoutParams(0, ui.px(48), 1f);
-            startLp.rightMargin = ui.px(8);
-            LinearLayout.LayoutParams stopLp = new LinearLayout.LayoutParams(0, ui.px(48), 1f);
-            stopLp.rightMargin = ui.px(8);
-            LinearLayout.LayoutParams resetLp = new LinearLayout.LayoutParams(0, ui.px(48), 1f);
-            row.addView(start, startLp);
-            row.addView(stop, stopLp);
-            row.addView(reset, resetLp);
+            LinearLayout.LayoutParams toggleLp = new LinearLayout.LayoutParams(0, timerHeight, 2f);
+            toggleLp.rightMargin = ui.px(8);
+            row.addView(toggle, toggleLp);
+            row.addView(reset, new LinearLayout.LayoutParams(0, timerHeight, 1f));
             fieldBox.addView(row);
 
-            start.setEnabled(!readOnly);
-            stop.setEnabled(!readOnly);
+            toggle.setEnabled(!readOnly);
             reset.setEnabled(!readOnly);
 
-            start.setOnClickListener(v -> {
-                long current = (Long) display.getTag();
-                timers.put(field.key, System.currentTimeMillis() - current);
-                tick(display, field.key, onChange);
-                onChange.run();
-            });
-            stop.setOnClickListener(v -> {
-                timers.remove(field.key);
+            toggle.setOnClickListener(v -> {
+                if (timers.containsKey(field.key)) {
+                    timers.remove(field.key);
+                    styleTimerToggle(toggle, false);
+                } else {
+                    long current = (Long) display.getTag();
+                    timers.put(field.key, System.currentTimeMillis() - current);
+                    styleTimerToggle(toggle, true);
+                    tick(display, field.key, onChange);
+                }
                 onChange.run();
             });
             reset.setOnClickListener(v -> {
                 timers.remove(field.key);
+                styleTimerToggle(toggle, false);
                 display.setTag(0L);
                 display.setText(formatMs(0));
                 onChange.run();
@@ -434,6 +437,7 @@ public final class TrackerFlowUi {
         editText.setTextColor(theme.primaryTextColor());
         editText.setHintTextColor(theme.mutedTextColor());
         editText.setGravity(Gravity.CENTER);
+        editText.setTextSize(ui.sp(14));
         editText.setMinHeight(ui.px(48));
         editText.setPadding(ui.px(12), 0, ui.px(12), 0);
         editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
@@ -456,15 +460,42 @@ public final class TrackerFlowUi {
             watchTextChange(editText, onChange);
         }
 
-        LinearLayout.LayoutParams minusLp = new LinearLayout.LayoutParams(ui.px(56), ui.px(48));
+        int inputHeight = numericHeight(field);
+        LinearLayout.LayoutParams minusLp = new LinearLayout.LayoutParams(0, inputHeight, 1f);
         minusLp.rightMargin = ui.px(8);
-        LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(0, ui.px(48), 1f);
+        LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(numericValueWidth(field), inputHeight);
         editLp.rightMargin = ui.px(8);
         row.addView(minus, minusLp);
         row.addView(editText, editLp);
-        row.addView(plus, new LinearLayout.LayoutParams(ui.px(56), ui.px(48)));
+        row.addView(plus, new LinearLayout.LayoutParams(0, inputHeight, 1f));
         fieldBox.addView(row);
         inputs.put(field.key, editText);
+    }
+
+    private void styleTimerToggle(Button button, boolean running) {
+        button.setText(running ? "Stop" : "Start");
+        button.setTextColor(running ? 0xffb42318 : Color.WHITE);
+        button.setBackgroundTintList(ColorStateList.valueOf(running ? theme.cautionFillColor() : theme.accentColor()));
+    }
+
+    private int stringMinLines(FieldDefinition field) {
+        String size = theme.fieldSize();
+        return "large".equals(size) ? 3 : "compact".equals(size) ? 1 : 2;
+    }
+
+    private int stringMaxLines(FieldDefinition field) {
+        String size = theme.fieldSize();
+        return "large".equals(size) ? 10 : "compact".equals(size) ? 3 : 6;
+    }
+
+    private int numericHeight(FieldDefinition field) {
+        String size = theme.fieldSize();
+        return ui.px("large".equals(size) ? 64 : "compact".equals(size) ? 48 : 56);
+    }
+
+    private int numericValueWidth(FieldDefinition field) {
+        String size = theme.fieldSize();
+        return ui.px("large".equals(size) ? 112 : "compact".equals(size) ? 72 : 88);
     }
 
     private void tick(TextView display, String key, Runnable onChange) {
@@ -828,6 +859,7 @@ public final class TrackerFlowUi {
         field.increment = parseDoubleSafe(views.incrementInput.getText().toString(), 1);
         field.decimals = parseIntSafe(views.decimalsInput.getText().toString(), 1);
         field.type = selectedType(views.typeGroup);
+        field.inputSize = "standard";
         field.required = views.requiredCheck.isChecked();
         field.prefillFromPrevious = views.prefillCheck.isChecked();
         return field;
@@ -948,6 +980,7 @@ public final class TrackerFlowUi {
                 field.put("increment", parseDoubleSafe(fieldViews.incrementInput.getText().toString(), 1));
                 field.put("decimals", parseIntSafe(fieldViews.decimalsInput.getText().toString(), 1));
                 field.put("unit", fieldViews.unitInput.getText().toString().trim());
+                field.put("inputSize", "standard");
                 field.put("required", fieldViews.requiredCheck.isChecked());
                 field.put("prefillFromPrevious", fieldViews.prefillCheck.isChecked());
                 fields.put(field);
@@ -1008,13 +1041,17 @@ public final class TrackerFlowUi {
     }
 
     private String selectedType(RadioGroup group) {
+        return selectedRadioValue(group, "string");
+    }
+
+    private String selectedRadioValue(RadioGroup group, String fallback) {
         int checkedId = group.getCheckedRadioButtonId();
         if (checkedId == -1) {
-            return "string";
+            return fallback;
         }
         RadioButton checked = group.findViewById(checkedId);
         Object tag = checked == null ? null : checked.getTag();
-        return tag == null ? "string" : String.valueOf(tag);
+        return tag == null ? fallback : String.valueOf(tag);
     }
 
     private void updateFieldEditorControls(FieldEditorViews views, String type) {

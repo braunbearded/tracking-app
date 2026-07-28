@@ -1,4 +1,4 @@
-package com.example.trackingapp;
+package com.zaelio.app;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -45,7 +45,7 @@ public class BackupJsonRepositoryTest {
 
         JSONObject export = new JSONObject(BackupJsonRepository.exportAll(db));
 
-        assertEquals("tracking-app-backup", export.getString("type"));
+        assertEquals("zaelio-backup", export.getString("type"));
         assertEquals(1, export.getJSONArray("trackers").length());
         assertEquals(1, export.getJSONArray("sessions").length());
         assertEquals(1, export.getJSONArray("sessions").getJSONObject(0).getJSONArray("records").length());

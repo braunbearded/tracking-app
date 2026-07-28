@@ -1,4 +1,4 @@
-package com.example.trackingapp;
+package com.zaelio.app;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -27,7 +27,7 @@ final class BackupJsonRepository {
 
     private static String export(TrackingDatabase helper, boolean includeTrackers, boolean includeSessions) throws JSONException {
         JSONObject root = new JSONObject();
-        root.put("type", "tracking-app-backup");
+        root.put("type", "zaelio-backup");
         root.put("version", 1);
 
         JSONArray trackers = new JSONArray();
@@ -53,6 +53,7 @@ final class BackupJsonRepository {
                     fieldJson.put("defaultValue", field.defaultValue == null ? JSONObject.NULL : field.defaultValue);
                     fieldJson.put("increment", field.increment);
                     fieldJson.put("unit", field.unit == null ? "" : field.unit);
+                    fieldJson.put("inputSize", field.inputSize == null ? "standard" : field.inputSize);
                     fieldJson.put("required", field.required);
                     fieldJson.put("prefillFromPrevious", field.prefillFromPrevious);
                     fields.put(fieldJson);
@@ -145,6 +146,7 @@ final class BackupJsonRepository {
                     }
                     values.put("incrementValue", field.optDouble("increment", 1));
                     values.put("unit", field.optString("unit", ""));
+                    values.put("inputSize", field.optString("inputSize", "standard"));
                     values.put("required", field.optBoolean("required", false) ? 1 : 0);
                     values.put("prefillFromPrevious", field.optBoolean("prefillFromPrevious", false) ? 1 : 0);
                     long newFieldId = db.insert("fields", null, values);

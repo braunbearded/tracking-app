@@ -1,4 +1,4 @@
-package com.example.trackingapp;
+package com.zaelio.app;
 
 import android.app.Activity;
 import android.content.ClipData;
@@ -47,10 +47,10 @@ import java.util.Locale;
 import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import com.example.trackingapp.theme.ThemeStore;
-import com.example.trackingapp.HomeUi;
-import com.example.trackingapp.ui.AppUi;
-import com.example.trackingapp.ui.SettingsUi;
+import com.zaelio.app.theme.ThemeStore;
+import com.zaelio.app.HomeUi;
+import com.zaelio.app.ui.AppUi;
+import com.zaelio.app.ui.SettingsUi;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -139,7 +139,7 @@ public class MainActivity extends Activity {
         currentTab = tab;
         base();
 
-        root.addView(ui.appBar("Tracking App", false, null, true, this::showOverflowMenu));
+        root.addView(ui.appBar("Zaelio", false, null, true, this::showOverflowMenu));
 
         FrameLayout content = new FrameLayout(this);
         LinearLayout.LayoutParams contentLp = new LinearLayout.LayoutParams(-1, 0, 1);
@@ -247,7 +247,7 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("application/json");
-        intent.putExtra(Intent.EXTRA_TITLE, "tracking-app-" + transferName(mode) + "-" + new SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(new Date()) + ".json");
+        intent.putExtra(Intent.EXTRA_TITLE, "zaelio-" + transferName(mode) + "-" + new SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(new Date()) + ".json");
         startActivityForResult(intent, REQUEST_EXPORT_JSON);
     }
 

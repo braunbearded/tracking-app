@@ -1,4 +1,4 @@
-package com.example.trackingapp;
+package com.zaelio.app;
 
 import android.content.ContentValues;
 import android.database.sqlite.SQLiteDatabase;
@@ -78,6 +78,7 @@ final class TrackerJsonRepository {
                 }
                 fieldValues.put("incrementValue", fieldJson.optDouble("increment", 1));
                 fieldValues.put("unit", fieldJson.optString("unit", ""));
+                fieldValues.put("inputSize", fieldJson.optString("inputSize", "standard"));
                 fieldValues.put("required", fieldJson.optBoolean("required", false) ? 1 : 0);
                 fieldValues.put("prefillFromPrevious", fieldJson.optBoolean("prefillFromPrevious", false) ? 1 : 0);
                 db.insert("fields", null, fieldValues);

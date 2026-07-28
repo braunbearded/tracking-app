@@ -1,4 +1,4 @@
-# 📊 Tracking App
+# 📊 Zaelio
 
 Eine kleine Android-App zum Erstellen eigener Tracker, Starten von Sessions und Speichern von Messwerten lokal in SQLite.
 
@@ -8,7 +8,7 @@ Eine kleine Android-App zum Erstellen eigener Tracker, Starten von Sessions und 
 - Sessions erfassen und fortsetzen
 - Werte lokal in SQLite speichern
 - Tracker, Sessions oder komplette Backups als JSON importieren/exportieren
-- Helles/dunkles Design, Schriftgröße und Akzentfarbe einstellbar
+- Helles/dunkles Design, Schriftgröße, Akzentfarbe und globale Feldgröße einstellbar
 - Kein Google Play Services, kein Firebase, keine Cloud
 
 ## 📱 Screenshots
@@ -94,7 +94,7 @@ Für eine installierbare/veröffentlichbare Release-APK brauchst du zusätzlich 
 Keystore erstellen:
 
 ```bash
-keytool -genkeypair -v -keystore tracking-app.jks -alias tracking-app -keyalg RSA -keysize 2048 -validity 10000
+keytool -genkeypair -v -keystore zaelio.jks -alias zaelio -keyalg RSA -keysize 2048 -validity 10000
 ```
 
 Danach eine Signing Config in `app/build.gradle` ergänzen oder die APK extern mit `apksigner` signieren. Keystore-Dateien und Passwörter niemals committen.
@@ -102,19 +102,19 @@ Danach eine Signing Config in `app/build.gradle` ergänzen oder die APK extern m
 ## 📁 Projektstruktur
 
 ```text
-app/src/main/java/com/example/trackingapp/
+app/src/main/java/com/zaelio/app/
 ├── MainActivity.java              # Routing, Lifecycle, Top Bar, Navigation
 ├── TrackingDatabase.java          # SQLite Schema, Migrationen, Datenzugriff
 ├── TrackerJsonRepository.java     # JSON Import/Export und Tracker-Speicherung
 ├── BackupJsonRepository.java      # JSON Backup für Tracker, Sessions und Werte
 ├── JsonUtil.java                  # JSON-Helfer
 ├── Models.java                    # Datenmodelle
+├── HomeUi.java                    # Session-/Tracker-Übersicht
+├── TrackerFlowUi.java             # Tracker-Editor und Session-Erfassung
 ├── theme/ThemeStore.java          # Theme, Akzentfarbe, Schriftgröße
 └── ui/
     ├── AppUi.java                 # Gemeinsame UI-Bausteine
-    ├── HomeUi.java                # Session-/Tracker-Übersicht
-    ├── SettingsUi.java            # Einstellungen und Über-Dialog
-    └── TrackerFlowUi.java         # Tracker-Editor und Session-Erfassung
+    └── SettingsUi.java            # Einstellungen und Über-Screen
 ```
 
 ## 🧪 Tests

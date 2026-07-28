@@ -3,14 +3,14 @@
 ## Project Structure & Module Organization
 This is a single-module Android app without Google Play Services.
 
-- `app/src/main/java/com/example/trackingapp/` contains app code.
+- `app/src/main/java/com/zaelio/app/` contains app code.
   - `MainActivity.java` owns routing, lifecycle, top app bar actions, and bottom navigation.
-- `TrackingDatabase.java` handles SQLite schema, migrations, seed data, and data access.
+- `TrackingDatabase.java` handles SQLite schema, migrations, seed data, and data access. Current schema version is 5.
 - `theme/ThemeStore.java` stores theme mode, accent color, font scale, and derived palette values.
 - `ui/AppUi.java` builds shared Material-style widgets.
-- `ui/SettingsUi.java` renders the settings screen and About dialog.
-- `ui/HomeUi.java` renders the session and tracker overviews.
-- `ui/TrackerFlowUi.java` owns the tracker editor, session flow, tracker selection, timers, and field input controls.
+- `ui/SettingsUi.java` renders the settings and About screens.
+- `HomeUi.java` renders the session and tracker overviews.
+- `TrackerFlowUi.java` owns the tracker editor, session flow, tracker selection, timers, and field input controls.
 - `TrackerJsonRepository.java`, `BackupJsonRepository.java`, `JsonUtil.java`, and `Models.java` cover JSON persistence, backup import/export, and model classes.
 - `app/src/main/res/` contains resources and styles.
 - `app/src/main/AndroidManifest.xml` defines the entry point.
@@ -29,8 +29,8 @@ The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 Follow the existing Java style:
 
 - Use 4-space indentation.
-- Keep package names lowercase, for example `com.example.trackingapp`.
-- Keep Java package declarations aligned with file paths when moving files. Some legacy UI files may still declare `com.example.trackingapp` while living under `ui/`; avoid making this worse.
+- Keep package names lowercase, using `com.zaelio.app` for app code.
+- Keep Java package declarations aligned with file paths when moving files.
 - Use `PascalCase` for classes and `camelCase` for methods, fields, and variables.
 - Prefer descriptive UI helpers such as `primaryButton()`, `showHome()`, and `navItem()`.
 
@@ -53,7 +53,7 @@ Prioritize tests for:
 - SQLite migrations, especially upgrades from schema versions before 3.
 - Tracker/session JSON import/export and editor autosave behavior.
 - Session record preservation when tracker definitions are edited or imported.
-- Numeric, duration, and string field parsing.
+- Numeric, duration, and string field parsing and field-size behavior.
 
 ## Commit & Pull Request Guidelines
 Recent history uses short, imperative commit messages. Keep commits focused and descriptive.

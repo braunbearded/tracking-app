@@ -1,4 +1,4 @@
-package com.example.trackingapp.ui;
+package com.zaelio.app.ui;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -10,7 +10,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import com.example.trackingapp.theme.ThemeStore;
+import com.zaelio.app.theme.ThemeStore;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.shape.ShapeAppearanceModel;
@@ -43,6 +43,7 @@ public final class SettingsUi {
 
         box.addView(themeCard());
         box.addView(fontCard());
+        box.addView(fieldSizeCard());
         box.addView(accentCard());
 
         root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -81,13 +82,13 @@ public final class SettingsUi {
         body.addView(title);
 
         TextView subtitle = new TextView(activity);
-        subtitle.setText("Tracking App");
+        subtitle.setText("Zaelio");
         subtitle.setTextSize(ui.sp(14));
         subtitle.setTextColor(theme.secondaryTextColor());
         subtitle.setPadding(0, 0, 0, ui.px(18));
         body.addView(subtitle);
 
-        body.addView(aboutInfoCard("Repository", "braunbearded/tracking-app", true));
+        body.addView(aboutInfoCard("Repository", "Zaelio", true));
         body.addView(aboutInfoCard("Version", versionName, false));
         body.addView(aboutInfoCard("Build", String.valueOf(versionCode), false));
 
@@ -114,7 +115,7 @@ public final class SettingsUi {
         if (clickable && "Repository".equals(label)) {
             row.setClickable(true);
             row.setFocusable(true);
-            row.setOnClickListener(v -> openUrl("https://github.com/braunbearded/tracking-app"));
+            row.setOnClickListener(v -> openUrl("https://github.com/zaelio/zaelio"));
             row.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
         }
 
@@ -203,6 +204,45 @@ public final class SettingsUi {
         return chip;
     }
 
+    private View fieldSizeCard() {
+        LinearLayout card = ui.contentCard();
+        ui.addSectionHeader(card, null, "Feldgröße", null);
+
+        ChipGroup group = new ChipGroup(activity);
+        group.setSingleSelection(true);
+        group.setSelectionRequired(true);
+        group.setChipSpacingHorizontal(ui.px(8));
+        group.setChipSpacingVertical(ui.px(8));
+
+        for (int i = 0; i < theme.fieldSizeCount(); i++) {
+            group.addView(fieldSizeChip(theme.fieldSizeName(i), i));
+        }
+        group.check(fieldSizeChipId(theme.fieldSizeIndex()));
+        group.setOnCheckedStateChangeListener((chipGroup, checkedIds) -> {
+            if (checkedIds.isEmpty()) {
+                return;
+            }
+            int checkedId = checkedIds.get(0);
+            for (int i = 0; i < theme.fieldSizeCount(); i++) {
+                if (checkedId == fieldSizeChipId(i)) {
+                    theme.setFieldSizeIndex(i);
+                    refreshSettings.run();
+                    break;
+                }
+            }
+        });
+        card.addView(group);
+        return card;
+    }
+
+    private Chip fieldSizeChip(String label, int index) {
+        Chip chip = new Chip(activity);
+        chip.setId(fieldSizeChipId(index));
+        chip.setText(label);
+        styleChoiceChip(chip, theme.fieldSizeIndex() == index);
+        return chip;
+    }
+
     private void styleChoiceChip(Chip chip, boolean selected) {
         chip.setCheckable(true);
         chip.setClickable(true);
@@ -276,5 +316,9 @@ public final class SettingsUi {
 
     private int fontScaleChipId(int index) {
         return 9100 + index;
+    }
+
+    private int fieldSizeChipId(int index) {
+        return 9200 + index;
     }
 }
