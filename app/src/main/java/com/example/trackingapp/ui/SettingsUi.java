@@ -13,7 +13,6 @@ import android.widget.TextView;
 import com.example.trackingapp.theme.ThemeStore;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.shape.ShapeAppearanceModel;
 
 public final class SettingsUi {
@@ -42,19 +41,19 @@ public final class SettingsUi {
         box.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(104));
         scrollView.addView(box);
 
-        box.addView(ui.settingsCardTitle("Darstellung"));
         box.addView(themeCard());
-
-        box.addView(ui.settingsCardTitle("Schrift"));
         box.addView(fontCard());
-
-        box.addView(ui.settingsCardTitle("Akzentfarbe"));
         box.addView(accentCard());
 
         root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
     }
 
-    public void showAboutDialog() {
+    public void renderAbout(LinearLayout root) {
+        root.addView(ui.appBar("Über die App", true, backHome, false, null));
+
+        ScrollView scrollView = new ScrollView(activity);
+        scrollView.setFillViewport(true);
+
         String versionName = "unknown";
         long versionCode = 0;
         try {
@@ -68,33 +67,43 @@ public final class SettingsUi {
         } catch (Exception ignored) {
         }
 
-        ScrollView scrollView = new ScrollView(activity);
-        scrollView.setFillViewport(true);
+        LinearLayout box = new LinearLayout(activity);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(104));
+        scrollView.addView(box);
 
-        LinearLayout body = new LinearLayout(activity);
-        body.setOrientation(LinearLayout.VERTICAL);
-        body.setPadding(ui.px(4), ui.px(4), ui.px(4), ui.px(0));
-        scrollView.addView(body);
+        LinearLayout body = ui.contentCard();
+        body.setPadding(ui.px(20), ui.px(18), ui.px(20), ui.px(16));
+        box.addView(body);
 
-        LinearLayout header = ui.contentCard();
-        ui.addSectionHeader(header, "ÜBER", "Tracking App", null);
-        LinearLayout.LayoutParams headerLp = new LinearLayout.LayoutParams(-1, -2);
-        headerLp.bottomMargin = ui.px(12);
-        body.addView(header, headerLp);
+        TextView title = ui.tv("Über die App", 20);
+        title.setPadding(0, 0, 0, ui.px(8));
+        body.addView(title);
+
+        TextView subtitle = new TextView(activity);
+        subtitle.setText("Tracking App");
+        subtitle.setTextSize(ui.sp(14));
+        subtitle.setTextColor(theme.secondaryTextColor());
+        subtitle.setPadding(0, 0, 0, ui.px(18));
+        body.addView(subtitle);
 
         body.addView(aboutInfoCard("Repository", "braunbearded/tracking-app", true));
         body.addView(aboutInfoCard("Version", versionName, false));
         body.addView(aboutInfoCard("Build", String.valueOf(versionCode), false));
 
-        new MaterialAlertDialogBuilder(activity)
-                .setView(scrollView)
-                .setPositiveButton("OK", null)
-                .show();
+        root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
     }
 
     private View aboutInfoCard(String label, String value, boolean clickable) {
         LinearLayout row = ui.contentCard();
         row.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(12));
+
+        TextView labelView = new TextView(activity);
+        labelView.setText(label.toUpperCase(java.util.Locale.ROOT));
+        labelView.setTextSize(ui.sp(12));
+        labelView.setTextColor(theme.mutedTextColor());
+        row.addView(labelView);
+
         TextView valueView = new TextView(activity);
         valueView.setText(value);
         valueView.setTextSize(ui.sp(15));
@@ -117,7 +126,7 @@ public final class SettingsUi {
 
     private View themeCard() {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, "DARSTELLUNG", "Farbschema", null);
+        ui.addSectionHeader(card, null, "Darstellung", null);
 
         ChipGroup group = new ChipGroup(activity);
         group.setSingleSelection(true);
@@ -149,7 +158,7 @@ public final class SettingsUi {
 
     private View fontCard() {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, "SCHRIFT", "Schriftgröße", null);
+        ui.addSectionHeader(card, null, "Schriftgröße", null);
 
         ChipGroup group = new ChipGroup(activity);
         group.setSingleSelection(true);
@@ -211,7 +220,7 @@ public final class SettingsUi {
 
     private View accentCard() {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, "AKZENTFARBE", "Akzentfarbe", null);
+        ui.addSectionHeader(card, null, "Akzentfarbe", null);
 
         for (int rowIndex = 0; rowIndex < 2; rowIndex++) {
             LinearLayout row = new LinearLayout(activity);
@@ -221,12 +230,15 @@ public final class SettingsUi {
 
             for (int col = 0; col < 4; col++) {
                 int index = rowIndex * 4 + col;
+                LinearLayout.LayoutParams cellLp = new LinearLayout.LayoutParams(0, -2, 1f);
+                cellLp.leftMargin = col == 0 ? 0 : ui.px(4);
+                cellLp.rightMargin = col == 3 ? 0 : ui.px(4);
                 if (index >= theme.accentCount()) {
                     View spacer = new View(activity);
-                    row.addView(spacer, new LinearLayout.LayoutParams(0, 0, 1f));
+                    row.addView(spacer, cellLp);
                     continue;
                 }
-                row.addView(accentOption(index), new LinearLayout.LayoutParams(0, -2, 1f));
+                row.addView(accentOption(index), cellLp);
             }
             card.addView(row);
         }
@@ -236,14 +248,12 @@ public final class SettingsUi {
     private Button accentOption(int index) {
         boolean selected = theme.accentIndex() == index;
         int accent = theme.accentColor(index);
-        Button button = new Button(activity);
-        button.setAllCaps(false);
-        button.setText(theme.accentName(index));
-        button.setTextSize(ui.sp(13));
-        button.setTextColor(selected ? android.graphics.Color.WHITE : accent);
-        button.setPadding(ui.px(8), ui.px(18), ui.px(8), ui.px(18));
         int fillColor = selected ? accent : theme.accentSoftColor(index);
-        button.setBackground(ui.makeRoundedCard(fillColor, accent));
+        Button button = ui.button(theme.accentName(index), fillColor, selected ? android.graphics.Color.WHITE : accent, accent);
+        button.setTextSize(ui.sp(12));
+        button.setSingleLine(true);
+        button.setMinHeight(ui.px(44));
+        button.setMinimumHeight(ui.px(44));
         button.setElevation(selected ? ui.px(4) : 0);
         button.setOnClickListener(v -> {
             theme.setAccentIndex(index);

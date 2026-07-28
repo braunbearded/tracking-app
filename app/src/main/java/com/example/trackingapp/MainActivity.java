@@ -34,6 +34,10 @@ import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -54,6 +58,9 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class MainActivity extends Activity {
+    private static final int REQUEST_IMPORT_JSON = 10;
+    private static final int REQUEST_EXPORT_JSON = 11;
+
     private TrackingDatabase db;
     private ThemeStore theme;
     private AppUi ui;
@@ -62,6 +69,7 @@ public class MainActivity extends Activity {
     private TrackerFlowUi trackerFlowUi;
     private LinearLayout root;
     private int currentTab = 0;
+    private int transferMode = 0;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
@@ -72,8 +80,21 @@ public class MainActivity extends Activity {
         db = new TrackingDatabase(this);
         settingsUi = new SettingsUi(this, theme, ui, this::refreshSettings, this::refreshHome);
         trackerFlowUi = new TrackerFlowUi(this, db, theme, ui, handler, () -> showHome(0), () -> showHome(1));
-        homeUi = new HomeUi(this, db, theme, ui, trackerFlowUi::openSession, trackerFlowUi::editTracker);
+        homeUi = new HomeUi(this, db, theme, ui, trackerFlowUi::openSession, trackerFlowUi::editTracker, this::refreshHome);
         showHome(0);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        if (requestCode == REQUEST_IMPORT_JSON) {
+            importJson(data.getData());
+        } else if (requestCode == REQUEST_EXPORT_JSON) {
+            exportJson(data.getData());
+        }
     }
 
     @Override
@@ -139,21 +160,134 @@ public class MainActivity extends Activity {
     }
 
     private void showOverflowMenu(View anchor) {
-        PopupMenu menu = new PopupMenu(this, anchor, Gravity.END);
-        menu.getMenu().add(0, 1, 0, "Einstellungen");
-        menu.getMenu().add(0, 2, 1, "Über die App");
-        menu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == 1) {
-                showSettingsScreen();
-                return true;
-            }
-            if (item.getItemId() == 2) {
-                showAboutDialog();
-                return true;
-            }
-            return false;
-        });
-        menu.show();
+        LinearLayout card = ui.contentCard();
+        card.setPadding(ui.px(20), ui.px(18), ui.px(20), ui.px(16));
+
+        TextView title = ui.tv("Menü", 20);
+        title.setPadding(0, 0, 0, ui.px(12));
+        card.addView(title);
+
+        final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
+        card.addView(menuButton("Einstellungen", () -> {
+            dialog[0].dismiss();
+            showSettingsScreen();
+        }));
+        card.addView(menuButton("Daten ex/importieren", () -> {
+            dialog[0].dismiss();
+            showDataTransferScreen();
+        }));
+        card.addView(menuButton("Über die App", () -> {
+            dialog[0].dismiss();
+            showAboutScreen();
+        }));
+
+        dialog[0] = new MaterialAlertDialogBuilder(this)
+                .setView(card)
+                .show();
+        if (dialog[0].getWindow() != null) {
+            dialog[0].getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+    }
+
+    private View menuButton(String text, Runnable onClick) {
+        Button button = ui.secondaryButton(text);
+        button.setOnClickListener(v -> onClick.run());
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.bottomMargin = ui.px(8);
+        button.setLayoutParams(lp);
+        return button;
+    }
+
+    private void showDataTransferScreen() {
+        base();
+        root.addView(ui.appBar("Daten ex/importieren", true, this::refreshHome, false, null));
+
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(104));
+        scroll.addView(box);
+
+        box.addView(transferCard("Alles", 0));
+        box.addView(transferCard("Tracker", 1));
+        box.addView(transferCard("Sessions", 2));
+        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+    }
+
+    private View transferCard(String title, int mode) {
+        LinearLayout card = ui.contentCard();
+        ui.addSectionHeader(card, null, title, null);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        Button importButton = ui.secondaryButton("Importieren");
+        Button exportButton = ui.primaryButton("Exportieren");
+        importButton.setOnClickListener(v -> chooseImportJson(mode));
+        exportButton.setOnClickListener(v -> chooseExportJson(mode));
+        row.addView(importButton, new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout.LayoutParams exportLp = new LinearLayout.LayoutParams(0, -2, 1);
+        exportLp.leftMargin = ui.px(8);
+        row.addView(exportButton, exportLp);
+        card.addView(row);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.bottomMargin = ui.px(12);
+        card.setLayoutParams(lp);
+        return card;
+    }
+
+    private void chooseImportJson(int mode) {
+        transferMode = mode;
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        startActivityForResult(intent, REQUEST_IMPORT_JSON);
+    }
+
+    private void chooseExportJson(int mode) {
+        transferMode = mode;
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        intent.putExtra(Intent.EXTRA_TITLE, "tracking-app-" + transferName(mode) + "-" + new SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(new Date()) + ".json");
+        startActivityForResult(intent, REQUEST_EXPORT_JSON);
+    }
+
+    private void importJson(Uri uri) {
+        try (InputStream in = getContentResolver().openInputStream(uri)) {
+            String json = readAll(in);
+            int count = transferMode == 1
+                    ? BackupJsonRepository.importTrackers(db, json)
+                    : transferMode == 2 ? BackupJsonRepository.importSessions(db, json) : BackupJsonRepository.importAll(db, json);
+            Toast.makeText(this, "Import abgeschlossen (" + count + " Tracker)", Toast.LENGTH_LONG).show();
+            refreshHome();
+        } catch (Exception e) {
+            Toast.makeText(this, "Import fehlgeschlagen: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void exportJson(Uri uri) {
+        try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+            String json = transferMode == 1
+                    ? BackupJsonRepository.exportTrackers(db)
+                    : transferMode == 2 ? BackupJsonRepository.exportSessions(db) : BackupJsonRepository.exportAll(db);
+            out.write(json.getBytes(StandardCharsets.UTF_8));
+            Toast.makeText(this, "Export gespeichert", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Export fehlgeschlagen: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private String transferName(int mode) {
+        return mode == 1 ? "trackers" : mode == 2 ? "sessions" : "backup";
+    }
+
+    private String readAll(InputStream in) throws java.io.IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int read;
+        while ((read = in.read(buffer)) != -1) {
+            out.write(buffer, 0, read);
+        }
+        return out.toString("UTF-8");
     }
 
     private void showSettingsScreen() {
@@ -161,8 +295,9 @@ public class MainActivity extends Activity {
         settingsUi.render(root);
     }
 
-    private void showAboutDialog() {
-        settingsUi.showAboutDialog();
+    private void showAboutScreen() {
+        base();
+        settingsUi.renderAbout(root);
     }
 
     private void sessions(FrameLayout body) {

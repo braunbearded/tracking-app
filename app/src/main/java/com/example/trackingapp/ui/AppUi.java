@@ -16,13 +16,14 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.example.trackingapp.R;
 import com.example.trackingapp.theme.ThemeStore;
 import com.google.android.material.button.MaterialButton;
 
 public final class AppUi {
-    private static final int CARD_RADIUS_DP = 4;
-    private static final int CONTROL_RADIUS_DP = 6;
-    private static final int CHIP_RADIUS_DP = 4;
+    private static final int CORNER_RADIUS_DP = 6;
+    private static final int BUTTON_HEIGHT_DP = 48;
+    private static final int ICON_BUTTON_SIZE_DP = 48;
 
     private final Activity activity;
     private final ThemeStore theme;
@@ -47,10 +48,18 @@ public final class AppUi {
         button.setAllCaps(false);
         button.setTextColor(textColor);
         button.setTextSize(sp(14));
-        button.setCornerRadius(px(CONTROL_RADIUS_DP));
-        button.setPadding(px(16), px(12), px(16), px(12));
+        button.setTypeface(Typeface.DEFAULT_BOLD);
+        button.setCornerRadius(px(CORNER_RADIUS_DP));
+        button.setMinHeight(px(BUTTON_HEIGHT_DP));
+        button.setMinimumHeight(px(BUTTON_HEIGHT_DP));
+        button.setMinWidth(px(64));
+        button.setPadding(px(16), 0, px(16), 0);
+        button.setInsetTop(0);
+        button.setInsetBottom(0);
+        button.setGravity(Gravity.CENTER);
         button.setBackgroundTintList(ColorStateList.valueOf(fillColor));
-        button.setStrokeWidth(0);
+        button.setStrokeColor(ColorStateList.valueOf(strokeColor));
+        button.setStrokeWidth(strokeColor == fillColor ? 0 : px(1));
         button.setRippleColor(ColorStateList.valueOf(theme.withAlpha(textColor, 0x22)));
         return button;
     }
@@ -140,18 +149,22 @@ public final class AppUi {
     }
 
     public Button floatingActionButton(View.OnClickListener onClick) {
-        Button fab = new Button(activity);
+        MaterialButton fab = new MaterialButton(activity);
         fab.setText("+");
         fab.setAllCaps(false);
-        fab.setTextSize(sp(28));
+        fab.setTextSize(sp(26));
         fab.setTypeface(Typeface.DEFAULT_BOLD);
         fab.setTextColor(0xffffffff);
-        fab.setBackground(makeRoundedCard(theme.accentColor(), theme.accentColor()));
+        fab.setCornerRadius(px(CORNER_RADIUS_DP));
+        fab.setBackgroundTintList(ColorStateList.valueOf(theme.accentColor()));
+        fab.setRippleColor(ColorStateList.valueOf(theme.withAlpha(Color.WHITE, 0x22)));
         fab.setElevation(px(10));
-        fab.setMinWidth(px(56));
-        fab.setMinHeight(px(56));
+        fab.setMinWidth(px(ICON_BUTTON_SIZE_DP));
+        fab.setMinHeight(px(ICON_BUTTON_SIZE_DP));
+        fab.setInsetTop(0);
+        fab.setInsetBottom(0);
         fab.setPadding(0, 0, 0, px(4));
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(px(56), px(56), Gravity.END | Gravity.BOTTOM);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(px(ICON_BUTTON_SIZE_DP), px(ICON_BUTTON_SIZE_DP), Gravity.END | Gravity.BOTTOM);
         lp.rightMargin = px(20);
         lp.bottomMargin = px(20);
         fab.setLayoutParams(lp);
@@ -169,17 +182,11 @@ public final class AppUi {
         bar.setElevation(px(1));
 
         if (showBack) {
-            Button back = button("←", theme.surfaceAltColor(), theme.primaryTextColor(), theme.borderColor());
-            back.setTextSize(sp(20));
-            back.setMinWidth(px(44));
-            back.setMinHeight(px(44));
-            back.setPadding(px(10), 0, px(10), 0);
-            back.setOnClickListener(v -> {
+            bar.addView(iconButton(R.drawable.ic_arrow_back_24, "Zurück", v -> {
                 if (onBack != null) {
                     onBack.run();
                 }
-            });
-            bar.addView(back);
+            }), new LinearLayout.LayoutParams(px(ICON_BUTTON_SIZE_DP), px(ICON_BUTTON_SIZE_DP)));
         }
 
         TextView title = new TextView(activity);
@@ -192,16 +199,32 @@ public final class AppUi {
         bar.addView(title, titleLp);
 
         if (showOverflow) {
-            Button overflow = button("⋮", theme.surfaceAltColor(), theme.primaryTextColor(), theme.borderColor());
-            overflow.setTextSize(sp(24));
-            overflow.setMinWidth(px(44));
-            overflow.setMinHeight(px(44));
-            overflow.setPadding(px(10), 0, px(10), 0);
-            overflow.setOnClickListener(overflowClick);
-            bar.addView(overflow);
+            bar.addView(iconButton(R.drawable.ic_more_vert_24, "Menü", overflowClick),
+                    new LinearLayout.LayoutParams(px(ICON_BUTTON_SIZE_DP), px(ICON_BUTTON_SIZE_DP)));
         }
 
         return bar;
+    }
+
+    private MaterialButton iconButton(int iconRes, String contentDescription, View.OnClickListener onClick) {
+        MaterialButton button = new MaterialButton(activity);
+        button.setText("");
+        button.setAllCaps(false);
+        button.setIcon(activity.getDrawable(iconRes));
+        button.setIconTint(ColorStateList.valueOf(theme.primaryTextColor()));
+        button.setIconGravity(MaterialButton.ICON_GRAVITY_TEXT_START);
+        button.setIconPadding(0);
+        button.setBackgroundTintList(ColorStateList.valueOf(theme.surfaceAltColor()));
+        button.setRippleColor(ColorStateList.valueOf(theme.withAlpha(theme.primaryTextColor(), 0x18)));
+        button.setCornerRadius(px(CORNER_RADIUS_DP));
+        button.setMinWidth(px(ICON_BUTTON_SIZE_DP));
+        button.setMinHeight(px(ICON_BUTTON_SIZE_DP));
+        button.setInsetTop(0);
+        button.setInsetBottom(0);
+        button.setPadding(px(12), 0, px(12), 0);
+        button.setContentDescription(contentDescription);
+        button.setOnClickListener(onClick);
+        return button;
     }
 
     public TextView settingsCardTitle(String text) {
@@ -283,7 +306,7 @@ public final class AppUi {
 
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(backgroundColor);
-        drawable.setCornerRadius(px(CHIP_RADIUS_DP));
+        drawable.setCornerRadius(px(CORNER_RADIUS_DP));
         chip.setBackground(drawable);
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
@@ -295,7 +318,7 @@ public final class AppUi {
     public GradientDrawable makeRoundedCard(int fillColor, int strokeColor) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(fillColor);
-        drawable.setCornerRadius(px(CARD_RADIUS_DP));
+        drawable.setCornerRadius(px(CORNER_RADIUS_DP));
         drawable.setStroke(px(1), strokeColor);
         return drawable;
     }

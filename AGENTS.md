@@ -4,14 +4,14 @@
 This is a single-module Android app without Google Play Services.
 
 - `app/src/main/java/com/example/trackingapp/` contains app code.
-  - `MainActivity.java` owns the screen flow, footer navigation, settings, and dialogs.
-- `TrackingDatabase.java` handles SQLite access.
-- `theme/ThemeStore.java` stores theme mode, accent color, and derived palette values.
-- `ui/HomeUi.java` renders the session and tracker overviews.
+  - `MainActivity.java` owns routing, lifecycle, top app bar actions, and bottom navigation.
+- `TrackingDatabase.java` handles SQLite schema, migrations, seed data, and data access.
+- `theme/ThemeStore.java` stores theme mode, accent color, font scale, and derived palette values.
 - `ui/AppUi.java` builds shared Material-style widgets.
 - `ui/SettingsUi.java` renders the settings screen and About dialog.
-- `ui/TrackerFlowUi.java` owns the tracker editor, session flow, and tracker selection dialog.
-- `TrackerJsonRepository.java`, `JsonUtil.java`, and `Models.java` cover persistence and models.
+- `ui/HomeUi.java` renders the session and tracker overviews.
+- `ui/TrackerFlowUi.java` owns the tracker editor, session flow, tracker selection, timers, and field input controls.
+- `TrackerJsonRepository.java`, `BackupJsonRepository.java`, `JsonUtil.java`, and `Models.java` cover JSON persistence, backup import/export, and model classes.
 - `app/src/main/res/` contains resources and styles.
 - `app/src/main/AndroidManifest.xml` defines the entry point.
 
@@ -19,6 +19,7 @@ This is a single-module Android app without Google Play Services.
 Use the Gradle wrapper from the repository root.
 
 - `./gradlew assembleDebug` builds a debug APK.
+- `./gradlew testDebugUnitTest` runs local JVM/Robolectric tests.
 - `./gradlew assembleRelease` builds a release APK if signing is configured.
 - `./gradlew clean` removes build outputs.
 
@@ -29,6 +30,7 @@ Follow the existing Java style:
 
 - Use 4-space indentation.
 - Keep package names lowercase, for example `com.example.trackingapp`.
+- Keep Java package declarations aligned with file paths when moving files. Some legacy UI files may still declare `com.example.trackingapp` while living under `ui/`; avoid making this worse.
 - Use `PascalCase` for classes and `camelCase` for methods, fields, and variables.
 - Prefer descriptive UI helpers such as `primaryButton()`, `showHome()`, and `navItem()`.
 
@@ -38,13 +40,20 @@ Keep UI changes consistent with the current Material 3 direction:
 - bottom navigation with two equal-width tabs
 - icon and label color indicate the selected tab only
 - footer touch areas should stay rectangular and extend to the edges
-- About dialog and settings should remain compact and scrollable on small screens
+- settings, data transfer, and about screens should remain compact and scrollable on small screens
 - shared UI helpers belong in `ui/AppUi.java`; screen-specific settings logic belongs in `ui/SettingsUi.java`
 - overview lists belong in `HomeUi.java`; keep `MainActivity.java` focused on routing and lifecycle
 - tracker editing and session entry belong in `TrackerFlowUi.java`
 
 ## Testing Guidelines
-There is no checked-in test suite yet. If you add tests, place unit tests under `app/src/test/` and instrumented tests under `app/src/androidTest/`. Name tests after the behavior being verified, such as `TrackingDatabaseTest`.
+Unit tests live under `app/src/test/` and use JUnit 4 plus Robolectric for Android SQLite coverage. Instrumented tests, if needed, belong under `app/src/androidTest/`. Name tests after the behavior being verified, such as `TrackingDatabaseTest`.
+
+Prioritize tests for:
+
+- SQLite migrations, especially upgrades from schema versions before 3.
+- Tracker/session JSON import/export and editor autosave behavior.
+- Session record preservation when tracker definitions are edited or imported.
+- Numeric, duration, and string field parsing.
 
 ## Commit & Pull Request Guidelines
 Recent history uses short, imperative commit messages. Keep commits focused and descriptive.
@@ -55,6 +64,14 @@ Pull requests should include:
 - Notes on build or runtime impact.
 - Screenshots or screen recordings for UI changes.
 - Linked issues when applicable.
+
+## Known Risks & Maintenance Notes
+Before changing persistence or editor flows, check these areas carefully:
+
+- Database migrations must be backward compatible. In particular, `TrackingDatabase.migrateToFieldsOnly()` is sensitive to cursor column indexes.
+- Editing a tracker through `TrackerJsonRepository.updateTracker()` currently rebuilds fields and can delete existing `field_records`; avoid accidental session data loss.
+- The app builds its UI programmatically. Keep shared widgets in `ui/AppUi.java` and avoid duplicating style logic in screen classes.
+- Timer state in `TrackerFlowUi` is in-memory and should be cleared on screen exit or activity destruction.
 
 ## Security & Configuration Tips
 Do not commit `local.properties`, keystores, or other machine-specific Android SDK settings. The project is intended to stay Android-only, with SQLite storage and no hidden Google service dependency.

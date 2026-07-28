@@ -1,93 +1,144 @@
-# Tracking App
+# 📊 Tracking App
 
-Small Android app for defining trackers, starting sessions, and recording item values in SQLite.
+Eine kleine Android-App zum Erstellen eigener Tracker, Starten von Sessions und Speichern von Messwerten lokal in SQLite.
 
-## What it uses
+## ✨ Features
 
-- Android SDK
-- SQLite
-- No Google Play services
-- No Firebase
+- Eigene Tracker mit Feldern und Items erstellen
+- Sessions erfassen und fortsetzen
+- Werte lokal in SQLite speichern
+- Tracker, Sessions oder komplette Backups als JSON importieren/exportieren
+- Helles/dunkles Design, Schriftgröße und Akzentfarbe einstellbar
+- Kein Google Play Services, kein Firebase, keine Cloud
 
-## Build prerequisites
+## 📱 Screenshots
 
-You need:
+Noch keine Screenshots im Repository. Lege sie z. B. unter `docs/screenshots/` ab und verlinke sie hier.
 
-- JDK 21
-- Android SDK platform 36
-- Android build tools
-- A configured `ANDROID_SDK_ROOT` or `local.properties`
+## 🧰 Benötigte Abhängigkeiten
 
-If you build from the command line, the Gradle wrapper is included in this repo.
+Zum Bauen brauchst du lokal:
 
-## How to build
+- JDK 17 oder neuer
+- Android SDK mit Platform `36`
+- Android Build Tools passend zum SDK
+- Gradle Wrapper aus diesem Repository (`./gradlew`)
 
-### Android Studio
+Projektabhängigkeiten:
 
-1. Open the project root in Android Studio.
-2. Let it sync Gradle.
-3. Build the app with **Build > Make Project** or **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
+- Android Gradle Plugin `8.13.1`
+- Gradle `9.5.1`
+- Material Components `com.google.android.material:material:1.12.0`
+- AndroidX RecyclerView `androidx.recyclerview:recyclerview:1.3.2`
 
-### Command line
+Test-Abhängigkeiten:
 
-From the project root:
+- JUnit `4.13.2`
+- AndroidX Test Core `1.6.1`
+- Robolectric `4.13`
+- org.json `20240303`
+
+Das Projekt nutzt absichtlich keine Google Play Services und kein Firebase.
+
+## ⚙️ Einrichtung
+
+Wenn dein Android SDK nicht automatisch gefunden wird, erstelle im Projektordner eine `local.properties`:
+
+```properties
+sdk.dir=/pfad/zu/deinem/Android/Sdk
+```
+
+Optional Java setzen:
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+```
+
+## 🛠️ Debug-Build erstellen
+
+```bash
 ./gradlew assembleDebug
 ```
 
-If your Android SDK is not already configured, add a `local.properties` file in the project root:
-
-```properties
-sdk.dir=/path/to/Android/Sdk
-```
-
-## APK output
-
-The debug APK is written to:
+Die APK liegt danach hier:
 
 ```text
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Release APK
+## 🚀 Release-Version erstellen
 
-This project does not currently include signing configuration. If you want a release APK, add a keystore and signing config first, then run:
+1. Version in `app/build.gradle` erhöhen:
+
+```gradle
+versionCode 2
+versionName '1.1'
+```
+
+2. Release bauen:
 
 ```bash
 ./gradlew assembleRelease
 ```
 
-## Notes for F-Droid
+Die unsigned Release-APK liegt danach hier:
 
-- Keep dependencies FOSS-only.
-- Avoid Google Play services and Firebase.
-- Keep the build reproducible and avoid closed-source plugins or SDKs.
+```text
+app/build/outputs/apk/release/app-release-unsigned.apk
+```
 
-## Project structure
+Für eine installierbare/veröffentlichbare Release-APK brauchst du zusätzlich eine Android-Signierung per Keystore. Diese ist aktuell nicht im Repository konfiguriert.
 
-- `app/src/main/java/com/example/trackingapp/MainActivity.java` main UI flow
-- `app/src/main/java/com/example/trackingapp/TrackingDatabase.java` SQLite schema and access
-- `app/src/main/java/com/example/trackingapp/TrackerJsonRepository.java` JSON editor save path
-- `app/src/main/java/com/example/trackingapp/JsonUtil.java` JSON helpers
-- `app/src/main/java/com/example/trackingapp/Models.java` data model classes
-- `app/src/main/java/com/example/trackingapp/theme/ThemeStore.java` theme mode, accent color, and derived palette values
-- `app/src/main/java/com/example/trackingapp/ui/HomeUi.java` sessions and trackers overview rendering
-- `app/src/main/java/com/example/trackingapp/ui/AppUi.java` shared widget factory for buttons, cards, app bars, and footer navigation
-- `app/src/main/java/com/example/trackingapp/ui/SettingsUi.java` settings screen and About dialog
-- `app/src/main/java/com/example/trackingapp/ui/TrackerFlowUi.java` tracker editor, session flow, and tracker chooser
+## 🔐 Release signieren
 
-## Current UI State
+Keystore erstellen:
 
-The app currently follows a Material 3 style with a thin `MainActivity` router and dedicated UI helpers:
+```bash
+keytool -genkeypair -v -keystore tracking-app.jks -alias tracking-app -keyalg RSA -keysize 2048 -validity 10000
+```
 
-- top app bar with the app name and overflow menu
-- bottom navigation for `Sessions` and `Tracker`
-- floating action button for creating a new session or tracker
-- settings screen with dark mode and 8 accent colors
-- About dialog with repository, version, and build information
-- footer navigation uses two equal-width rectangular touch targets so the clickable area reaches the edges instead of a rounded inset shape
-- tracker editing and session entry live in `TrackerFlowUi`
+Danach eine Signing Config in `app/build.gradle` ergänzen oder die APK extern mit `apksigner` signieren. Keystore-Dateien und Passwörter niemals committen.
 
-The app remains Android-only and does not use Google Play services or Firebase.
+## 📁 Projektstruktur
+
+```text
+app/src/main/java/com/example/trackingapp/
+├── MainActivity.java              # Routing, Lifecycle, Top Bar, Navigation
+├── TrackingDatabase.java          # SQLite Schema, Migrationen, Datenzugriff
+├── TrackerJsonRepository.java     # JSON Import/Export und Tracker-Speicherung
+├── BackupJsonRepository.java      # JSON Backup für Tracker, Sessions und Werte
+├── JsonUtil.java                  # JSON-Helfer
+├── Models.java                    # Datenmodelle
+├── theme/ThemeStore.java          # Theme, Akzentfarbe, Schriftgröße
+└── ui/
+    ├── AppUi.java                 # Gemeinsame UI-Bausteine
+    ├── HomeUi.java                # Session-/Tracker-Übersicht
+    ├── SettingsUi.java            # Einstellungen und Über-Dialog
+    └── TrackerFlowUi.java         # Tracker-Editor und Session-Erfassung
+```
+
+## 🧪 Tests
+
+Lokale Unit-Tests laufen mit JUnit und Robolectric:
+
+```bash
+./gradlew testDebugUnitTest
+```
+
+Aktueller Fokus:
+
+- `JsonUtilTest` prüft JSON-Roundtrips und Tracker-Export.
+- `TrackingDatabaseTest` prüft Seed-Daten, Sessions, Records, Previous Values und Löschlogik.
+- `BackupJsonRepositoryTest` prüft kompletten Export/Import sowie Tracker-only Export.
+
+Zusätzlicher Build-Check:
+
+```bash
+./gradlew assembleDebug
+```
+
+## 📝 Hinweise
+
+- App-Daten bleiben lokal auf dem Gerät.
+- `local.properties`, Keystores und Passwörter nicht committen.
+- Für F-Droid/OSS-Builds nur freie Abhängigkeiten verwenden.

@@ -33,7 +33,6 @@ import android.widget.Toast;
 
 import com.example.trackingapp.theme.ThemeStore;
 import com.example.trackingapp.ui.AppUi;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -57,6 +56,7 @@ public final class TrackerFlowUi {
     private final Runnable backToTrackers;
     private final Map<String, Long> timers = new HashMap<>();
     private LinearLayout root;
+    private View dropIndicator;
 
     public TrackerFlowUi(Activity activity, TrackingDatabase db, ThemeStore theme, AppUi ui,
                          Handler handler, Runnable backToSessions, Runnable backToTrackers) {
@@ -75,29 +75,32 @@ public final class TrackerFlowUi {
 
     public void chooseTracker() {
         List<Tracker> trackers = db.trackers();
-        BottomSheetDialog dialog = new BottomSheetDialog(activity);
+        base();
+        root.addView(ui.appBar("Tracker auswählen", true, backToSessions, false, null));
 
-        LinearLayout sheet = new LinearLayout(activity);
-        sheet.setOrientation(LinearLayout.VERTICAL);
-        sheet.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(20));
-        sheet.setBackgroundColor(theme.surfaceColor());
+        ScrollView scrollView = new ScrollView(activity);
+        scrollView.setFillViewport(true);
 
-        TextView title = ui.tv("Tracker auswählen", 18);
-        title.setPadding(0, 0, 0, ui.px(4));
-        sheet.addView(title);
+        LinearLayout box = new LinearLayout(activity);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(16));
+        scrollView.addView(box);
+
+        TextView intro = new TextView(activity);
+        intro.setText("Wähle einen Tracker für die neue Session.");
+        intro.setTextSize(ui.sp(14));
+        intro.setTextColor(theme.secondaryTextColor());
+        intro.setPadding(ui.px(4), ui.px(4), ui.px(4), ui.px(12));
+        box.addView(intro);
 
         if (trackers.isEmpty()) {
             Button create = ui.primaryButton("Neuen Tracker anlegen");
-            create.setOnClickListener(v -> {
-                dialog.dismiss();
-                createTracker();
-            });
-            sheet.addView(create, new LinearLayout.LayoutParams(-1, -2));
+            create.setOnClickListener(v -> createTracker());
+            box.addView(create, new LinearLayout.LayoutParams(-1, -2));
         } else {
             for (Tracker tracker : trackers) {
                 View item = selectionRow(tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name);
                 item.setOnClickListener(v -> {
-                    dialog.dismiss();
                     long sessionId = db.createSession(tracker.id);
                     if (sessionId == -1) {
                         Toast.makeText(activity, "Session konnte nicht angelegt werden", Toast.LENGTH_SHORT).show();
@@ -107,18 +110,11 @@ public final class TrackerFlowUi {
                 });
                 LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
                 rowLp.bottomMargin = ui.px(10);
-                sheet.addView(item, rowLp);
+                box.addView(item, rowLp);
             }
         }
 
-        Button cancel = ui.secondaryButton("Abbrechen");
-        cancel.setOnClickListener(v -> dialog.dismiss());
-        LinearLayout.LayoutParams cancelLp = new LinearLayout.LayoutParams(-1, -2);
-        cancelLp.topMargin = ui.px(4);
-        sheet.addView(cancel, cancelLp);
-
-        dialog.setContentView(sheet);
-        dialog.show();
+        root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
     }
 
     private View selectionRow(String title) {
@@ -301,15 +297,16 @@ public final class TrackerFlowUi {
 
     private Map<String, Object> initialValues(Session session, Item item) {
         Map<Long, ItemRecord> records = db.records(session.id);
-        if (records.containsKey(item.id)) {
-            return JsonUtil.toMap(records.get(item.id).valuesJson);
-        }
-
         Map<String, Object> values = new LinkedHashMap<>();
         for (FieldDefinition field : item.fields) {
+            if (records.containsKey(field.id)) {
+                values.putAll(JsonUtil.toMap(records.get(field.id).valuesJson));
+                continue;
+            }
+
             Object value = TrackingDatabase.NO_PREVIOUS;
             if (field.prefillFromPrevious) {
-                value = db.previousValue(session.trackerId, item.id, field.key);
+                value = db.previousValue(session.trackerId, field.id, field.key);
             }
             if (!field.prefillFromPrevious || value == TrackingDatabase.NO_PREVIOUS) {
                 value = parse(field.defaultValue, field.type);
@@ -342,7 +339,19 @@ public final class TrackerFlowUi {
             Map<String, View> inputs,
             boolean readOnly,
             Runnable onChange) {
-        box.addView(ui.tv(field.label + (field.unit == null || field.unit.isEmpty() ? "" : " (" + field.unit + ")"), 16));
+        LinearLayout fieldBox = new LinearLayout(activity);
+        fieldBox.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams fieldBoxLp = new LinearLayout.LayoutParams(-1, -2);
+        fieldBoxLp.bottomMargin = ui.px(18);
+        box.addView(fieldBox, fieldBoxLp);
+
+        TextView label = new TextView(activity);
+        label.setText(field.label + (field.unit == null || field.unit.isEmpty() ? "" : " (" + field.unit + ")"));
+        label.setTextSize(ui.sp(15));
+        label.setTextColor(theme.primaryTextColor());
+        label.setTypeface(Typeface.DEFAULT_BOLD);
+        label.setPadding(0, 0, 0, ui.px(8));
+        fieldBox.addView(label);
 
         Object value = values.get(field.key);
         if ("string".equals(field.type)) {
@@ -350,28 +359,42 @@ public final class TrackerFlowUi {
             editText.setText(value == null ? "" : String.valueOf(value));
             editText.setTextColor(theme.primaryTextColor());
             editText.setHintTextColor(theme.mutedTextColor());
+            editText.setMinHeight(ui.px(48));
+            editText.setPadding(ui.px(12), 0, ui.px(12), 0);
+            editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
             editText.setEnabled(!readOnly);
             if (!readOnly) {
                 watchTextChange(editText, onChange);
             }
-            box.addView(editText);
+            fieldBox.addView(editText, new LinearLayout.LayoutParams(-1, ui.px(48)));
             inputs.put(field.key, editText);
             return;
         }
 
         if ("duration".equals(field.type)) {
-            TextView display = ui.tv(formatMs(toLong(value)), 24);
+            TextView display = new TextView(activity);
+            display.setText(formatMs(toLong(value)));
+            display.setTextSize(ui.sp(24));
+            display.setTextColor(theme.primaryTextColor());
+            display.setGravity(Gravity.CENTER);
             display.setTag(toLong(value));
+            fieldBox.addView(display, new LinearLayout.LayoutParams(-1, ui.px(48)));
 
             LinearLayout row = new LinearLayout(activity);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
             Button start = ui.secondaryButton("Start");
             Button stop = ui.secondaryButton("Stop");
             Button reset = ui.ghostButton("Reset");
-            row.addView(start);
-            row.addView(stop);
-            row.addView(reset);
-            box.addView(display);
-            box.addView(row);
+            LinearLayout.LayoutParams startLp = new LinearLayout.LayoutParams(0, ui.px(48), 1f);
+            startLp.rightMargin = ui.px(8);
+            LinearLayout.LayoutParams stopLp = new LinearLayout.LayoutParams(0, ui.px(48), 1f);
+            stopLp.rightMargin = ui.px(8);
+            LinearLayout.LayoutParams resetLp = new LinearLayout.LayoutParams(0, ui.px(48), 1f);
+            row.addView(start, startLp);
+            row.addView(stop, stopLp);
+            row.addView(reset, resetLp);
+            fieldBox.addView(row);
 
             start.setEnabled(!readOnly);
             stop.setEnabled(!readOnly);
@@ -399,6 +422,8 @@ public final class TrackerFlowUi {
         }
 
         LinearLayout row = new LinearLayout(activity);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
         Button minus = ui.secondaryButton("−");
         Button plus = ui.primaryButton("+");
         EditText editText = new EditText(activity);
@@ -408,13 +433,17 @@ public final class TrackerFlowUi {
                 : InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
         editText.setTextColor(theme.primaryTextColor());
         editText.setHintTextColor(theme.mutedTextColor());
+        editText.setGravity(Gravity.CENTER);
+        editText.setMinHeight(ui.px(48));
+        editText.setPadding(ui.px(12), 0, ui.px(12), 0);
+        editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
         editText.setEnabled(!readOnly);
         minus.setEnabled(!readOnly);
         plus.setEnabled(!readOnly);
 
         View.OnClickListener adjust = v -> {
             hideKeyboard(editText);
-            double current = editText.getText().toString().isEmpty() ? 0 : Double.parseDouble(editText.getText().toString());
+            double current = parseDoubleSafe(editText.getText().toString(), 0);
             current += v == plus ? field.increment : -field.increment;
             editText.setText("int".equals(field.type)
                     ? String.valueOf(Math.round(current))
@@ -427,10 +456,14 @@ public final class TrackerFlowUi {
             watchTextChange(editText, onChange);
         }
 
-        row.addView(minus);
-        row.addView(editText, new LinearLayout.LayoutParams(0, -2, 1));
-        row.addView(plus);
-        box.addView(row);
+        LinearLayout.LayoutParams minusLp = new LinearLayout.LayoutParams(ui.px(56), ui.px(48));
+        minusLp.rightMargin = ui.px(8);
+        LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(0, ui.px(48), 1f);
+        editLp.rightMargin = ui.px(8);
+        row.addView(minus, minusLp);
+        row.addView(editText, editLp);
+        row.addView(plus, new LinearLayout.LayoutParams(ui.px(56), ui.px(48)));
+        fieldBox.addView(row);
         inputs.put(field.key, editText);
     }
 
@@ -558,11 +591,13 @@ public final class TrackerFlowUi {
         ui.addSectionHeader(card, null, item == null ? "Neues Item" : item.title, null);
 
         View drag = dragHandle();
+        Button duplicate = ui.secondaryButton("Duplizieren");
         Button remove = ui.dangerButton("Entfernen");
         LinearLayout actionRow = new LinearLayout(activity);
         actionRow.setOrientation(LinearLayout.HORIZONTAL);
-        actionRow.addView(new View(activity), new LinearLayout.LayoutParams(0, -2, 1));
         actionRow.addView(drag);
+        actionRow.addView(new View(activity), new LinearLayout.LayoutParams(0, -2, 1));
+        actionRow.addView(duplicate);
         actionRow.addView(remove);
         card.addView(actionRow);
 
@@ -573,11 +608,11 @@ public final class TrackerFlowUi {
         LinearLayout fieldsHeader = new LinearLayout(activity);
         fieldsHeader.setOrientation(LinearLayout.HORIZONTAL);
         fieldsHeader.setPadding(0, ui.px(8), 0, ui.px(8));
-        TextView fieldsTitle = ui.tv("Fields", 16);
+        TextView fieldsTitle = ui.tv("Felder", 16);
         fieldsTitle.setPadding(0, 0, 0, 0);
         fieldsHeader.addView(fieldsTitle, new LinearLayout.LayoutParams(0, -2, 1));
 
-        Button addField = ui.primaryButton("Field hinzufügen");
+        Button addField = ui.primaryButton("Feld hinzufügen");
         fieldsHeader.addView(addField);
         card.addView(fieldsHeader);
 
@@ -590,10 +625,16 @@ public final class TrackerFlowUi {
             for (FieldDefinition field : item.fields) {
                 addFieldEditor(fieldsContainer, views.fields, field, scheduleSave);
             }
+        } else {
+            addFieldEditor(fieldsContainer, views.fields, null, scheduleSave);
         }
 
         addField.setOnClickListener(v -> {
             addFieldEditor(fieldsContainer, views.fields, null, scheduleSave);
+            scheduleSave.run();
+        });
+        duplicate.setOnClickListener(v -> {
+            addItemEditor(container, itemEditors, itemFromViews(views), scheduleSave);
             scheduleSave.run();
         });
         remove.setOnClickListener(v -> {
@@ -633,16 +674,23 @@ public final class TrackerFlowUi {
         FieldEditorViews views = new FieldEditorViews();
 
         LinearLayout row = ui.contentCard();
-        ui.addSectionHeader(row, null, field == null ? "Neues Field" : field.label, null);
+        ui.addSectionHeader(row, null, field == null ? "Neues Feld" : field.label, null);
         LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
         rowLp.bottomMargin = ui.px(12);
 
         View drag = dragHandle();
+        Button moveUp = ui.secondaryButton("↑");
+        Button moveDown = ui.secondaryButton("↓");
+        Button duplicate = ui.secondaryButton("Duplizieren");
         Button remove = ui.dangerButton("Entfernen");
         LinearLayout actionRow = new LinearLayout(activity);
         actionRow.setOrientation(LinearLayout.HORIZONTAL);
-        actionRow.addView(new View(activity), new LinearLayout.LayoutParams(0, -2, 1));
+        actionRow.setGravity(Gravity.CENTER_VERTICAL);
         actionRow.addView(drag);
+        actionRow.addView(new View(activity), new LinearLayout.LayoutParams(0, -2, 1));
+        actionRow.addView(moveUp, compactActionButtonLp());
+        actionRow.addView(moveDown, compactActionButtonLp());
+        actionRow.addView(duplicate);
         actionRow.addView(remove);
         row.addView(actionRow);
 
@@ -659,12 +707,11 @@ public final class TrackerFlowUi {
         watchTextChange(views.incrementInput, scheduleSave);
         watchTextChange(views.decimalsInput, scheduleSave);
 
-        row.addView(views.keyInput);
         row.addView(views.labelInput);
         row.addView(views.defaultValueInput);
 
         RadioGroup typeGroup = new RadioGroup(activity);
-        typeGroup.setOrientation(RadioGroup.HORIZONTAL);
+        typeGroup.setOrientation(RadioGroup.VERTICAL);
         typeGroup.setPadding(0, ui.px(4), 0, ui.px(4));
         typeGroup.setTag("type");
         views.typeGroup = typeGroup;
@@ -718,6 +765,18 @@ public final class TrackerFlowUi {
             scheduleSave.run();
         });
 
+        moveUp.setOnClickListener(v -> {
+            moveFieldEditor(container, fieldEditors, views, -1);
+            scheduleSave.run();
+        });
+        moveDown.setOnClickListener(v -> {
+            moveFieldEditor(container, fieldEditors, views, 1);
+            scheduleSave.run();
+        });
+        duplicate.setOnClickListener(v -> {
+            addFieldEditor(container, fieldEditors, fieldFromViews(views), scheduleSave);
+            scheduleSave.run();
+        });
         remove.setOnClickListener(v -> {
             container.removeView(row);
             views.removed = true;
@@ -747,6 +806,59 @@ public final class TrackerFlowUi {
         });
         configureFieldDragTarget(container, row, fieldEditors, scheduleSave);
         return views;
+    }
+
+    private Item itemFromViews(ItemEditorViews views) {
+        Item item = new Item();
+        item.title = views.titleInput.getText().toString();
+        for (FieldEditorViews fieldViews : views.fields) {
+            if (!fieldViews.removed) {
+                item.fields.add(fieldFromViews(fieldViews));
+            }
+        }
+        return item;
+    }
+
+    private FieldDefinition fieldFromViews(FieldEditorViews views) {
+        FieldDefinition field = new FieldDefinition();
+        field.key = views.keyInput.getText().toString();
+        field.label = views.labelInput.getText().toString();
+        field.defaultValue = views.defaultValueInput.getText().toString();
+        field.unit = views.unitInput.getText().toString();
+        field.increment = parseDoubleSafe(views.incrementInput.getText().toString(), 1);
+        field.decimals = parseIntSafe(views.decimalsInput.getText().toString(), 1);
+        field.type = selectedType(views.typeGroup);
+        field.required = views.requiredCheck.isChecked();
+        field.prefillFromPrevious = views.prefillCheck.isChecked();
+        return field;
+    }
+
+    private LinearLayout.LayoutParams compactActionButtonLp() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ui.px(48), ui.px(48));
+        lp.rightMargin = ui.px(8);
+        return lp;
+    }
+
+    private void moveFieldEditor(LinearLayout container, List<FieldEditorViews> fieldEditors, FieldEditorViews views, int direction) {
+        if (views == null || views.row == null) {
+            return;
+        }
+
+        int fromIndex = container.indexOfChild(views.row);
+        int toIndex = fromIndex + direction;
+        if (fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()) {
+            return;
+        }
+
+        container.removeView(views.row);
+        container.addView(views.row, toIndex);
+
+        int listFromIndex = fieldEditors.indexOf(views);
+        int listToIndex = listFromIndex + direction;
+        if (listFromIndex >= 0 && listToIndex >= 0 && listToIndex < fieldEditors.size()) {
+            fieldEditors.remove(listFromIndex);
+            fieldEditors.add(listToIndex, views);
+        }
     }
 
     private LinearLayout wrapLabeledView(String label, View view) {
@@ -800,6 +912,7 @@ public final class TrackerFlowUi {
         root.put("description", form.descriptionInput.getText().toString().trim());
 
         JSONArray items = new JSONArray();
+        List<String> usedFieldKeys = new ArrayList<>();
         int itemOrder = 0;
         for (ItemEditorViews itemViews : form.items) {
             if (itemViews.removed) {
@@ -817,9 +930,16 @@ public final class TrackerFlowUi {
                     continue;
                 }
 
+                String itemTitle = itemViews.titleInput.getText().toString().trim();
+                String fieldLabel = fieldViews.labelInput.getText().toString().trim();
+                if (fieldLabel.isEmpty()) {
+                    fieldLabel = itemTitle.isEmpty() ? "Field " + (fieldOrder + 1) : itemTitle;
+                }
+                String fieldKey = uniqueFieldKey(fieldLabel, usedFieldKeys);
+
                 JSONObject field = new JSONObject();
-                field.put("key", fieldViews.keyInput.getText().toString().trim());
-                field.put("label", fieldViews.labelInput.getText().toString().trim());
+                field.put("key", fieldKey);
+                field.put("label", fieldLabel);
                 field.put("type", selectedType(fieldViews.typeGroup));
                 field.put("order", fieldOrder++);
 
@@ -838,6 +958,23 @@ public final class TrackerFlowUi {
 
         root.put("items", items);
         return root.toString(2);
+    }
+
+    private String uniqueFieldKey(String label, List<String> usedKeys) {
+        String base = label.toLowerCase(Locale.US)
+                .replaceAll("[^a-z0-9]+", "_")
+                .replaceAll("^_+|_+$", "");
+        if (base.isEmpty()) {
+            base = "field";
+        }
+
+        String candidate = base;
+        int suffix = 2;
+        while (usedKeys.contains(candidate)) {
+            candidate = base + "_" + suffix++;
+        }
+        usedKeys.add(candidate);
+        return candidate;
     }
 
     private int parseIntSafe(String value, int fallback) {
@@ -919,6 +1056,7 @@ public final class TrackerFlowUi {
     private void startCardDrag(View view) {
         ClipData data = ClipData.newPlainText("tracker-editor-drag", "card");
         View.DragShadowBuilder shadow = new View.DragShadowBuilder(view);
+        view.setAlpha(0.35f);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             view.startDragAndDrop(data, shadow, view, 0);
         } else {
@@ -927,22 +1065,55 @@ public final class TrackerFlowUi {
     }
 
     private void configureItemDragTarget(LinearLayout container, View target, List<ItemEditorViews> itemEditors, Runnable onChange) {
-        target.setOnDragListener((v, event) -> handleDrop(container, target, itemEditors, event, onChange));
-        container.setOnDragListener((v, event) -> handleContainerDrop(container, itemEditors, event, onChange));
+        View.OnDragListener listener = (v, event) -> handleDrop(container, target, itemEditors, v, event, onChange);
+        setDragListenerDeep(target, listener);
+        container.setOnDragListener((v, event) -> handleContainerDrop(container, itemEditors, v, event, onChange));
     }
 
     private void configureFieldDragTarget(LinearLayout container, View target, List<FieldEditorViews> fieldEditors, Runnable onChange) {
-        target.setOnDragListener((v, event) -> handleDrop(container, target, fieldEditors, event, onChange));
-        container.setOnDragListener((v, event) -> handleContainerDrop(container, fieldEditors, event, onChange));
+        View.OnDragListener listener = (v, event) -> handleDrop(container, target, fieldEditors, v, event, onChange);
+        setDragListenerDeep(target, listener);
+        container.setOnDragListener((v, event) -> handleContainerDrop(container, fieldEditors, v, event, onChange));
     }
 
-    private boolean handleDrop(LinearLayout container, View target, List<?> list, android.view.DragEvent event, Runnable onChange) {
+    private void setDragListenerDeep(View view, View.OnDragListener listener) {
+        view.setOnDragListener(listener);
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                setDragListenerDeep(group.getChildAt(i), listener);
+            }
+        }
+    }
+
+    private boolean handleDrop(LinearLayout container, View target, List<?> list, View eventView, android.view.DragEvent event, Runnable onChange) {
         if (!(event.getLocalState() instanceof View)) {
             return false;
         }
 
+        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_LOCATION
+                || event.getAction() == android.view.DragEvent.ACTION_DRAG_ENTERED) {
+            View dragged = (View) event.getLocalState();
+            autoScrollDuringDrag(eventView, container, event);
+            if (dragged.getParent() == container) {
+                showDropIndicatorBefore(container, target);
+            }
+            return true;
+        }
+        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_ENDED) {
+            restoreDraggedView(event);
+            hideDropIndicator();
+            return true;
+        }
+        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_STARTED
+                || event.getAction() == android.view.DragEvent.ACTION_DRAG_EXITED) {
+            return true;
+        }
+
         View dragged = (View) event.getLocalState();
         if (event.getAction() == android.view.DragEvent.ACTION_DROP) {
+            restoreDraggedView(event);
+            hideDropIndicator();
             if (dragged == target || dragged.getParent() != container) {
                 return true;
             }
@@ -957,13 +1128,34 @@ public final class TrackerFlowUi {
         return true;
     }
 
-    private boolean handleContainerDrop(LinearLayout container, List<?> list, android.view.DragEvent event, Runnable onChange) {
+    private boolean handleContainerDrop(LinearLayout container, List<?> list, View eventView, android.view.DragEvent event, Runnable onChange) {
         if (!(event.getLocalState() instanceof View)) {
             return false;
         }
 
+        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_LOCATION
+                || event.getAction() == android.view.DragEvent.ACTION_DRAG_ENTERED) {
+            View dragged = (View) event.getLocalState();
+            autoScrollDuringDrag(eventView, container, event);
+            if (dragged.getParent() == container) {
+                showDropIndicator(container, container.getChildCount());
+            }
+            return true;
+        }
+        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_ENDED) {
+            restoreDraggedView(event);
+            hideDropIndicator();
+            return true;
+        }
+        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_STARTED
+                || event.getAction() == android.view.DragEvent.ACTION_DRAG_EXITED) {
+            return true;
+        }
+
         View dragged = (View) event.getLocalState();
         if (event.getAction() == android.view.DragEvent.ACTION_DROP) {
+            restoreDraggedView(event);
+            hideDropIndicator();
             if (dragged.getParent() != container) {
                 return true;
             }
@@ -976,6 +1168,88 @@ public final class TrackerFlowUi {
         }
 
         return true;
+    }
+
+    private void restoreDraggedView(android.view.DragEvent event) {
+        if (event.getLocalState() instanceof View) {
+            ((View) event.getLocalState()).setAlpha(1f);
+        }
+    }
+
+    private void showDropIndicatorBefore(LinearLayout container, View target) {
+        hideDropIndicator();
+        showDropIndicator(container, container.indexOfChild(target));
+    }
+
+    private void showDropIndicator(LinearLayout container, int index) {
+        if (container == null) {
+            return;
+        }
+        if (dropIndicator == null) {
+            dropIndicator = new View(activity);
+            dropIndicator.setBackground(ui.makeRoundedCard(theme.accentSoftColor(), theme.accentColor()));
+        }
+
+        ViewParent parent = dropIndicator.getParent();
+        if (parent instanceof LinearLayout) {
+            ((LinearLayout) parent).removeView(dropIndicator);
+        }
+
+        int safeIndex = Math.max(0, Math.min(index, container.getChildCount()));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, ui.px(28));
+        lp.leftMargin = ui.px(8);
+        lp.rightMargin = ui.px(8);
+        lp.topMargin = ui.px(6);
+        lp.bottomMargin = ui.px(14);
+        container.addView(dropIndicator, safeIndex, lp);
+    }
+
+    private void hideDropIndicator() {
+        if (dropIndicator == null) {
+            return;
+        }
+        ViewParent parent = dropIndicator.getParent();
+        if (parent instanceof LinearLayout) {
+            ((LinearLayout) parent).removeView(dropIndicator);
+        }
+    }
+
+    private void autoScrollDuringDrag(View eventView, View scrollAnchor, android.view.DragEvent event) {
+        ScrollView scrollView = findParentScrollView(scrollAnchor);
+        if (scrollView == null || eventView == null) {
+            return;
+        }
+
+        int[] eventViewLocation = new int[2];
+        int[] scrollViewLocation = new int[2];
+        eventView.getLocationOnScreen(eventViewLocation);
+        scrollView.getLocationOnScreen(scrollViewLocation);
+
+        int pointerY = eventViewLocation[1] + Math.round(event.getY());
+        int topEdge = scrollViewLocation[1] + ui.px(72);
+        int bottomEdge = scrollViewLocation[1] + scrollView.getHeight() - ui.px(72);
+        int step = ui.px(18);
+
+        if (pointerY < topEdge) {
+            scrollView.smoothScrollBy(0, -step);
+        } else if (pointerY > bottomEdge) {
+            scrollView.smoothScrollBy(0, step);
+        }
+    }
+
+    private ScrollView findParentScrollView(View view) {
+        ViewParent parent = view == null ? null : view.getParent();
+        while (parent != null) {
+            if (parent instanceof ScrollView) {
+                return (ScrollView) parent;
+            }
+            if (parent instanceof View) {
+                parent = ((View) parent).getParent();
+            } else {
+                break;
+            }
+        }
+        return null;
     }
 
     private void moveViewBefore(LinearLayout container, View dragged, View target) {
@@ -1033,14 +1307,19 @@ public final class TrackerFlowUi {
     }
 
     private void saveSessionItem(Session session, Item item, Map<String, View> inputs) {
-        db.saveRecord(session, item.id, readInputs(item, inputs));
+        Map<String, Object> values = readInputs(item, inputs);
+        for (FieldDefinition field : item.fields) {
+            Map<String, Object> fieldValue = new LinkedHashMap<>();
+            fieldValue.put(field.key, values.get(field.key));
+            db.saveRecord(session, field.id, fieldValue);
+        }
     }
 
     private void saveSessionItems(Session session, Tracker tracker, Map<Long, Map<String, View>> inputsByItem) {
         for (Item item : tracker.items) {
             Map<String, View> inputs = inputsByItem.get(item.id);
             if (inputs != null) {
-                db.saveRecord(session, item.id, readInputs(item, inputs));
+                saveSessionItem(session, item, inputs);
             }
         }
     }
