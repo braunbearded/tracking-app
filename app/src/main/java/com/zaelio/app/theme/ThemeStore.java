@@ -11,7 +11,6 @@ public final class ThemeStore {
     public static final int THEME_LIGHT = 1;
     public static final int THEME_DARK = 2;
 
-    private static final String KEY_DARK_MODE = "dark_mode";
     private static final String KEY_THEME_MODE = "theme_mode";
     private static final String KEY_ACCENT_INDEX = "accent_index";
     private static final String KEY_FONT_SCALE_INDEX = "font_scale_index";
@@ -68,10 +67,6 @@ public final class ThemeStore {
 
     public boolean darkMode() {
         return themeMode() == THEME_DARK || (themeMode() == THEME_SYSTEM && isSystemDark());
-    }
-
-    public void setDarkMode(boolean enabled) {
-        setThemeMode(enabled ? THEME_DARK : THEME_LIGHT);
     }
 
     public int themeMode() {
@@ -207,10 +202,6 @@ public final class ThemeStore {
 
     public int navigationBarColor() {
         return darkMode() ? 0xff0f172a : 0xffffffff;
-    }
-
-    public int navigationItemFillColor() {
-        return darkMode() ? 0xff1e293b : 0xfff9fafb;
     }
 
     public int withAlpha(int color, int alpha) {

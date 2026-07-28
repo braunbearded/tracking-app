@@ -25,8 +25,6 @@ final class FieldDefinition {
     int order;
     boolean required;
     int decimals = 1;
-    // Legacy JSON/DB field; runtime sizing is global in ThemeStore.
-    String inputSize = "standard";
     boolean prefillFromPrevious;
 }
 

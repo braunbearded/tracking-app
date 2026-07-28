@@ -11,17 +11,19 @@ import android.widget.TextView;
 import com.zaelio.app.theme.ThemeStore;
 import com.zaelio.app.ui.AppUi;
 
+import java.util.function.LongConsumer;
+
 public final class HomeUi {
     private final Activity activity;
     private final TrackingDatabase db;
     private final ThemeStore theme;
     private final AppUi ui;
-    private final SessionClick openSession;
-    private final TrackerClick editTracker;
+    private final LongConsumer openSession;
+    private final LongConsumer editTracker;
     private final Runnable refresh;
 
     public HomeUi(Activity activity, TrackingDatabase db, ThemeStore theme, AppUi ui,
-                  SessionClick openSession, TrackerClick editTracker, Runnable refresh) {
+                  LongConsumer openSession, LongConsumer editTracker, Runnable refresh) {
         this.activity = activity;
         this.db = db;
         this.theme = theme;
@@ -62,7 +64,7 @@ public final class HomeUi {
                     skipClick[0] = false;
                     return;
                 }
-                openSession.open(session.id);
+                openSession.accept(session.id);
             });
             attachDeleteGestures(card, () -> confirmDeleteSession(session), skipClick);
             box.addView(card, cardLayoutParams());
@@ -98,7 +100,7 @@ public final class HomeUi {
                     skipClick[0] = false;
                     return;
                 }
-                editTracker.open(tracker.id);
+                editTracker.accept(tracker.id);
             });
             attachDeleteGestures(card, () -> confirmDeleteTracker(tracker), skipClick);
             box.addView(card, cardLayoutParams());
@@ -313,13 +315,5 @@ public final class HomeUi {
     private String date(long millis) {
         return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
                 .format(new java.util.Date(millis));
-    }
-
-    public interface SessionClick {
-        void open(long sessionId);
-    }
-
-    public interface TrackerClick {
-        void open(long trackerId);
     }
 }

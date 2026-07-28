@@ -668,7 +668,6 @@ public final class TrackerFlowUi {
         field.increment = parseDoubleSafe(views.incrementInput.getText().toString(), 1);
         field.decimals = parseIntSafe(views.decimalsInput.getText().toString(), 1);
         field.type = selectedType(views.typeGroup);
-        field.inputSize = "standard";
         field.required = views.requiredCheck.isChecked();
         field.prefillFromPrevious = views.prefillCheck.isChecked();
         return field;
@@ -789,7 +788,6 @@ public final class TrackerFlowUi {
                 field.put("increment", parseDoubleSafe(fieldViews.incrementInput.getText().toString(), 1));
                 field.put("decimals", parseIntSafe(fieldViews.decimalsInput.getText().toString(), 1));
                 field.put("unit", fieldViews.unitInput.getText().toString().trim());
-                field.put("inputSize", "standard");
                 field.put("required", fieldViews.requiredCheck.isChecked());
                 field.put("prefillFromPrevious", fieldViews.prefillCheck.isChecked());
                 fields.put(field);

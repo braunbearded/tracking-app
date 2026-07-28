@@ -57,27 +57,6 @@ final class JsonUtil {
         }
     }
 
-    static String newTrackerTemplateJson() {
-        try {
-            JSONObject root = new JSONObject();
-            root.put("name", "Neuer Tracker");
-            root.put("description", "");
-
-            JSONArray fields = new JSONArray();
-            FieldDefinition field = new FieldDefinition();
-            field.key = "value";
-            field.label = "Wert";
-            field.type = "string";
-            field.defaultValue = "";
-            fields.put(fieldToJson(field));
-
-            root.put("fields", fields);
-            return root.toString(2);
-        } catch (JSONException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
     static JSONObject fieldToJson(FieldDefinition field) throws JSONException {
         JSONObject fieldJson = new JSONObject();
         fieldJson.put("id", field.id);
@@ -88,7 +67,6 @@ final class JsonUtil {
         fieldJson.put("defaultValue", field.defaultValue == null ? JSONObject.NULL : field.defaultValue);
         fieldJson.put("increment", field.increment);
         fieldJson.put("unit", field.unit == null ? "" : field.unit);
-        fieldJson.put("inputSize", field.inputSize == null ? "standard" : field.inputSize);
         fieldJson.put("required", field.required);
         fieldJson.put("prefillFromPrevious", field.prefillFromPrevious);
         return fieldJson;
@@ -108,7 +86,6 @@ final class JsonUtil {
         }
         values.put("incrementValue", field.optDouble("increment", 1));
         values.put("unit", field.optString("unit", ""));
-        values.put("inputSize", field.optString("inputSize", "standard"));
         values.put("required", field.optBoolean("required", false) ? 1 : 0);
         values.put("prefillFromPrevious", field.optBoolean("prefillFromPrevious", false) ? 1 : 0);
         return values;

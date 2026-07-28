@@ -82,14 +82,6 @@ public final class AppUi {
         return button(text, theme.cautionFillColor(), 0xffb42318, theme.cautionStrokeColor());
     }
 
-    public Button tabButton(String text, boolean selected) {
-        return button(
-                text,
-                selected ? theme.accentSoftColor() : theme.surfaceColor(),
-                selected ? theme.accentColor() : theme.mutedTextColor(),
-                selected ? theme.accentColor() : theme.borderColor());
-    }
-
     public View bottomNav(boolean sessionsSelected, View.OnClickListener onSessions, View.OnClickListener onTracker) {
         LinearLayout nav = new LinearLayout(activity);
         nav.setOrientation(LinearLayout.HORIZONTAL);
@@ -229,13 +221,6 @@ public final class AppUi {
         return button;
     }
 
-    public TextView settingsCardTitle(String text) {
-        TextView title = tv(text, 12);
-        title.setTextColor(theme.mutedTextColor());
-        title.setPadding(0, 0, 0, px(6));
-        return title;
-    }
-
     public LinearLayout settingsCard() {
         LinearLayout card = new LinearLayout(activity);
         card.setOrientation(LinearLayout.VERTICAL);
@@ -324,16 +309,6 @@ public final class AppUi {
         rightMeta.setGravity(Gravity.END);
         metaRow.addView(rightMeta, new LinearLayout.LayoutParams(0, -2, 1));
         return metaRow;
-    }
-
-    public LinearLayout chipRow(View... chips) {
-        LinearLayout chipRow = new LinearLayout(activity);
-        chipRow.setOrientation(LinearLayout.HORIZONTAL);
-        chipRow.setPadding(0, 0, 0, px(12));
-        for (View chip : chips) {
-            chipRow.addView(chip);
-        }
-        return chipRow;
     }
 
     public TextView chip(String text, int backgroundColor, int textColor) {

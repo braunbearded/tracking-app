@@ -72,18 +72,13 @@ final class FieldInputUi {
     }
 
     private void stringControl(LinearLayout fieldBox, FieldDefinition field, Object value, Map<String, View> inputs, boolean readOnly, Runnable onChange) {
-        EditText editText = new EditText(activity);
-        editText.setText(value == null ? "" : String.valueOf(value));
-        editText.setTextColor(theme.primaryTextColor());
-        editText.setHintTextColor(theme.mutedTextColor());
+        EditText editText = styledEditText(value);
         editText.setSingleLine(false);
         editText.setMinLines(stringMinLines());
         editText.setMaxLines(stringMaxLines());
         editText.setGravity(Gravity.TOP | Gravity.START);
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        editText.setMinHeight(ui.px(48));
         editText.setPadding(ui.px(12), ui.px(10), ui.px(12), ui.px(10));
-        editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
         editText.setEnabled(!readOnly);
         if (!readOnly) {
             watchTextChange(editText, onChange);
@@ -145,18 +140,13 @@ final class FieldInputUi {
         row.setGravity(Gravity.CENTER_VERTICAL);
         Button minus = ui.secondaryButton("−");
         Button plus = ui.primaryButton("+");
-        EditText editText = new EditText(activity);
-        editText.setText(value == null ? "" : String.valueOf(value));
+        EditText editText = styledEditText(value);
         editText.setInputType("int".equals(field.type)
                 ? InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED
                 : InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
-        editText.setTextColor(theme.primaryTextColor());
-        editText.setHintTextColor(theme.mutedTextColor());
         editText.setGravity(Gravity.CENTER);
         editText.setTextSize(ui.sp(14));
-        editText.setMinHeight(ui.px(48));
         editText.setPadding(ui.px(12), 0, ui.px(12), 0);
-        editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
         editText.setEnabled(!readOnly);
         minus.setEnabled(!readOnly);
         plus.setEnabled(!readOnly);
@@ -186,6 +176,16 @@ final class FieldInputUi {
         row.addView(plus, new LinearLayout.LayoutParams(0, inputHeight, 1f));
         fieldBox.addView(row);
         inputs.put(field.key, editText);
+    }
+
+    private EditText styledEditText(Object value) {
+        EditText editText = new EditText(activity);
+        editText.setText(value == null ? "" : String.valueOf(value));
+        editText.setTextColor(theme.primaryTextColor());
+        editText.setHintTextColor(theme.mutedTextColor());
+        editText.setMinHeight(ui.px(48));
+        editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
+        return editText;
     }
 
     private void styleTimerToggle(Button button, boolean running) {

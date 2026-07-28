@@ -37,7 +37,6 @@ public class JsonUtilTest {
         field.defaultValue = "0";
         field.increment = 2.5;
         field.unit = "kg";
-        field.inputSize = "large";
         field.required = true;
         field.prefillFromPrevious = true;
         tracker.fields.add(field);
@@ -48,7 +47,6 @@ public class JsonUtilTest {
         assertEquals("Training", json.getString("name"));
         assertEquals("Plan", json.getString("description"));
         assertEquals("weight", fields.getJSONObject(0).getString("key"));
-        assertEquals("large", fields.getJSONObject(0).getString("inputSize"));
         assertTrue(fields.getJSONObject(0).getBoolean("required"));
     }
 }

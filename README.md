@@ -29,7 +29,6 @@ Projektabhängigkeiten:
 - Android Gradle Plugin `8.13.1`
 - Gradle `9.5.1`
 - Material Components `com.google.android.material:material:1.12.0`
-- AndroidX RecyclerView `androidx.recyclerview:recyclerview:1.3.2`
 
 Test-Abhängigkeiten:
 

@@ -27,7 +27,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE trackers(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,description TEXT,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL)");
-        db.execSQL("CREATE TABLE fields(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,itemTitle TEXT,itemOrder INTEGER NOT NULL DEFAULT 0,fieldKey TEXT NOT NULL,label TEXT NOT NULL,type TEXT NOT NULL,sortOrder INTEGER NOT NULL,defaultValue TEXT,incrementValue REAL,unit TEXT,inputSize TEXT NOT NULL DEFAULT 'standard',required INTEGER NOT NULL,prefillFromPrevious INTEGER NOT NULL,FOREIGN KEY(trackerId) REFERENCES trackers(id) ON DELETE CASCADE)");
+        db.execSQL("CREATE TABLE fields(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,itemTitle TEXT,itemOrder INTEGER NOT NULL DEFAULT 0,fieldKey TEXT NOT NULL,label TEXT NOT NULL,type TEXT NOT NULL,sortOrder INTEGER NOT NULL,defaultValue TEXT,incrementValue REAL,unit TEXT,required INTEGER NOT NULL,prefillFromPrevious INTEGER NOT NULL,FOREIGN KEY(trackerId) REFERENCES trackers(id) ON DELETE CASCADE)");
         db.execSQL("CREATE TABLE sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,FOREIGN KEY(trackerId) REFERENCES trackers(id))");
         db.execSQL("CREATE TABLE field_records(id INTEGER PRIMARY KEY AUTOINCREMENT,sessionId INTEGER NOT NULL,trackerId INTEGER NOT NULL,fieldId INTEGER NOT NULL,fieldKey TEXT NOT NULL,valuesJson TEXT NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,UNIQUE(sessionId,fieldId),FOREIGN KEY(sessionId) REFERENCES sessions(id),FOREIGN KEY(fieldId) REFERENCES fields(id))");
         seed(db);
@@ -44,19 +44,12 @@ final class TrackingDatabase extends SQLiteOpenHelper {
         if (oldVersion < 4) {
             migrateFieldItemColumns(db);
         }
-        if (oldVersion < 5) {
-            migrateFieldInputSize(db);
-        }
     }
 
     private void migrateFieldItemColumns(SQLiteDatabase db) {
         db.execSQL("ALTER TABLE fields ADD COLUMN itemTitle TEXT");
         db.execSQL("ALTER TABLE fields ADD COLUMN itemOrder INTEGER NOT NULL DEFAULT 0");
         db.execSQL("UPDATE fields SET itemTitle=label,itemOrder=sortOrder WHERE itemTitle IS NULL");
-    }
-
-    private void migrateFieldInputSize(SQLiteDatabase db) {
-        db.execSQL("ALTER TABLE fields ADD COLUMN inputSize TEXT NOT NULL DEFAULT 'standard'");
     }
 
     private void migrateSessionsTable(SQLiteDatabase db) {
@@ -227,7 +220,6 @@ final class TrackingDatabase extends SQLiteOpenHelper {
         values.put("defaultValue", def);
         values.put("incrementValue", inc);
         values.put("unit", unit);
-        values.put("inputSize", "standard");
         values.put("required", 0);
         values.put("prefillFromPrevious", prefillFromPrevious ? 1 : 0);
         return db.insert("fields", null, values);
@@ -282,7 +274,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
             tracker.updatedAt = trackerCursor.getLong(4);
 
             Cursor fieldCursor = db.rawQuery(
-                    "SELECT id,trackerId,fieldKey,label,type,sortOrder,defaultValue,incrementValue,unit,required,prefillFromPrevious,itemTitle,itemOrder,inputSize FROM fields WHERE trackerId=? ORDER BY itemOrder,sortOrder,id",
+                    "SELECT id,trackerId,fieldKey,label,type,sortOrder,defaultValue,incrementValue,unit,required,prefillFromPrevious,itemTitle,itemOrder FROM fields WHERE trackerId=? ORDER BY itemOrder,sortOrder,id",
                     new String[]{String.valueOf(id)});
             try {
                 while (fieldCursor.moveToNext()) {
@@ -298,7 +290,6 @@ final class TrackingDatabase extends SQLiteOpenHelper {
                     definition.unit = fieldCursor.getString(8);
                     definition.required = fieldCursor.getInt(9) == 1;
                     definition.prefillFromPrevious = fieldCursor.getInt(10) == 1;
-                    definition.inputSize = fieldCursor.getString(13);
                     tracker.fields.add(definition);
 
                     String itemTitle = fieldCursor.getString(11);
