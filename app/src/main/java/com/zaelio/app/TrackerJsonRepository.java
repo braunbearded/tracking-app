@@ -64,24 +64,7 @@ final class TrackerJsonRepository {
                 }
             }
             for (int i = 0; i < fields.length(); i++) {
-                JSONObject fieldJson = fields.getJSONObject(i);
-                ContentValues fieldValues = new ContentValues();
-                fieldValues.put("trackerId", trackerId);
-                fieldValues.put("itemTitle", fieldJson.optString("itemTitle", fieldJson.optString("label", fieldJson.getString("key"))));
-                fieldValues.put("itemOrder", fieldJson.optInt("itemOrder", i));
-                fieldValues.put("fieldKey", fieldJson.getString("key"));
-                fieldValues.put("label", fieldJson.optString("label", fieldJson.getString("key")));
-                fieldValues.put("type", fieldJson.getString("type"));
-                fieldValues.put("sortOrder", fieldJson.optInt("order", i));
-                if (fieldJson.has("defaultValue") && !fieldJson.isNull("defaultValue")) {
-                    fieldValues.put("defaultValue", String.valueOf(fieldJson.get("defaultValue")));
-                }
-                fieldValues.put("incrementValue", fieldJson.optDouble("increment", 1));
-                fieldValues.put("unit", fieldJson.optString("unit", ""));
-                fieldValues.put("inputSize", fieldJson.optString("inputSize", "standard"));
-                fieldValues.put("required", fieldJson.optBoolean("required", false) ? 1 : 0);
-                fieldValues.put("prefillFromPrevious", fieldJson.optBoolean("prefillFromPrevious", false) ? 1 : 0);
-                db.insert("fields", null, fieldValues);
+                db.insert("fields", null, JsonUtil.fieldValuesFromJson(fields.getJSONObject(i), trackerId, i));
             }
 
             db.setTransactionSuccessful();

@@ -110,7 +110,8 @@ app/src/main/java/com/zaelio/app/
 ├── JsonUtil.java                  # JSON-Helfer
 ├── Models.java                    # Datenmodelle
 ├── HomeUi.java                    # Session-/Tracker-Übersicht
-├── TrackerFlowUi.java             # Tracker-Editor und Session-Erfassung
+├── TrackerFlowUi.java             # Tracker-Editor und Session-Routing
+├── FieldInputUi.java              # Eingabefelder, Timer und Zahlensteuerung
 ├── theme/ThemeStore.java          # Theme, Akzentfarbe, Schriftgröße
 └── ui/
     ├── AppUi.java                 # Gemeinsame UI-Bausteine

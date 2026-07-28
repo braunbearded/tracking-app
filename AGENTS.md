@@ -10,7 +10,8 @@ This is a single-module Android app without Google Play Services.
 - `ui/AppUi.java` builds shared Material-style widgets.
 - `ui/SettingsUi.java` renders the settings and About screens.
 - `HomeUi.java` renders the session and tracker overviews.
-- `TrackerFlowUi.java` owns the tracker editor, session flow, tracker selection, timers, and field input controls.
+- `TrackerFlowUi.java` owns the tracker editor, session flow, and tracker selection.
+- `FieldInputUi.java` renders session field controls, including timers, numeric controls, and multiline text.
 - `TrackerJsonRepository.java`, `BackupJsonRepository.java`, `JsonUtil.java`, and `Models.java` cover JSON persistence, backup import/export, and model classes.
 - `app/src/main/res/` contains resources and styles.
 - `app/src/main/AndroidManifest.xml` defines the entry point.
@@ -41,9 +42,9 @@ Keep UI changes consistent with the current Material 3 direction:
 - icon and label color indicate the selected tab only
 - footer touch areas should stay rectangular and extend to the edges
 - settings, data transfer, and about screens should remain compact and scrollable on small screens
-- shared UI helpers belong in `ui/AppUi.java`; screen-specific settings logic belongs in `ui/SettingsUi.java`
+- shared screen/dialog helpers belong in `ui/AppUi.java`; screen-specific settings logic belongs in `ui/SettingsUi.java`
 - overview lists belong in `HomeUi.java`; keep `MainActivity.java` focused on routing and lifecycle
-- tracker editing and session entry belong in `TrackerFlowUi.java`
+- tracker editing and session routing belong in `TrackerFlowUi.java`; individual session input widgets belong in `FieldInputUi.java`
 
 ## Testing Guidelines
 Unit tests live under `app/src/test/` and use JUnit 4 plus Robolectric for Android SQLite coverage. Instrumented tests, if needed, belong under `app/src/androidTest/`. Name tests after the behavior being verified, such as `TrackingDatabaseTest`.

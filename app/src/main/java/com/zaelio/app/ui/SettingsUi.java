@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.zaelio.app.theme.ThemeStore;
@@ -31,30 +30,15 @@ public final class SettingsUi {
     }
 
     public void render(LinearLayout root) {
-        root.addView(ui.appBar("Einstellungen", true, backHome, false, null));
-
-        ScrollView scrollView = new ScrollView(activity);
-        scrollView.setFillViewport(true);
-
-        LinearLayout box = new LinearLayout(activity);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(104));
-        scrollView.addView(box);
-
+        LinearLayout box = ui.screenBody(root, "Einstellungen", backHome);
         box.addView(themeCard());
         box.addView(fontCard());
         box.addView(fieldSizeCard());
         box.addView(accentCard());
-
-        root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
     }
 
     public void renderAbout(LinearLayout root) {
-        root.addView(ui.appBar("Über die App", true, backHome, false, null));
-
-        ScrollView scrollView = new ScrollView(activity);
-        scrollView.setFillViewport(true);
-
+        LinearLayout box = ui.screenBody(root, "Über die App", backHome);
         String versionName = "unknown";
         long versionCode = 0;
         try {
@@ -68,31 +52,15 @@ public final class SettingsUi {
         } catch (Exception ignored) {
         }
 
-        LinearLayout box = new LinearLayout(activity);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(104));
-        scrollView.addView(box);
-
         LinearLayout body = ui.contentCard();
         body.setPadding(ui.px(20), ui.px(18), ui.px(20), ui.px(16));
         box.addView(body);
 
-        TextView title = ui.tv("Über die App", 20);
-        title.setPadding(0, 0, 0, ui.px(8));
-        body.addView(title);
-
-        TextView subtitle = new TextView(activity);
-        subtitle.setText("Zaelio");
-        subtitle.setTextSize(ui.sp(14));
-        subtitle.setTextColor(theme.secondaryTextColor());
-        subtitle.setPadding(0, 0, 0, ui.px(18));
-        body.addView(subtitle);
-
+        ui.addDialogTitle(body, "Über die App");
+        ui.addDialogMessage(body, "Zaelio");
         body.addView(aboutInfoCard("Repository", "Zaelio", true));
         body.addView(aboutInfoCard("Version", versionName, false));
         body.addView(aboutInfoCard("Build", String.valueOf(versionCode), false));
-
-        root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
     }
 
     private View aboutInfoCard(String label, String value, boolean clickable) {

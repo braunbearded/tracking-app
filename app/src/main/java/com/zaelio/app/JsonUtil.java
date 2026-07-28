@@ -1,5 +1,6 @@
 package com.zaelio.app;
 
+import android.content.ContentValues;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -47,18 +48,7 @@ final class JsonUtil {
 
             JSONArray fields = new JSONArray();
             for (FieldDefinition field : tracker.fields) {
-                JSONObject fieldJson = new JSONObject();
-                fieldJson.put("key", field.key);
-                fieldJson.put("label", field.label);
-                fieldJson.put("type", field.type);
-                fieldJson.put("order", field.order);
-                fieldJson.put("defaultValue", field.defaultValue == null ? JSONObject.NULL : field.defaultValue);
-                fieldJson.put("increment", field.increment);
-                fieldJson.put("unit", field.unit == null ? "" : field.unit);
-                fieldJson.put("inputSize", field.inputSize == null ? "standard" : field.inputSize);
-                fieldJson.put("required", field.required);
-                fieldJson.put("prefillFromPrevious", field.prefillFromPrevious);
-                fields.put(fieldJson);
+                fields.put(fieldToJson(field));
             }
             root.put("fields", fields);
             return root.toString(2);
@@ -74,18 +64,12 @@ final class JsonUtil {
             root.put("description", "");
 
             JSONArray fields = new JSONArray();
-            JSONObject fieldJson = new JSONObject();
-            fieldJson.put("key", "value");
-            fieldJson.put("label", "Wert");
-            fieldJson.put("type", "string");
-            fieldJson.put("order", 0);
-            fieldJson.put("defaultValue", "");
-            fieldJson.put("increment", 1);
-            fieldJson.put("unit", "");
-            fieldJson.put("inputSize", "standard");
-            fieldJson.put("required", false);
-            fieldJson.put("prefillFromPrevious", false);
-            fields.put(fieldJson);
+            FieldDefinition field = new FieldDefinition();
+            field.key = "value";
+            field.label = "Wert";
+            field.type = "string";
+            field.defaultValue = "";
+            fields.put(fieldToJson(field));
 
             root.put("fields", fields);
             return root.toString(2);
@@ -93,4 +77,41 @@ final class JsonUtil {
             throw new IllegalArgumentException(e);
         }
     }
+
+    static JSONObject fieldToJson(FieldDefinition field) throws JSONException {
+        JSONObject fieldJson = new JSONObject();
+        fieldJson.put("id", field.id);
+        fieldJson.put("key", field.key);
+        fieldJson.put("label", field.label);
+        fieldJson.put("type", field.type);
+        fieldJson.put("order", field.order);
+        fieldJson.put("defaultValue", field.defaultValue == null ? JSONObject.NULL : field.defaultValue);
+        fieldJson.put("increment", field.increment);
+        fieldJson.put("unit", field.unit == null ? "" : field.unit);
+        fieldJson.put("inputSize", field.inputSize == null ? "standard" : field.inputSize);
+        fieldJson.put("required", field.required);
+        fieldJson.put("prefillFromPrevious", field.prefillFromPrevious);
+        return fieldJson;
+    }
+
+    static ContentValues fieldValuesFromJson(JSONObject field, long trackerId, int fallbackOrder) throws JSONException {
+        ContentValues values = new ContentValues();
+        values.put("trackerId", trackerId);
+        values.put("itemTitle", field.optString("itemTitle", field.optString("label", field.optString("key", ""))));
+        values.put("itemOrder", field.optInt("itemOrder", fallbackOrder));
+        values.put("fieldKey", field.getString("key"));
+        values.put("label", field.optString("label", field.getString("key")));
+        values.put("type", field.optString("type", "string"));
+        values.put("sortOrder", field.optInt("order", fallbackOrder));
+        if (field.has("defaultValue") && !field.isNull("defaultValue")) {
+            values.put("defaultValue", String.valueOf(field.get("defaultValue")));
+        }
+        values.put("incrementValue", field.optDouble("increment", 1));
+        values.put("unit", field.optString("unit", ""));
+        values.put("inputSize", field.optString("inputSize", "standard"));
+        values.put("required", field.optBoolean("required", false) ? 1 : 0);
+        values.put("prefillFromPrevious", field.optBoolean("prefillFromPrevious", false) ? 1 : 0);
+        return values;
+    }
 }
+

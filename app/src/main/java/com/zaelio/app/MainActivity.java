@@ -1,61 +1,28 @@
 package com.zaelio.app;
 
 import android.app.Activity;
-import android.content.ClipData;
-import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
-import android.graphics.Typeface;
-import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.RippleDrawable;
-import android.content.res.ColorStateList;
 import android.net.Uri;
-import android.text.TextUtils;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.InputType;
-import android.view.Gravity;
 import android.view.View;
-import android.view.ViewParent;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.CheckBox;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.PopupMenu;
-import android.widget.ScrollView;
-import android.widget.TextView;
 import android.widget.Toast;
+
+import com.zaelio.app.theme.ThemeStore;
+import com.zaelio.app.ui.AppUi;
+import com.zaelio.app.ui.SettingsUi;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import com.zaelio.app.theme.ThemeStore;
-import com.zaelio.app.HomeUi;
-import com.zaelio.app.ui.AppUi;
-import com.zaelio.app.ui.SettingsUi;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class MainActivity extends Activity {
     private static final int REQUEST_IMPORT_JSON = 10;
@@ -162,10 +129,7 @@ public class MainActivity extends Activity {
     private void showOverflowMenu(View anchor) {
         LinearLayout card = ui.contentCard();
         card.setPadding(ui.px(20), ui.px(18), ui.px(20), ui.px(16));
-
-        TextView title = ui.tv("Menü", 20);
-        title.setPadding(0, 0, 0, ui.px(12));
-        card.addView(title);
+        ui.addDialogTitle(card, "Menü");
 
         final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
         card.addView(menuButton("Einstellungen", () -> {
@@ -181,12 +145,7 @@ public class MainActivity extends Activity {
             showAboutScreen();
         }));
 
-        dialog[0] = new MaterialAlertDialogBuilder(this)
-                .setView(card)
-                .show();
-        if (dialog[0].getWindow() != null) {
-            dialog[0].getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        }
+        dialog[0] = ui.showCardDialog(card);
     }
 
     private View menuButton(String text, Runnable onClick) {
@@ -200,18 +159,10 @@ public class MainActivity extends Activity {
 
     private void showDataTransferScreen() {
         base();
-        root.addView(ui.appBar("Daten ex/importieren", true, this::refreshHome, false, null));
-
-        ScrollView scroll = new ScrollView(this);
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(104));
-        scroll.addView(box);
-
+        LinearLayout box = ui.screenBody(root, "Daten ex/importieren", this::refreshHome);
         box.addView(transferCard("Alles", 0));
         box.addView(transferCard("Tracker", 1));
         box.addView(transferCard("Sessions", 2));
-        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
     }
 
     private View transferCard(String title, int mode) {

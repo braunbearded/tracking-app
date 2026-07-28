@@ -42,20 +42,9 @@ final class BackupJsonRepository {
             JSONArray fields = new JSONArray();
             for (Item item : tracker.items) {
                 for (FieldDefinition field : item.fields) {
-                    JSONObject fieldJson = new JSONObject();
-                    fieldJson.put("id", field.id);
+                    JSONObject fieldJson = JsonUtil.fieldToJson(field);
                     fieldJson.put("itemTitle", item.title == null ? "" : item.title);
                     fieldJson.put("itemOrder", item.order);
-                    fieldJson.put("key", field.key);
-                    fieldJson.put("label", field.label);
-                    fieldJson.put("type", field.type);
-                    fieldJson.put("order", field.order);
-                    fieldJson.put("defaultValue", field.defaultValue == null ? JSONObject.NULL : field.defaultValue);
-                    fieldJson.put("increment", field.increment);
-                    fieldJson.put("unit", field.unit == null ? "" : field.unit);
-                    fieldJson.put("inputSize", field.inputSize == null ? "standard" : field.inputSize);
-                    fieldJson.put("required", field.required);
-                    fieldJson.put("prefillFromPrevious", field.prefillFromPrevious);
                     fields.put(fieldJson);
                 }
             }
@@ -133,23 +122,7 @@ final class BackupJsonRepository {
                 }
                 for (int j = 0; j < fields.length(); j++) {
                     JSONObject field = fields.getJSONObject(j);
-                    ContentValues values = new ContentValues();
-                    values.put("trackerId", newTrackerId);
-                    values.put("itemTitle", field.optString("itemTitle", field.optString("label", field.optString("key", ""))));
-                    values.put("itemOrder", field.optInt("itemOrder", j));
-                    values.put("fieldKey", field.getString("key"));
-                    values.put("label", field.optString("label", field.getString("key")));
-                    values.put("type", field.optString("type", "string"));
-                    values.put("sortOrder", field.optInt("order", j));
-                    if (field.has("defaultValue") && !field.isNull("defaultValue")) {
-                        values.put("defaultValue", String.valueOf(field.get("defaultValue")));
-                    }
-                    values.put("incrementValue", field.optDouble("increment", 1));
-                    values.put("unit", field.optString("unit", ""));
-                    values.put("inputSize", field.optString("inputSize", "standard"));
-                    values.put("required", field.optBoolean("required", false) ? 1 : 0);
-                    values.put("prefillFromPrevious", field.optBoolean("prefillFromPrevious", false) ? 1 : 0);
-                    long newFieldId = db.insert("fields", null, values);
+                    long newFieldId = db.insert("fields", null, JsonUtil.fieldValuesFromJson(field, newTrackerId, j));
                     fieldIds.put(field.optLong("id", newFieldId), newFieldId);
                 }
             }

@@ -2,9 +2,6 @@ package com.zaelio.app;
 
 import android.app.Activity;
 import android.content.ClipData;
-import android.content.Context;
-import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -18,7 +15,6 @@ import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewParent;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -55,6 +51,7 @@ public final class TrackerFlowUi {
     private final Runnable backToSessions;
     private final Runnable backToTrackers;
     private final Map<String, Long> timers = new HashMap<>();
+    private final FieldInputUi fieldInputUi;
     private LinearLayout root;
     private View dropIndicator;
 
@@ -67,6 +64,7 @@ public final class TrackerFlowUi {
         this.handler = handler;
         this.backToSessions = backToSessions;
         this.backToTrackers = backToTrackers;
+        this.fieldInputUi = new FieldInputUi(activity, theme, ui, handler, timers);
     }
 
     public void clearTimers() {
@@ -281,7 +279,7 @@ public final class TrackerFlowUi {
             ui.addSectionHeader(card, null, item.title, null);
 
             for (FieldDefinition field : item.fields) {
-                fieldControl(card, field, values, inputs, false, () -> saveSessionItem(session, item, inputs));
+                fieldInputUi.fieldControl(card, field, values, inputs, false, () -> saveSessionItem(session, item, inputs));
             }
 
             box.addView(card, cardLp);
@@ -330,195 +328,6 @@ public final class TrackerFlowUi {
         } catch (Exception ignored) {
         }
         return value;
-    }
-
-    private void fieldControl(
-            LinearLayout box,
-            FieldDefinition field,
-            Map<String, Object> values,
-            Map<String, View> inputs,
-            boolean readOnly,
-            Runnable onChange) {
-        LinearLayout fieldBox = new LinearLayout(activity);
-        fieldBox.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams fieldBoxLp = new LinearLayout.LayoutParams(-1, -2);
-        fieldBoxLp.bottomMargin = ui.px(18);
-        box.addView(fieldBox, fieldBoxLp);
-
-        TextView label = new TextView(activity);
-        label.setText(field.label + (field.unit == null || field.unit.isEmpty() ? "" : " (" + field.unit + ")"));
-        label.setTextSize(ui.sp(15));
-        label.setTextColor(theme.primaryTextColor());
-        label.setTypeface(Typeface.DEFAULT_BOLD);
-        label.setPadding(0, 0, 0, ui.px(8));
-        fieldBox.addView(label);
-
-        Object value = values.get(field.key);
-        if ("string".equals(field.type)) {
-            EditText editText = new EditText(activity);
-            editText.setText(value == null ? "" : String.valueOf(value));
-            editText.setTextColor(theme.primaryTextColor());
-            editText.setHintTextColor(theme.mutedTextColor());
-            editText.setSingleLine(false);
-            editText.setMinLines(stringMinLines(field));
-            editText.setMaxLines(stringMaxLines(field));
-            editText.setGravity(Gravity.TOP | Gravity.START);
-            editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-            editText.setMinHeight(ui.px(48));
-            editText.setPadding(ui.px(12), ui.px(10), ui.px(12), ui.px(10));
-            editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
-            editText.setEnabled(!readOnly);
-            if (!readOnly) {
-                watchTextChange(editText, onChange);
-            }
-            fieldBox.addView(editText, new LinearLayout.LayoutParams(-1, -2));
-            inputs.put(field.key, editText);
-            return;
-        }
-
-        if ("duration".equals(field.type)) {
-            TextView display = new TextView(activity);
-            display.setText(formatMs(toLong(value)));
-            display.setTextSize(ui.sp(24));
-            display.setTextColor(theme.primaryTextColor());
-            display.setGravity(Gravity.CENTER);
-            display.setTag(toLong(value));
-            int timerHeight = numericHeight(field);
-            fieldBox.addView(display, new LinearLayout.LayoutParams(-1, timerHeight));
-
-            LinearLayout row = new LinearLayout(activity);
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setGravity(Gravity.CENTER_VERTICAL);
-            Button toggle = timers.containsKey(field.key) ? ui.dangerButton("Stop") : ui.primaryButton("Start");
-            Button reset = ui.ghostButton("Reset");
-            LinearLayout.LayoutParams toggleLp = new LinearLayout.LayoutParams(0, timerHeight, 2f);
-            toggleLp.rightMargin = ui.px(8);
-            row.addView(toggle, toggleLp);
-            row.addView(reset, new LinearLayout.LayoutParams(0, timerHeight, 1f));
-            fieldBox.addView(row);
-
-            toggle.setEnabled(!readOnly);
-            reset.setEnabled(!readOnly);
-
-            toggle.setOnClickListener(v -> {
-                if (timers.containsKey(field.key)) {
-                    timers.remove(field.key);
-                    styleTimerToggle(toggle, false);
-                } else {
-                    long current = (Long) display.getTag();
-                    timers.put(field.key, System.currentTimeMillis() - current);
-                    styleTimerToggle(toggle, true);
-                    tick(display, field.key, onChange);
-                }
-                onChange.run();
-            });
-            reset.setOnClickListener(v -> {
-                timers.remove(field.key);
-                styleTimerToggle(toggle, false);
-                display.setTag(0L);
-                display.setText(formatMs(0));
-                onChange.run();
-            });
-
-            inputs.put(field.key, display);
-            return;
-        }
-
-        LinearLayout row = new LinearLayout(activity);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        Button minus = ui.secondaryButton("−");
-        Button plus = ui.primaryButton("+");
-        EditText editText = new EditText(activity);
-        editText.setText(value == null ? "" : String.valueOf(value));
-        editText.setInputType("int".equals(field.type)
-                ? InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED
-                : InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
-        editText.setTextColor(theme.primaryTextColor());
-        editText.setHintTextColor(theme.mutedTextColor());
-        editText.setGravity(Gravity.CENTER);
-        editText.setTextSize(ui.sp(14));
-        editText.setMinHeight(ui.px(48));
-        editText.setPadding(ui.px(12), 0, ui.px(12), 0);
-        editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
-        editText.setEnabled(!readOnly);
-        minus.setEnabled(!readOnly);
-        plus.setEnabled(!readOnly);
-
-        View.OnClickListener adjust = v -> {
-            hideKeyboard(editText);
-            double current = parseDoubleSafe(editText.getText().toString(), 0);
-            current += v == plus ? field.increment : -field.increment;
-            editText.setText("int".equals(field.type)
-                    ? String.valueOf(Math.round(current))
-                    : String.format(Locale.US, "%." + field.decimals + "f", current));
-            onChange.run();
-        };
-        minus.setOnClickListener(adjust);
-        plus.setOnClickListener(adjust);
-        if (!readOnly) {
-            watchTextChange(editText, onChange);
-        }
-
-        int inputHeight = numericHeight(field);
-        LinearLayout.LayoutParams minusLp = new LinearLayout.LayoutParams(0, inputHeight, 1f);
-        minusLp.rightMargin = ui.px(8);
-        LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(numericValueWidth(field), inputHeight);
-        editLp.rightMargin = ui.px(8);
-        row.addView(minus, minusLp);
-        row.addView(editText, editLp);
-        row.addView(plus, new LinearLayout.LayoutParams(0, inputHeight, 1f));
-        fieldBox.addView(row);
-        inputs.put(field.key, editText);
-    }
-
-    private void styleTimerToggle(Button button, boolean running) {
-        button.setText(running ? "Stop" : "Start");
-        button.setTextColor(running ? 0xffb42318 : Color.WHITE);
-        button.setBackgroundTintList(ColorStateList.valueOf(running ? theme.cautionFillColor() : theme.accentColor()));
-    }
-
-    private int stringMinLines(FieldDefinition field) {
-        String size = theme.fieldSize();
-        return "large".equals(size) ? 3 : "compact".equals(size) ? 1 : 2;
-    }
-
-    private int stringMaxLines(FieldDefinition field) {
-        String size = theme.fieldSize();
-        return "large".equals(size) ? 10 : "compact".equals(size) ? 3 : 6;
-    }
-
-    private int numericHeight(FieldDefinition field) {
-        String size = theme.fieldSize();
-        return ui.px("large".equals(size) ? 64 : "compact".equals(size) ? 48 : 56);
-    }
-
-    private int numericValueWidth(FieldDefinition field) {
-        String size = theme.fieldSize();
-        return ui.px("large".equals(size) ? 112 : "compact".equals(size) ? 72 : 88);
-    }
-
-    private void tick(TextView display, String key, Runnable onChange) {
-        Long startedAt = timers.get(key);
-        if (startedAt == null) {
-            return;
-        }
-
-        long elapsed = System.currentTimeMillis() - startedAt;
-        display.setTag(elapsed);
-        display.setText(formatMs(elapsed));
-        if (onChange != null) {
-            onChange.run();
-        }
-        handler.postDelayed(() -> tick(display, key, onChange), 500);
-    }
-
-    private void hideKeyboard(View view) {
-        InputMethodManager inputMethodManager = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (inputMethodManager != null) {
-            inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
-        }
-        view.clearFocus();
     }
 
     private Map<String, Object> readInputs(Item item, Map<String, View> inputs) {

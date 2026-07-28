@@ -10,7 +10,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import com.zaelio.app.theme.ThemeStore;
 import com.zaelio.app.ui.AppUi;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public final class HomeUi {
     private final Activity activity;
@@ -216,16 +215,8 @@ public final class HomeUi {
         LinearLayout card = ui.contentCard();
         card.setPadding(ui.px(20), ui.px(18), ui.px(20), ui.px(16));
 
-        TextView titleView = ui.tv(title, 20);
-        titleView.setPadding(0, 0, 0, ui.px(8));
-        card.addView(titleView);
-
-        TextView messageView = new TextView(activity);
-        messageView.setText(message);
-        messageView.setTextSize(ui.sp(14));
-        messageView.setTextColor(theme.secondaryTextColor());
-        messageView.setPadding(0, 0, 0, ui.px(18));
-        card.addView(messageView);
+        ui.addDialogTitle(card, title);
+        ui.addDialogMessage(card, message);
 
         LinearLayout buttons = new LinearLayout(activity);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
@@ -238,12 +229,7 @@ public final class HomeUi {
         card.addView(buttons);
 
         final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
-        dialog[0] = new MaterialAlertDialogBuilder(activity)
-                .setView(card)
-                .show();
-        if (dialog[0].getWindow() != null) {
-            dialog[0].getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-        }
+        dialog[0] = ui.showCardDialog(card);
         cancel.setOnClickListener(v -> dialog[0].dismiss());
         delete.setOnClickListener(v -> {
             dialog[0].dismiss();

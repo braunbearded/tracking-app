@@ -14,11 +14,13 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.zaelio.app.R;
 import com.zaelio.app.theme.ThemeStore;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public final class AppUi {
     private static final int CORNER_RADIUS_DP = 6;
@@ -245,6 +247,43 @@ public final class AppUi {
 
     public LinearLayout contentCard() {
         return settingsCard();
+    }
+
+    public LinearLayout screenBody(LinearLayout root, String title, Runnable onBack) {
+        root.addView(appBar(title, true, onBack, false, null));
+        ScrollView scrollView = new ScrollView(activity);
+        scrollView.setFillViewport(true);
+        LinearLayout body = new LinearLayout(activity);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(px(16), px(16), px(16), px(104));
+        scrollView.addView(body);
+        root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
+        return body;
+    }
+
+    public androidx.appcompat.app.AlertDialog showCardDialog(View content) {
+        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(activity)
+                .setView(content)
+                .show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+        return dialog;
+    }
+
+    public void addDialogTitle(LinearLayout card, String text) {
+        TextView title = tv(text, 20);
+        title.setPadding(0, 0, 0, px(12));
+        card.addView(title);
+    }
+
+    public void addDialogMessage(LinearLayout card, String text) {
+        TextView message = new TextView(activity);
+        message.setText(text);
+        message.setTextSize(sp(14));
+        message.setTextColor(theme.secondaryTextColor());
+        message.setPadding(0, 0, 0, px(18));
+        card.addView(message);
     }
 
     public void addSectionHeader(LinearLayout container, String eyebrowText, String titleText, String subtitleText) {
