@@ -9,12 +9,12 @@ This is a single-module Android app without Google Play Services.
 - `theme/ThemeStore.java` stores theme mode, accent color, font scale, and derived palette values.
 - `ui/AppUi.java` builds shared Material-style widgets.
 - `ui/SettingsUi.java` renders the settings and About screens.
-- `HomeUi.java` renders the session and tracker overviews.
+- `HomeUi.java` renders the session and tracker overviews, including long-press/left-swipe delete gestures.
 - `TrackerFlowUi.java` owns the tracker editor, session flow, and tracker selection.
 - `FieldInputUi.java` renders session field controls, including timers, numeric controls, and multiline text.
 - `TrackerJsonRepository.java`, `BackupJsonRepository.java`, `JsonUtil.java`, and `Models.java` cover JSON persistence, backup import/export, and model classes.
 - `app/src/main/res/` contains resources and styles.
-- `app/src/main/AndroidManifest.xml` defines the entry point.
+- `app/src/main/AndroidManifest.xml` defines the entry point and the `VIBRATE` permission used for delete-selection feedback.
 
 ## Build, Test, and Development Commands
 Use the Gradle wrapper from the repository root.
@@ -23,6 +23,8 @@ Use the Gradle wrapper from the repository root.
 - `./gradlew testDebugUnitTest` runs local JVM/Robolectric tests.
 - `./gradlew assembleRelease` builds a release APK if signing is configured.
 - `./gradlew clean` removes build outputs.
+
+Keep the standard Gradle wrapper files committed: `gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar`, and `gradle/wrapper/gradle-wrapper.properties`.
 
 The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
@@ -43,7 +45,7 @@ Keep UI changes consistent with the current Material 3 direction:
 - footer touch areas should stay rectangular and extend to the edges
 - settings, data transfer, and about screens should remain compact and scrollable on small screens
 - shared screen/dialog helpers belong in `ui/AppUi.java`; screen-specific settings logic belongs in `ui/SettingsUi.java`
-- overview lists belong in `HomeUi.java`; keep `MainActivity.java` focused on routing and lifecycle
+- overview lists and their delete gestures belong in `HomeUi.java`; keep `MainActivity.java` focused on routing and lifecycle
 - tracker editing and session routing belong in `TrackerFlowUi.java`; individual session input widgets belong in `FieldInputUi.java`
 
 ## Testing Guidelines
@@ -73,6 +75,7 @@ Before changing persistence or editor flows, check these areas carefully:
 - Editing a tracker through `TrackerJsonRepository.updateTracker()` currently rebuilds fields and can delete existing `field_records`; avoid accidental session data loss.
 - The app builds its UI programmatically. Keep shared widgets in `ui/AppUi.java` and avoid duplicating style logic in screen classes.
 - Timer state in `TrackerFlowUi` is in-memory and should be cleared on screen exit or activity destruction.
+- Delete candidate feedback in overview lists should stay clear even when the accent color is red; keep the non-color cue (strikethrough/scale/alpha) alongside vibration.
 
 ## Security & Configuration Tips
 Do not commit `local.properties`, keystores, or other machine-specific Android SDK settings. The project is intended to stay Android-only, with SQLite storage and no hidden Google service dependency.

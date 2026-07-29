@@ -6,6 +6,7 @@ Eine kleine Android-App zum Erstellen eigener Tracker, Starten von Sessions und 
 
 - Eigene Tracker mit Feldern und Items erstellen
 - Sessions erfassen und fortsetzen
+- Listen-Einträge per Long-Press oder Links-Swipe zum Löschen markieren, inklusive Vibration und visueller Hervorhebung
 - Werte lokal in SQLite speichern
 - Tracker, Sessions oder komplette Backups als JSON importieren/exportieren
 - Helles/dunkles Design, Schriftgröße, Akzentfarbe und globale Feldgröße einstellbar
@@ -26,16 +27,17 @@ Zum Bauen brauchst du lokal:
 
 Projektabhängigkeiten:
 
-- Android Gradle Plugin `8.13.1`
+- Android Gradle Plugin `9.3.1`
 - Gradle `9.5.1`
-- Material Components `com.google.android.material:material:1.12.0`
+- Material Components `com.google.android.material:material:1.14.0`
 
 Test-Abhängigkeiten:
 
 - JUnit `4.13.2`
-- AndroidX Test Core `1.6.1`
-- Robolectric `4.13`
-- org.json `20240303`
+- AndroidX Test Core `1.7.0`
+- Robolectric `4.16.1`
+- ASM `9.10.1` für Robolectric auf modernen JDKs
+- org.json `20260719`
 
 Das Projekt nutzt absichtlich keine Google Play Services und kein Firebase.
 
@@ -140,5 +142,6 @@ Zusätzlicher Build-Check:
 ## 📝 Hinweise
 
 - App-Daten bleiben lokal auf dem Gerät.
+- Die App nutzt `android.permission.VIBRATE` nur für kurzes Feedback beim Markieren eines Löschkandidaten.
 - `local.properties`, Keystores und Passwörter nicht committen.
 - Für F-Droid/OSS-Builds nur freie Abhängigkeiten verwenden.

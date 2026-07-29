@@ -22,6 +22,7 @@ local.properties
 # Generated / temporary files
 *.class
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.keystore
 *.jks
 *.hprof

@@ -1,8 +1,17 @@
 package com.zaelio.app;
 
 import android.app.Activity;
+import android.content.Context;
+import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -11,6 +20,7 @@ import android.widget.TextView;
 import com.zaelio.app.theme.ThemeStore;
 import com.zaelio.app.ui.AppUi;
 
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 public final class HomeUi {
@@ -66,7 +76,7 @@ public final class HomeUi {
                 }
                 openSession.accept(session.id);
             });
-            attachDeleteGestures(card, () -> confirmDeleteSession(session), skipClick);
+            attachDeleteGestures(card, restore -> confirmDeleteSession(session, restore), skipClick);
             box.addView(card, cardLayoutParams());
         }
 
@@ -102,7 +112,7 @@ public final class HomeUi {
                 }
                 editTracker.accept(tracker.id);
             });
-            attachDeleteGestures(card, () -> confirmDeleteTracker(tracker), skipClick);
+            attachDeleteGestures(card, restore -> confirmDeleteTracker(tracker, restore), skipClick);
             box.addView(card, cardLayoutParams());
         }
 
@@ -162,13 +172,13 @@ public final class HomeUi {
         return empty;
     }
 
-    private void attachDeleteGestures(View card, Runnable deleteAction, boolean[] skipClick) {
+    private void attachDeleteGestures(View card, Consumer<Runnable> deleteAction, boolean[] skipClick) {
         final float[] downX = new float[1];
         final boolean[] dragging = new boolean[1];
         final boolean[] deleteStarted = new boolean[1];
         card.setOnLongClickListener(v -> {
             deleteStarted[0] = true;
-            deleteAction.run();
+            deleteAction.accept(markDeleteCandidate(card));
             return true;
         });
         card.setOnTouchListener((v, event) -> {
@@ -189,7 +199,7 @@ public final class HomeUi {
                     skipClick[0] = true;
                     if (!deleteStarted[0] && dx < -ui.px(80)) {
                         deleteStarted[0] = true;
-                        deleteAction.run();
+                        deleteAction.accept(markDeleteCandidate(card));
                     }
                     return true;
                 }
@@ -198,22 +208,67 @@ public final class HomeUi {
         });
     }
 
-    private void confirmDeleteSession(Session session) {
+    private Runnable markDeleteCandidate(View card) {
+        Drawable background = card.getBackground();
+        vibrate(card);
+        setStrikeThrough(card, true);
+        card.setBackground(ui.makeRoundedCard(theme.cautionFillColor(), theme.cautionStrokeColor()));
+        card.animate().scaleX(0.98f).scaleY(0.98f).alpha(0.9f).setDuration(80).start();
+        return () -> {
+            setStrikeThrough(card, false);
+            card.setBackground(background);
+            card.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(80).start();
+        };
+    }
+
+    private void vibrate(View view) {
+        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+        Vibrator vibrator;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            VibratorManager manager = (VibratorManager) activity.getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
+            vibrator = manager == null ? null : manager.getDefaultVibrator();
+        } else {
+            vibrator = (Vibrator) activity.getSystemService(Context.VIBRATOR_SERVICE);
+        }
+        if (vibrator == null || !vibrator.hasVibrator()) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(60, 180));
+        } else {
+            vibrator.vibrate(60);
+        }
+    }
+
+    private void setStrikeThrough(View view, boolean enabled) {
+        if (view instanceof TextView) {
+            TextView textView = (TextView) view;
+            int flag = Paint.STRIKE_THRU_TEXT_FLAG;
+            textView.setPaintFlags(enabled ? textView.getPaintFlags() | flag : textView.getPaintFlags() & ~flag);
+        } else if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                setStrikeThrough(group.getChildAt(i), enabled);
+            }
+        }
+    }
+
+    private void confirmDeleteSession(Session session, Runnable restore) {
         showDeleteDialog("Session löschen", "Diese Session wirklich löschen?", () -> {
             db.deleteSession(session.id);
             refresh.run();
-        });
+        }, restore);
     }
 
-    private void confirmDeleteTracker(Tracker tracker) {
+    private void confirmDeleteTracker(Tracker tracker, Runnable restore) {
         String name = tracker.name == null || tracker.name.trim().isEmpty() ? "Diesen Tracker" : tracker.name;
         showDeleteDialog("Tracker löschen", name + " wirklich löschen?", () -> {
             db.deleteTracker(tracker.id);
             refresh.run();
-        });
+        }, restore);
     }
 
-    private void showDeleteDialog(String title, String message, Runnable onDelete) {
+    private void showDeleteDialog(String title, String message, Runnable onDelete, Runnable onDismiss) {
         LinearLayout card = ui.contentCard();
         card.setPadding(ui.px(20), ui.px(18), ui.px(20), ui.px(16));
 
@@ -232,6 +287,7 @@ public final class HomeUi {
 
         final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
         dialog[0] = ui.showCardDialog(card);
+        dialog[0].setOnDismissListener(d -> onDismiss.run());
         cancel.setOnClickListener(v -> dialog[0].dismiss());
         delete.setOnClickListener(v -> {
             dialog[0].dismiss();
