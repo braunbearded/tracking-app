@@ -309,16 +309,9 @@ public final class TrackerFlowUi {
             Map<String, View> inputs = new HashMap<>();
             inputsByItem.put(item.id, inputs);
 
-            LinearLayout card = ui.contentCard();
+            LinearLayout card = sessionItemCard(session, item, values, inputs);
             LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
             cardLp.bottomMargin = ui.spaceXl();
-
-            ui.addSectionHeader(card, item.title, null);
-
-            for (FieldDefinition field : item.fields) {
-                fieldInputUi.fieldControl(card, field, values, inputs, false, () -> saveSessionItem(session, item, inputs));
-            }
-
             box.addView(card, cardLp);
         }
 
@@ -330,6 +323,49 @@ public final class TrackerFlowUi {
         setBackAction.accept(back);
         root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
         root.addView(footerButton("Zurück", back));
+    }
+
+    private LinearLayout sessionItemCard(Session session, Item item, Map<String, Object> values, Map<String, View> inputs) {
+        LinearLayout card = ui.contentCard();
+        card.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
+
+        LinearLayout title = new LinearLayout(activity);
+        title.setOrientation(LinearLayout.VERTICAL);
+        TextView titleView = new TextView(activity);
+        titleView.setText(item.title);
+        titleView.setTextSize(ui.sp(16));
+        titleView.setTypeface(Typeface.DEFAULT_BOLD);
+        titleView.setTextColor(theme.primaryTextColor());
+        title.addView(titleView);
+
+        TextView meta = new TextView(activity);
+        meta.setText(item.fields.size() == 1 ? "1 Feld" : item.fields.size() + " Felder");
+        meta.setTextSize(ui.sp(13));
+        meta.setTextColor(theme.secondaryTextColor());
+        title.addView(meta);
+
+        ImageView expand = expandAction();
+        LinearLayout fields = new LinearLayout(activity);
+        fields.setOrientation(LinearLayout.VERTICAL);
+        fields.setPadding(0, ui.spaceM(), 0, 0);
+
+        View.OnClickListener toggle = v -> {
+            boolean expanded = fields.getVisibility() == View.VISIBLE;
+            fields.setVisibility(expanded ? View.GONE : View.VISIBLE);
+            expand.setRotation(expanded ? 0f : 180f);
+        };
+        LinearLayout header = ui.listRow(null, title, expand);
+        header.setOnClickListener(toggle);
+        title.setOnClickListener(toggle);
+        expand.setOnClickListener(toggle);
+        expand.setRotation(180f);
+        card.addView(header);
+
+        for (FieldDefinition field : item.fields) {
+            fieldInputUi.fieldControl(fields, field, values, inputs, false, () -> saveSessionItem(session, item, inputs));
+        }
+        card.addView(fields);
+        return card;
     }
 
     private Map<String, Object> initialValues(Session session, Item item) {

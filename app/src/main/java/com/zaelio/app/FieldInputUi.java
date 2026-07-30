@@ -19,6 +19,8 @@ import android.widget.TextView;
 
 import com.zaelio.app.theme.ThemeStore;
 import com.zaelio.app.ui.AppUi;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.Locale;
 import java.util.Map;
@@ -47,17 +49,11 @@ final class FieldInputUi {
             Runnable onChange) {
         LinearLayout fieldBox = new LinearLayout(activity);
         fieldBox.setOrientation(LinearLayout.VERTICAL);
+        fieldBox.setPadding(ui.spaceM(), ui.spaceM(), ui.spaceM(), ui.spaceM());
+        fieldBox.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
         LinearLayout.LayoutParams fieldBoxLp = new LinearLayout.LayoutParams(-1, -2);
-        fieldBoxLp.bottomMargin = ui.dialogPaddingY();
+        fieldBoxLp.bottomMargin = ui.spaceM();
         box.addView(fieldBox, fieldBoxLp);
-
-        TextView label = new TextView(activity);
-        label.setText(field.label + (field.unit == null || field.unit.isEmpty() ? "" : " (" + field.unit + ")"));
-        label.setTextSize(ui.sp(15));
-        label.setTextColor(theme.primaryTextColor());
-        label.setTypeface(Typeface.DEFAULT_BOLD);
-        label.setPadding(0, 0, 0, ui.spaceS());
-        fieldBox.addView(label);
 
         Object value = values.get(field.key);
         if ("string".equals(field.type)) {
@@ -78,24 +74,37 @@ final class FieldInputUi {
         editText.setMaxLines(stringMaxLines());
         editText.setGravity(Gravity.TOP | Gravity.START);
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        editText.setPadding(ui.spaceM(), ui.spaceSm(), ui.spaceM(), ui.spaceSm());
+        editText.setTextSize(ui.sp(18));
+        editText.setPadding(ui.spaceM(), ui.spaceM(), ui.spaceM(), ui.spaceM());
         editText.setEnabled(!readOnly);
         if (!readOnly) {
             watchTextChange(editText, onChange);
         }
-        fieldBox.addView(editText, new LinearLayout.LayoutParams(-1, -2));
+        fieldBox.addView(outlinedInput(fieldLabel(field), editText), new LinearLayout.LayoutParams(-1, -2));
         inputs.put(field.key, editText);
     }
 
     private void timerControl(LinearLayout fieldBox, FieldDefinition field, Object value, Map<String, View> inputs, boolean readOnly, Runnable onChange) {
+        TextView label = new TextView(activity);
+        label.setText(fieldLabel(field));
+        label.setTextSize(ui.sp(13));
+        label.setTextColor(theme.secondaryTextColor());
+        label.setTypeface(Typeface.DEFAULT_BOLD);
+        label.setPadding(0, 0, 0, ui.spaceS());
+        fieldBox.addView(label);
+
         TextView display = new TextView(activity);
         display.setText(formatMs(toLong(value)));
-        display.setTextSize(ui.sp(24));
+        display.setTextSize(ui.sp(30));
+        display.setTypeface(Typeface.DEFAULT_BOLD);
         display.setTextColor(theme.primaryTextColor());
         display.setGravity(Gravity.CENTER);
         display.setTag(toLong(value));
+        display.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
         int timerHeight = numericHeight();
-        fieldBox.addView(display, new LinearLayout.LayoutParams(-1, timerHeight));
+        LinearLayout.LayoutParams displayLp = new LinearLayout.LayoutParams(-1, timerHeight);
+        displayLp.bottomMargin = ui.spaceS();
+        fieldBox.addView(display, displayLp);
 
         LinearLayout row = new LinearLayout(activity);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -135,18 +144,14 @@ final class FieldInputUi {
     }
 
     private void numericControl(LinearLayout fieldBox, FieldDefinition field, Object value, Map<String, View> inputs, boolean readOnly, Runnable onChange) {
-        LinearLayout row = new LinearLayout(activity);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
         Button minus = ui.secondaryButton("−");
         Button plus = ui.primaryButton("+");
         EditText editText = styledEditText(value);
         editText.setInputType("int".equals(field.type)
                 ? InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED
                 : InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
-        editText.setGravity(Gravity.CENTER);
-        editText.setTextSize(ui.sp(14));
-        editText.setPadding(ui.spaceM(), 0, ui.spaceM(), 0);
+        editText.setTextSize(ui.sp(18));
+        editText.setPadding(ui.spaceM(), ui.spaceM(), ui.spaceM(), ui.spaceM());
         editText.setEnabled(!readOnly);
         minus.setEnabled(!readOnly);
         plus.setEnabled(!readOnly);
@@ -166,26 +171,44 @@ final class FieldInputUi {
             watchTextChange(editText, onChange);
         }
 
-        int inputHeight = numericHeight();
-        LinearLayout.LayoutParams minusLp = new LinearLayout.LayoutParams(0, inputHeight, 1f);
+        LinearLayout.LayoutParams inputLp = new LinearLayout.LayoutParams(-1, -2);
+        inputLp.bottomMargin = ui.spaceS();
+        fieldBox.addView(outlinedInput(fieldLabel(field), editText), inputLp);
+
+        LinearLayout row = new LinearLayout(activity);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        int buttonHeight = numericHeight();
+        minus.setTextSize(ui.sp(24));
+        plus.setTextSize(ui.sp(24));
+        LinearLayout.LayoutParams minusLp = new LinearLayout.LayoutParams(0, buttonHeight, 1f);
         minusLp.rightMargin = ui.spaceS();
-        LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(numericValueWidth(), inputHeight);
-        editLp.rightMargin = ui.spaceS();
         row.addView(minus, minusLp);
-        row.addView(editText, editLp);
-        row.addView(plus, new LinearLayout.LayoutParams(0, inputHeight, 1f));
+        row.addView(plus, new LinearLayout.LayoutParams(0, buttonHeight, 1f));
         fieldBox.addView(row);
         inputs.put(field.key, editText);
     }
 
     private EditText styledEditText(Object value) {
-        EditText editText = new EditText(activity);
+        EditText editText = new TextInputEditText(activity);
         editText.setText(value == null ? "" : String.valueOf(value));
         editText.setTextColor(theme.primaryTextColor());
         editText.setHintTextColor(theme.mutedTextColor());
         editText.setMinHeight(ui.buttonHeight());
-        editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
+        editText.setBackground(null);
         return editText;
+    }
+
+    private TextInputLayout outlinedInput(String hint, EditText editText) {
+        TextInputLayout layout = new TextInputLayout(activity);
+        layout.setHint(hint);
+        layout.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
+        layout.addView(editText, new LinearLayout.LayoutParams(-1, -2));
+        return layout;
+    }
+
+    private String fieldLabel(FieldDefinition field) {
+        return field.label + (field.unit == null || field.unit.isEmpty() ? "" : " · " + field.unit);
     }
 
     private void styleTimerToggle(Button button, boolean running) {
@@ -238,11 +261,6 @@ final class FieldInputUi {
     private int numericHeight() {
         String size = theme.fieldSize();
         return ui.px("large".equals(size) ? 64 : "compact".equals(size) ? 48 : 56);
-    }
-
-    private int numericValueWidth() {
-        String size = theme.fieldSize();
-        return ui.px("large".equals(size) ? 112 : "compact".equals(size) ? 72 : 88);
     }
 
     private long toLong(Object value) {
