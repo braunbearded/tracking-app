@@ -25,6 +25,10 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 public final class HomeUi {
+    private static final int DELETE_SWIPE_LEFT_DP = 120;
+    private static final int DELETE_SWIPE_RIGHT_DP = 60;
+    private static final int DELETE_SWIPE_TRIGGER_DP = 80;
+
     private final Activity activity;
     private final TrackingDatabase db;
     private final ThemeStore theme;
@@ -216,7 +220,7 @@ public final class HomeUi {
     }
 
     private void attachOverviewReorder(View handle, LinearLayout container, View movedView, Runnable onChange) {
-        ReorderHelper.attach(ui, handle, container, movedView, onChange, null);
+        ReorderHelper.attach(ui, handle, container, movedView, onChange);
     }
 
     private java.util.List<Long> childIds(LinearLayout container) {
@@ -249,13 +253,13 @@ public final class HomeUi {
                 if (Math.abs(dx) > ui.spaceS()) {
                     dragging[0] = true;
                     card.getParent().requestDisallowInterceptTouchEvent(true);
-                    card.setTranslationX(Math.max(-ui.deleteSwipeLeft(), Math.min(ui.deleteSwipeRight(), dx)));
+                    card.setTranslationX(Math.max(-ui.px(DELETE_SWIPE_LEFT_DP), Math.min(ui.px(DELETE_SWIPE_RIGHT_DP), dx)));
                 }
             } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
                 card.animate().translationX(0).setDuration(120).start();
                 if (dragging[0]) {
                     skipClick[0] = true;
-                    if (!deleteStarted[0] && dx < -ui.deleteSwipeTrigger()) {
+                    if (!deleteStarted[0] && dx < -ui.px(DELETE_SWIPE_TRIGGER_DP)) {
                         deleteStarted[0] = true;
                         deleteAction.accept(markDeleteCandidate(card));
                     }
@@ -358,8 +362,7 @@ public final class HomeUi {
     private String formatValue(FieldDefinition field, Object value) {
         if ("duration".equals(field.type)) {
             long millis = value instanceof Number ? ((Number) value).longValue() : parseLong(value);
-            long seconds = millis / 1000;
-            return String.format(java.util.Locale.US, "%02d:%02d:%02d", seconds / 3600, (seconds / 60) % 60, seconds % 60);
+            return FormatUtil.formatMs(millis);
         }
         if ("float".equals(field.type) && value instanceof Number) {
             return String.format(java.util.Locale.US, "%." + field.decimals + "f", ((Number) value).doubleValue())

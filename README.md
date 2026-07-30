@@ -5,7 +5,7 @@ Eine kleine Android-App zum Erstellen eigener Tracker, Starten von Sessions und 
 ## ✨ Features
 
 - Eigene Tracker mit Feldern und Items erstellen; neue Elemente scrollen im Editor automatisch in den sichtbaren Bereich
-- Sessions erfassen und fortsetzen, mit aufklappbaren Item-Karten, großen Plus/Minus-Buttons und Material-Textfeldern
+- Sessions erfassen und fortsetzen, mit aufklappbaren Item-Karten, großen Plus/Minus-Buttons und Material-Feldern für Text, Zahlen und Timer
 - Listen-Einträge per Long-Press, Links-Swipe oder `...`-Menü löschen
 - Sessions und Tracker per Drag-Handle in der Übersicht sortieren
 - Android-Zurück navigiert sinnvoll; auf Home beendet erst ein schneller Doppel-Zurück-Druck die App
@@ -111,6 +111,7 @@ app/src/main/java/com/zaelio/app/
 ├── TrackerJsonRepository.java     # JSON Import/Export und Tracker-Speicherung
 ├── BackupJsonRepository.java      # JSON Backup für Tracker, Sessions und Werte
 ├── JsonUtil.java                  # JSON-Helfer
+├── FormatUtil.java                # Gemeinsame Formatierung
 ├── Models.java                    # Datenmodelle
 ├── HomeUi.java                    # Session-/Tracker-Übersicht
 ├── ReorderHelper.java             # Gemeinsames Drag-Reorder-Verhalten

@@ -15,6 +15,10 @@ final class ReorderHelper {
     private ReorderHelper() {
     }
 
+    static void attach(AppUi ui, View handle, LinearLayout container, View movedView, Runnable onChange) {
+        attach(ui, handle, container, movedView, onChange, null);
+    }
+
     static void attach(AppUi ui, View handle, LinearLayout container, View movedView, Runnable onChange, IntConsumer afterSwap) {
         final float[] startY = new float[1];
         final float[] consumedY = new float[1];

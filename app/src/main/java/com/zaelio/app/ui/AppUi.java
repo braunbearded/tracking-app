@@ -8,9 +8,12 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -21,6 +24,7 @@ import com.zaelio.app.R;
 import com.zaelio.app.theme.ThemeStore;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputLayout;
 
 public final class AppUi {
     private static final int CORNER_RADIUS_DP = 6;
@@ -33,14 +37,9 @@ public final class AppUi {
     private static final int SPACE_DIALOG_Y_DP = 18;
     private static final int SPACE_XL_DP = 20;
     private static final int CHECK_ROW_HEIGHT_DP = 40;
-    private static final int COMPACT_BUTTON_HEIGHT_DP = 44;
     private static final int BUTTON_HEIGHT_DP = 48;
     private static final int ICON_BUTTON_SIZE_DP = 48;
     private static final int ROW_HEIGHT_DP = 56;
-    private static final int CURSOR_HEIGHT_DP = 24;
-    private static final int DELETE_SWIPE_LEFT_DP = 120;
-    private static final int DELETE_SWIPE_RIGHT_DP = 60;
-    private static final int DELETE_SWIPE_TRIGGER_DP = 80;
     private static final int DRAG_HANDLE_WIDTH_DP = 28;
     private static final int LIST_ACTION_WIDTH_DP = 36;
     private static final int BOTTOM_SAFE_PADDING_DP = 104;
@@ -296,6 +295,57 @@ public final class AppUi {
         }
     }
 
+    public void onTextChanged(EditText input, Runnable onChange) {
+        input.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { onChange.run(); }
+            @Override public void afterTextChanged(Editable s) { }
+        });
+    }
+
+    public TextInputLayout outlinedInput(String hint, EditText input) {
+        TextInputLayout layout = new TextInputLayout(activity);
+        layout.setHint(hint);
+        layout.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
+        layout.setBoxBackgroundColor(theme.surfaceColor());
+        layout.setBoxStrokeColorStateList(inputBorderStateList());
+        layout.setBoxStrokeWidth(strokeWidth());
+        layout.setBoxStrokeWidthFocused(focusedStrokeWidth());
+        layout.setHintTextColor(inputHintStateList());
+        layout.setBoxCornerRadii(cornerRadius(), cornerRadius(), cornerRadius(), cornerRadius());
+        input.setHint(null);
+        input.setHintTextColor(inputHintStateList());
+        input.setBackground(null);
+        layout.addView(input, new LinearLayout.LayoutParams(-1, input.getMinLines() > 1 ? -2 : rowHeight()));
+        return layout;
+    }
+
+    private ColorStateList inputHintStateList() {
+        int accent = theme.accentColor();
+        int normal = theme.mutedTextColor();
+        return new ColorStateList(
+                new int[][]{
+                        new int[]{android.R.attr.state_focused},
+                        new int[]{android.R.attr.state_hovered},
+                        new int[]{android.R.attr.state_enabled},
+                        new int[]{}
+                },
+                new int[]{accent, accent, normal, normal});
+    }
+
+    private ColorStateList inputBorderStateList() {
+        int accent = theme.accentColor();
+        int normal = theme.darkMode() ? theme.secondaryTextColor() : theme.borderColor();
+        return new ColorStateList(
+                new int[][]{
+                        new int[]{android.R.attr.state_focused},
+                        new int[]{android.R.attr.state_hovered},
+                        new int[]{android.R.attr.state_enabled},
+                        new int[]{}
+                },
+                new int[]{accent, accent, normal, normal});
+    }
+
     public TextView listIcon(String text) {
         TextView view = new TextView(activity);
         view.setText(text);
@@ -349,7 +399,7 @@ public final class AppUi {
 
     public void confirmDelete(String title, String message, Runnable onDelete, Runnable onDismiss) {
         LinearLayout card = contentCard();
-        card.setPadding(spaceXl(), dialogPaddingY(), spaceXl(), spaceL());
+        card.setPadding(spaceXl(), px(SPACE_DIALOG_Y_DP), spaceXl(), spaceL());
         addDialogTitle(card, title);
         addDialogMessage(card, message);
 
@@ -416,10 +466,6 @@ public final class AppUi {
         return px(SPACE_L_DP);
     }
 
-    public int dialogPaddingY() {
-        return px(SPACE_DIALOG_Y_DP);
-    }
-
     public int spaceXl() {
         return px(SPACE_XL_DP);
     }
@@ -428,28 +474,8 @@ public final class AppUi {
         return px(CHECK_ROW_HEIGHT_DP);
     }
 
-    public int compactButtonHeight() {
-        return px(COMPACT_BUTTON_HEIGHT_DP);
-    }
-
     public int buttonHeight() {
         return px(BUTTON_HEIGHT_DP);
-    }
-
-    public int cursorHeight() {
-        return px(CURSOR_HEIGHT_DP);
-    }
-
-    public int deleteSwipeLeft() {
-        return px(DELETE_SWIPE_LEFT_DP);
-    }
-
-    public int deleteSwipeRight() {
-        return px(DELETE_SWIPE_RIGHT_DP);
-    }
-
-    public int deleteSwipeTrigger() {
-        return px(DELETE_SWIPE_TRIGGER_DP);
     }
 
     public int cornerRadius() {

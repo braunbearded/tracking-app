@@ -207,8 +207,8 @@ public final class SettingsUi {
         Button button = ui.button(theme.accentName(index), fillColor, selected ? android.graphics.Color.WHITE : accent, accent);
         button.setTextSize(ui.sp(12));
         button.setSingleLine(true);
-        button.setMinHeight(ui.compactButtonHeight());
-        button.setMinimumHeight(ui.compactButtonHeight());
+        button.setMinHeight(ui.buttonHeight());
+        button.setMinimumHeight(ui.buttonHeight());
         button.setElevation(selected ? ui.spaceXs() : 0);
         button.setOnClickListener(v -> {
             theme.setAccentIndex(index);

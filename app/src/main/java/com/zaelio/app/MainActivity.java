@@ -151,7 +151,7 @@ public class MainActivity extends Activity {
 
     private void showOverflowMenu(View anchor) {
         LinearLayout card = ui.contentCard();
-        card.setPadding(ui.spaceXl(), ui.dialogPaddingY(), ui.spaceXl(), ui.spaceL());
+        card.setPadding(ui.spaceXl(), ui.spaceL(), ui.spaceXl(), ui.spaceL());
         ui.addDialogTitle(card, "Menü");
 
         final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];

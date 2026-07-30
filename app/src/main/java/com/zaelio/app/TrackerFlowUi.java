@@ -11,9 +11,7 @@ import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.os.Handler;
 import android.text.InputType;
-import android.text.Editable;
 import android.widget.Filter;
-import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.TouchDelegate;
 import android.view.View;
@@ -409,11 +407,11 @@ public final class TrackerFlowUi {
         Map<String, Object> values = new LinkedHashMap<>();
         for (FieldDefinition field : item.fields) {
             View view = inputs.get(field.key);
-            if (view instanceof EditText) {
+            if (view instanceof TextView && view.getTag() instanceof Long) {
+                values.put(field.key, (Long) view.getTag());
+            } else if (view instanceof EditText) {
                 String value = ((EditText) view).getText().toString();
                 values.put(field.key, parse(value, field.type));
-            } else if (view instanceof TextView) {
-                values.put(field.key, (Long) view.getTag());
             }
         }
         return values;
@@ -441,10 +439,6 @@ public final class TrackerFlowUi {
         }
     }
 
-    private String formatMs(long millis) {
-        long seconds = millis / 1000;
-        return String.format(Locale.US, "%02d:%02d:%02d", seconds / 3600, (seconds / 60) % 60, seconds % 60);
-    }
 
     private String summaryText(Map<String, Object> values, Item item) {
         StringBuilder builder = new StringBuilder();
@@ -458,7 +452,7 @@ public final class TrackerFlowUi {
             if (value == null || String.valueOf(value).isEmpty()) {
                 builder.append("—");
             } else if ("duration".equals(field.type)) {
-                builder.append(formatMs(toLong(value)));
+                builder.append(FormatUtil.formatMs(toLong(value)));
             } else if ("float".equals(field.type)) {
                 builder.append(String.format(Locale.US, "%." + field.decimals + "f", toDouble(value)));
             } else {
@@ -491,8 +485,8 @@ public final class TrackerFlowUi {
     }
 
     private void attachTrackerAutosave(TrackerEditorForm form, Runnable scheduleSave) {
-        watchTextChange(form.nameInput, scheduleSave);
-        watchTextChange(form.descriptionInput, scheduleSave);
+        ui.onTextChanged(form.nameInput, scheduleSave);
+        ui.onTextChanged(form.descriptionInput, scheduleSave);
     }
 
     private ItemEditorViews addItemEditor(ScrollView scrollView, LinearLayout container, List<ItemEditorViews> itemEditors, Item item, Runnable scheduleSave) {
@@ -583,7 +577,7 @@ public final class TrackerFlowUi {
             addFieldEditor(scrollView, fieldsContainer, views.fields, null, itemChanged);
         }
 
-        watchTextChange(views.titleInput, itemChanged);
+        ui.onTextChanged(views.titleInput, itemChanged);
         addField.setOnClickListener(v -> {
             FieldEditorViews added = addFieldEditor(scrollView, fieldsContainer, views.fields, null, itemChanged);
             scrollIntoView(scrollView, added.row);
@@ -798,12 +792,12 @@ public final class TrackerFlowUi {
             updateFieldSummary(views);
             scheduleSave.run();
         };
-        watchTextChange(views.keyInput, fieldChanged);
-        watchTextChange(views.labelInput, fieldChanged);
-        watchTextChange(views.defaultValueInput, fieldChanged);
-        watchTextChange(views.unitInput, fieldChanged);
-        watchTextChange(views.incrementInput, fieldChanged);
-        watchTextChange(views.decimalsInput, fieldChanged);
+        ui.onTextChanged(views.keyInput, fieldChanged);
+        ui.onTextChanged(views.labelInput, fieldChanged);
+        ui.onTextChanged(views.defaultValueInput, fieldChanged);
+        ui.onTextChanged(views.unitInput, fieldChanged);
+        ui.onTextChanged(views.incrementInput, fieldChanged);
+        ui.onTextChanged(views.decimalsInput, fieldChanged);
         required.setOnCheckedChangeListener((buttonView, isChecked) -> fieldChanged.run());
         prefill.setOnCheckedChangeListener((buttonView, isChecked) -> fieldChanged.run());
         updateFieldEditorControls(views, selectedType(typeInput));
@@ -1082,32 +1076,20 @@ public final class TrackerFlowUi {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             GradientDrawable cursor = new GradientDrawable();
             cursor.setColor(theme.accentColor());
-            cursor.setSize(ui.focusedStrokeWidth(), ui.cursorHeight());
+            cursor.setSize(ui.focusedStrokeWidth(), ui.px(24));
             input.setTextCursorDrawable(cursor);
         }
     }
 
     private TextInputLayout outlinedInput(String label, EditText input) {
-        TextInputLayout layout = new TextInputLayout(activity);
-        layout.setHint(label);
-        layout.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
-        layout.setBoxBackgroundColor(theme.surfaceColor());
-        layout.setBoxStrokeColor(theme.accentColor());
-        layout.setBoxStrokeColorStateList(inputBorderStateList());
-        layout.setBoxStrokeWidth(ui.strokeWidth());
-        layout.setBoxStrokeWidthFocused(ui.focusedStrokeWidth());
-        layout.setHintTextColor(inputHintStateList());
-        layout.setBoxCornerRadii(ui.cornerRadius(), ui.cornerRadius(), ui.cornerRadius(), ui.cornerRadius());
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = ui.spaceM();
-        layout.setLayoutParams(lp);
-        input.setHint(null);
         input.setHintTextColor(inputHintStateList());
-        input.setBackground(null);
         tintCursor(input);
         boolean multiline = input.getMinLines() > 1;
         input.setPadding(ui.spaceM(), multiline ? ui.spaceM() : 0, ui.spaceM(), multiline ? ui.spaceM() : 0);
-        layout.addView(input, new LinearLayout.LayoutParams(-1, multiline ? -2 : ui.rowHeight()));
+        TextInputLayout layout = ui.outlinedInput(label, input);
+        layout.setLayoutParams(lp);
         return layout;
     }
 
@@ -1124,23 +1106,6 @@ public final class TrackerFlowUi {
         lp.bottomMargin = ui.spaceM();
         input.setLayoutParams(lp);
         return input;
-    }
-
-    private void watchTextChange(EditText input, Runnable onChange) {
-        input.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                onChange.run();
-            }
-        });
     }
 
     private String trackerEditorToJson(TrackerEditorForm form) throws Exception {

@@ -6,9 +6,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Handler;
-import android.text.Editable;
 import android.text.InputType;
-import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -20,7 +18,6 @@ import android.widget.TextView;
 import com.zaelio.app.theme.ThemeStore;
 import com.zaelio.app.ui.AppUi;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.Locale;
 import java.util.Map;
@@ -78,33 +75,24 @@ final class FieldInputUi {
         editText.setPadding(ui.spaceM(), ui.spaceM(), ui.spaceM(), ui.spaceM());
         editText.setEnabled(!readOnly);
         if (!readOnly) {
-            watchTextChange(editText, onChange);
+            ui.onTextChanged(editText, onChange);
         }
-        fieldBox.addView(outlinedInput(fieldLabel(field), editText), new LinearLayout.LayoutParams(-1, -2));
+        fieldBox.addView(ui.outlinedInput(fieldLabel(field), editText), new LinearLayout.LayoutParams(-1, -2));
         inputs.put(field.key, editText);
     }
 
     private void timerControl(LinearLayout fieldBox, FieldDefinition field, Object value, Map<String, View> inputs, boolean readOnly, Runnable onChange) {
-        TextView label = new TextView(activity);
-        label.setText(fieldLabel(field));
-        label.setTextSize(ui.sp(13));
-        label.setTextColor(theme.secondaryTextColor());
-        label.setTypeface(Typeface.DEFAULT_BOLD);
-        label.setPadding(0, 0, 0, ui.spaceS());
-        fieldBox.addView(label);
-
-        TextView display = new TextView(activity);
-        display.setText(formatMs(toLong(value)));
-        display.setTextSize(ui.sp(30));
-        display.setTypeface(Typeface.DEFAULT_BOLD);
-        display.setTextColor(theme.primaryTextColor());
-        display.setGravity(Gravity.CENTER);
+        EditText display = styledEditText(FormatUtil.formatMs(toLong(value)));
+        display.setTextSize(ui.sp(18));
+        display.setPadding(ui.spaceM(), ui.spaceM(), ui.spaceM(), ui.spaceM());
+        display.setFocusable(false);
+        display.setCursorVisible(false);
+        display.setInputType(InputType.TYPE_NULL);
         display.setTag(toLong(value));
-        display.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
         int timerHeight = numericHeight();
-        LinearLayout.LayoutParams displayLp = new LinearLayout.LayoutParams(-1, timerHeight);
+        LinearLayout.LayoutParams displayLp = new LinearLayout.LayoutParams(-1, -2);
         displayLp.bottomMargin = ui.spaceS();
-        fieldBox.addView(display, displayLp);
+        fieldBox.addView(ui.outlinedInput(fieldLabel(field), display), displayLp);
 
         LinearLayout row = new LinearLayout(activity);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -136,7 +124,7 @@ final class FieldInputUi {
             timers.remove(field.key);
             styleTimerToggle(toggle, false);
             display.setTag(0L);
-            display.setText(formatMs(0));
+            display.setText(FormatUtil.formatMs(0));
             onChange.run();
         });
 
@@ -168,12 +156,12 @@ final class FieldInputUi {
         minus.setOnClickListener(adjust);
         plus.setOnClickListener(adjust);
         if (!readOnly) {
-            watchTextChange(editText, onChange);
+            ui.onTextChanged(editText, onChange);
         }
 
         LinearLayout.LayoutParams inputLp = new LinearLayout.LayoutParams(-1, -2);
         inputLp.bottomMargin = ui.spaceS();
-        fieldBox.addView(outlinedInput(fieldLabel(field), editText), inputLp);
+        fieldBox.addView(ui.outlinedInput(fieldLabel(field), editText), inputLp);
 
         LinearLayout row = new LinearLayout(activity);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -199,13 +187,6 @@ final class FieldInputUi {
         return editText;
     }
 
-    private TextInputLayout outlinedInput(String hint, EditText editText) {
-        TextInputLayout layout = new TextInputLayout(activity);
-        layout.setHint(hint);
-        layout.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
-        layout.addView(editText, new LinearLayout.LayoutParams(-1, -2));
-        return layout;
-    }
 
     private String fieldLabel(FieldDefinition field) {
         return field.label + (field.unit == null || field.unit.isEmpty() ? "" : " · " + field.unit);
@@ -225,7 +206,7 @@ final class FieldInputUi {
 
         long elapsed = System.currentTimeMillis() - startedAt;
         display.setTag(elapsed);
-        display.setText(formatMs(elapsed));
+        display.setText(FormatUtil.formatMs(elapsed));
         if (onChange != null) {
             onChange.run();
         }
@@ -240,13 +221,6 @@ final class FieldInputUi {
         view.clearFocus();
     }
 
-    private void watchTextChange(EditText editText, Runnable onChange) {
-        editText.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { onChange.run(); }
-            @Override public void afterTextChanged(Editable s) { }
-        });
-    }
 
     private int stringMinLines() {
         String size = theme.fieldSize();
@@ -282,8 +256,4 @@ final class FieldInputUi {
         }
     }
 
-    private String formatMs(long millis) {
-        long seconds = millis / 1000;
-        return String.format(Locale.US, "%02d:%02d:%02d", seconds / 3600, (seconds / 60) % 60, seconds % 60);
-    }
 }
