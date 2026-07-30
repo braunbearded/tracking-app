@@ -56,15 +56,15 @@ public final class HomeUi {
                 continue;
             }
 
-            LinearLayout card = overviewCard(
+            OverviewCard row = overviewCard(
                     tracker.name,
                     date(session.createdAt),
                     preview(session.id, tracker),
                     () -> openSession.accept(session.id),
                     restore -> confirmDeleteSession(session, restore));
-            card.setTag(session.id);
-            attachOverviewReorder(card.getChildAt(0), box, card, () -> db.reorderSessions(childIds(box)));
-            box.addView(card, cardLayoutParams());
+            row.card.setTag(session.id);
+            attachOverviewReorder(row.handle, box, row.card, () -> db.reorderSessions(childIds(box)));
+            box.addView(row.card, cardLayoutParams());
         }
 
         if (sessions.isEmpty()) {
@@ -80,15 +80,15 @@ public final class HomeUi {
 
         java.util.List<Tracker> trackers = db.trackers();
         for (Tracker tracker : trackers) {
-            LinearLayout card = overviewCard(
+            OverviewCard row = overviewCard(
                     tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name,
                     null,
                     fieldPreview(tracker),
                     () -> editTracker.accept(tracker.id),
                     restore -> confirmDeleteTracker(tracker, restore));
-            card.setTag(tracker.id);
-            attachOverviewReorder(card.getChildAt(0), box, card, () -> db.reorderTrackers(childIds(box)));
-            box.addView(card, cardLayoutParams());
+            row.card.setTag(tracker.id);
+            attachOverviewReorder(row.handle, box, row.card, () -> db.reorderTrackers(childIds(box)));
+            box.addView(row.card, cardLayoutParams());
         }
 
         body.addView(scrollView);
@@ -103,12 +103,12 @@ public final class HomeUi {
     private LinearLayout createListBox(ScrollView scrollView) {
         LinearLayout box = new LinearLayout(activity);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(104));
+        box.setPadding(ui.spaceL(), ui.spaceM(), ui.spaceL(), ui.bottomSafePadding());
         scrollView.addView(box);
         return box;
     }
 
-    private LinearLayout overviewCard(String title, String meta, String previewText, Runnable open, Consumer<Runnable> deleteAction) {
+    private OverviewCard overviewCard(String title, String meta, String previewText, Runnable open, Consumer<Runnable> deleteAction) {
         LinearLayout card = createCard();
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
@@ -123,7 +123,7 @@ public final class HomeUi {
         });
         attachDeleteGestures(card, deleteAction, skipClick);
 
-        card.addView(listIcon("⠿"), new LinearLayout.LayoutParams(ui.px(28), ui.px(56)));
+        TextView handle = ui.listIcon("⠿");
 
         LinearLayout content = new LinearLayout(activity);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -153,36 +153,22 @@ public final class HomeUi {
         preview.setEllipsize(android.text.TextUtils.TruncateAt.END);
         content.addView(preview);
 
-        card.addView(content, new LinearLayout.LayoutParams(0, -2, 1));
-
-        TextView menu = listIcon("...");
+        TextView menu = ui.listIcon("...");
         menu.setOnClickListener(v -> showDeleteMenu(menu, () -> deleteAction.accept(() -> {})));
-        card.addView(menu, new LinearLayout.LayoutParams(ui.px(36), ui.px(56)));
 
-        TextView arrow = listIcon("›");
-        arrow.setTextSize(ui.sp(24));
+        TextView arrow = ui.listIcon("›");
         arrow.setOnClickListener(v -> open.run());
-        card.addView(arrow, new LinearLayout.LayoutParams(ui.px(28), ui.px(56)));
-        return card;
+
+        card.addView(ui.listRow(handle, content, menu, arrow), new LinearLayout.LayoutParams(-1, -2));
+        return new OverviewCard(card, handle);
     }
 
     private LinearLayout createCard() {
         LinearLayout card = new LinearLayout(activity);
-        card.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
+        card.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
         card.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.accentSoftColor()));
-        card.setElevation(ui.px(1));
+        card.setElevation(ui.strokeWidth());
         return card;
-    }
-
-    private TextView listIcon(String text) {
-        TextView view = new TextView(activity);
-        view.setText(text);
-        view.setTextSize(ui.sp(24));
-        view.setTextColor(theme.mutedTextColor());
-        view.setGravity(Gravity.CENTER);
-        view.setClickable(true);
-        view.setFocusable(true);
-        return view;
     }
 
     private void showDeleteMenu(View anchor, Runnable delete) {
@@ -197,18 +183,18 @@ public final class HomeUi {
 
     private LinearLayout.LayoutParams cardLayoutParams() {
         LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
-        cardLp.bottomMargin = ui.px(14);
+        cardLp.bottomMargin = ui.spaceMl();
         return cardLp;
     }
 
     private LinearLayout emptyState(String titleText, String bodyText) {
         LinearLayout empty = new LinearLayout(activity);
         empty.setOrientation(LinearLayout.VERTICAL);
-        empty.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
+        empty.setPadding(ui.spaceL(), ui.spaceL(), ui.spaceL(), ui.spaceL());
         empty.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
 
         TextView emptyTitle = ui.tv(titleText, 18);
-        emptyTitle.setPadding(0, 0, 0, ui.px(4));
+        emptyTitle.setPadding(0, 0, 0, ui.spaceXs());
         empty.addView(emptyTitle);
 
         if (bodyText != null && !bodyText.isEmpty()) {
@@ -220,85 +206,13 @@ public final class HomeUi {
         }
 
         LinearLayout.LayoutParams emptyLp = new LinearLayout.LayoutParams(-1, -2);
-        emptyLp.topMargin = ui.px(4);
+        emptyLp.topMargin = ui.spaceXs();
         empty.setLayoutParams(emptyLp);
         return empty;
     }
 
     private void attachOverviewReorder(View handle, LinearLayout container, View movedView, Runnable onChange) {
-        final float[] startY = new float[1];
-        final float[] consumedY = new float[1];
-        final float[] oldElevation = new float[1];
-        handle.setOnTouchListener((v, event) -> {
-            int action = event.getActionMasked();
-            if (action == MotionEvent.ACTION_DOWN) {
-                container.requestDisallowInterceptTouchEvent(true);
-                startY[0] = event.getRawY();
-                consumedY[0] = 0;
-                oldElevation[0] = movedView.getElevation();
-                movedView.setElevation(oldElevation[0] + ui.px(8));
-                movedView.setAlpha(0.82f);
-                return true;
-            }
-            if (action == MotionEvent.ACTION_MOVE) {
-                float delta = event.getRawY() - startY[0] - consumedY[0];
-                int direction = delta > 0 ? 1 : -1;
-                while (delta != 0) {
-                    int distance = overviewReorderDistance(container, movedView, direction);
-                    if (distance <= 0 || Math.abs(delta) <= distance / 2f) {
-                        break;
-                    }
-                    if (!moveOverviewCard(container, movedView, direction)) {
-                        break;
-                    }
-                    consumedY[0] += direction * distance;
-                    delta = event.getRawY() - startY[0] - consumedY[0];
-                    direction = delta > 0 ? 1 : -1;
-                    onChange.run();
-                }
-                return true;
-            }
-            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                movedView.setElevation(oldElevation[0]);
-                movedView.setAlpha(1f);
-                container.requestDisallowInterceptTouchEvent(false);
-                return true;
-            }
-            return false;
-        });
-    }
-
-    private boolean moveOverviewCard(LinearLayout container, View movedView, int direction) {
-        int fromIndex = container.indexOfChild(movedView);
-        int toIndex = fromIndex + direction;
-        if (fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()) {
-            return false;
-        }
-        View sibling = container.getChildAt(toIndex);
-        int distance = viewHeightWithMargins(sibling);
-        container.removeView(sibling);
-        container.addView(sibling, direction > 0 ? fromIndex : toIndex + 1);
-        sibling.animate().cancel();
-        sibling.setTranslationY(direction > 0 ? distance : -distance);
-        sibling.animate().translationY(0).setDuration(140).start();
-        return true;
-    }
-
-    private int overviewReorderDistance(LinearLayout container, View movedView, int direction) {
-        int fromIndex = container.indexOfChild(movedView);
-        int toIndex = fromIndex + direction;
-        return fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()
-                ? 0
-                : viewHeightWithMargins(container.getChildAt(toIndex));
-    }
-
-    private int viewHeightWithMargins(View view) {
-        int height = view.getHeight();
-        if (view.getLayoutParams() instanceof LinearLayout.LayoutParams) {
-            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
-            height += lp.topMargin + lp.bottomMargin;
-        }
-        return height;
+        ReorderHelper.attach(ui, handle, container, movedView, onChange, null);
     }
 
     private java.util.List<Long> childIds(LinearLayout container) {
@@ -328,16 +242,16 @@ public final class HomeUi {
                 dragging[0] = false;
                 deleteStarted[0] = false;
             } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                if (Math.abs(dx) > ui.px(8)) {
+                if (Math.abs(dx) > ui.spaceS()) {
                     dragging[0] = true;
                     card.getParent().requestDisallowInterceptTouchEvent(true);
-                    card.setTranslationX(Math.max(-ui.px(120), Math.min(ui.px(60), dx)));
+                    card.setTranslationX(Math.max(-ui.deleteSwipeLeft(), Math.min(ui.deleteSwipeRight(), dx)));
                 }
             } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
                 card.animate().translationX(0).setDuration(120).start();
                 if (dragging[0]) {
                     skipClick[0] = true;
-                    if (!deleteStarted[0] && dx < -ui.px(80)) {
+                    if (!deleteStarted[0] && dx < -ui.deleteSwipeTrigger()) {
                         deleteStarted[0] = true;
                         deleteAction.accept(markDeleteCandidate(card));
                     }
@@ -410,7 +324,7 @@ public final class HomeUi {
 
     private void showDeleteDialog(String title, String message, Runnable onDelete, Runnable onDismiss) {
         LinearLayout card = ui.contentCard();
-        card.setPadding(ui.px(20), ui.px(18), ui.px(20), ui.px(16));
+        card.setPadding(ui.spaceXl(), ui.dialogPaddingY(), ui.spaceXl(), ui.spaceL());
 
         ui.addDialogTitle(card, title);
         ui.addDialogMessage(card, message);
@@ -421,7 +335,7 @@ public final class HomeUi {
         Button delete = ui.dangerButton("Löschen");
         buttons.addView(cancel, new LinearLayout.LayoutParams(0, -2, 1));
         LinearLayout.LayoutParams deleteLp = new LinearLayout.LayoutParams(0, -2, 1);
-        deleteLp.leftMargin = ui.px(8);
+        deleteLp.leftMargin = ui.spaceS();
         buttons.addView(delete, deleteLp);
         card.addView(buttons);
 
@@ -511,5 +425,15 @@ public final class HomeUi {
     private String date(long millis) {
         return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
                 .format(new java.util.Date(millis));
+    }
+
+    private static final class OverviewCard {
+        final LinearLayout card;
+        final View handle;
+
+        OverviewCard(LinearLayout card, View handle) {
+            this.card = card;
+            this.handle = handle;
+        }
     }
 }

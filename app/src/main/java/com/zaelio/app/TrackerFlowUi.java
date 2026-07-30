@@ -15,10 +15,8 @@ import android.text.Editable;
 import android.widget.Filter;
 import android.text.TextWatcher;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.TouchDelegate;
 import android.view.View;
-import android.view.ViewParent;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -91,14 +89,14 @@ public final class TrackerFlowUi {
 
         LinearLayout box = new LinearLayout(activity);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(16));
+        box.setPadding(ui.spaceL(), ui.spaceM(), ui.spaceL(), ui.spaceL());
         scrollView.addView(box);
 
         TextView intro = new TextView(activity);
         intro.setText("Wähle einen Tracker für die neue Session.");
         intro.setTextSize(ui.sp(14));
         intro.setTextColor(theme.secondaryTextColor());
-        intro.setPadding(ui.px(4), ui.px(4), ui.px(4), ui.px(12));
+        intro.setPadding(ui.spaceXs(), ui.spaceXs(), ui.spaceXs(), ui.spaceM());
         box.addView(intro);
 
         if (trackers.isEmpty()) {
@@ -117,7 +115,7 @@ public final class TrackerFlowUi {
                     openSession(sessionId);
                 });
                 LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
-                rowLp.bottomMargin = ui.px(10);
+                rowLp.bottomMargin = ui.spaceSm();
                 box.addView(item, rowLp);
             }
         }
@@ -126,12 +124,6 @@ public final class TrackerFlowUi {
     }
 
     private View selectionRow(String title) {
-        LinearLayout row = new LinearLayout(activity);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(ui.px(16), ui.px(14), ui.px(16), ui.px(14));
-        row.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
-
         LinearLayout text = new LinearLayout(activity);
         text.setOrientation(LinearLayout.VERTICAL);
 
@@ -142,16 +134,9 @@ public final class TrackerFlowUi {
         rowTitle.setTextColor(theme.primaryTextColor());
         text.addView(rowTitle);
 
-        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(0, -2, 1f);
-        row.addView(text, textLp);
-
-        TextView arrow = new TextView(activity);
-        arrow.setText("›");
-        arrow.setTextSize(ui.sp(22));
-        arrow.setTextColor(theme.mutedTextColor());
-        arrow.setPadding(ui.px(10), 0, 0, 0);
-        row.addView(arrow);
-
+        LinearLayout row = ui.listRow(null, text, ui.listIcon("›"));
+        row.setPadding(ui.spaceL(), ui.spaceMl(), ui.spaceL(), ui.spaceMl());
+        row.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
         return row;
     }
 
@@ -202,24 +187,24 @@ public final class TrackerFlowUi {
         scrollView.setFillViewport(true);
         LinearLayout body = new LinearLayout(activity);
         body.setOrientation(LinearLayout.VERTICAL);
-        body.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
+        body.setPadding(ui.spaceL(), ui.spaceL(), ui.spaceL(), ui.spaceL());
         scrollView.addView(body);
 
         TrackerEditorForm form = buildTrackerEditorForm(tracker);
         LinearLayout formCard = ui.contentCard();
-        formCard.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
+        formCard.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
         ui.addSectionHeader(formCard, null, "Grunddaten", null);
 
         formCard.addView(outlinedInput("Tracker-Name", form.nameInput));
         TextInputLayout descriptionInput = outlinedInput("Beschreibung", form.descriptionInput);
-        ((LinearLayout.LayoutParams) descriptionInput.getLayoutParams()).bottomMargin = ui.px(4);
+        ((LinearLayout.LayoutParams) descriptionInput.getLayoutParams()).bottomMargin = ui.spaceXs();
         formCard.addView(descriptionInput);
         body.addView(formCard);
 
         LinearLayout itemsHeader = new LinearLayout(activity);
         itemsHeader.setOrientation(LinearLayout.HORIZONTAL);
         itemsHeader.setGravity(Gravity.CENTER_VERTICAL);
-        itemsHeader.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
+        itemsHeader.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
         itemsHeader.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
 
         TextView itemsTitle = new TextView(activity);
@@ -233,18 +218,18 @@ public final class TrackerFlowUi {
         itemsCount.setTextSize(ui.sp(12));
         itemsCount.setTextColor(theme.accentColor());
         itemsCount.setGravity(Gravity.CENTER);
-        itemsCount.setPadding(ui.px(8), ui.px(2), ui.px(8), ui.px(2));
+        itemsCount.setPadding(ui.spaceS(), ui.focusedStrokeWidth(), ui.spaceS(), ui.focusedStrokeWidth());
         itemsCount.setBackground(ui.makeRoundedCard(theme.accentSoftColor(), theme.accentSoftColor()));
         LinearLayout.LayoutParams itemCountLp = new LinearLayout.LayoutParams(-2, -2);
-        itemCountLp.leftMargin = ui.px(8);
+        itemCountLp.leftMargin = ui.spaceS();
         itemsHeader.addView(itemsCount, itemCountLp);
         itemsHeader.addView(new View(activity), new LinearLayout.LayoutParams(0, 1, 1));
 
         Button addItem = ui.primaryButton("Item hinzufügen");
-        itemsHeader.addView(addItem, new LinearLayout.LayoutParams(-2, ui.px(48)));
+        itemsHeader.addView(addItem, new LinearLayout.LayoutParams(-2, ui.buttonHeight()));
         LinearLayout.LayoutParams itemsHeaderLp = new LinearLayout.LayoutParams(-1, -2);
-        itemsHeaderLp.topMargin = ui.px(12);
-        itemsHeaderLp.bottomMargin = ui.px(12);
+        itemsHeaderLp.topMargin = ui.spaceM();
+        itemsHeaderLp.bottomMargin = ui.spaceM();
         body.addView(itemsHeader, itemsHeaderLp);
 
         LinearLayout itemsContainer = new LinearLayout(activity);
@@ -313,7 +298,7 @@ public final class TrackerFlowUi {
         ScrollView scrollView = new ScrollView(activity);
         LinearLayout box = new LinearLayout(activity);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
+        box.setPadding(ui.spaceL(), ui.spaceL(), ui.spaceL(), ui.spaceL());
         scrollView.addView(box);
 
         for (int itemIndex = 0; itemIndex < tracker.items.size(); itemIndex++) {
@@ -324,7 +309,7 @@ public final class TrackerFlowUi {
 
             LinearLayout card = ui.contentCard();
             LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
-            cardLp.bottomMargin = ui.px(20);
+            cardLp.bottomMargin = ui.spaceXl();
 
             ui.addSectionHeader(card, null, item.title, null);
 
@@ -480,17 +465,13 @@ public final class TrackerFlowUi {
         }
 
         LinearLayout card = ui.contentCard();
-        card.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
+        card.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
         View reorder = reorderHandle();
         TextView menu = iconAction("⋮");
         ImageView expand = expandAction();
 
         views.titleInput = labeledInput("Item-Name", item == null ? "" : item.title, InputType.TYPE_CLASS_TEXT);
 
-        LinearLayout summaryRow = new LinearLayout(activity);
-        summaryRow.setOrientation(LinearLayout.HORIZONTAL);
-        summaryRow.setGravity(Gravity.CENTER_VERTICAL);
-        summaryRow.setMinimumHeight(ui.px(56));
         LinearLayout summaryText = new LinearLayout(activity);
         summaryText.setOrientation(LinearLayout.VERTICAL);
         views.summaryTitle = new TextView(activity);
@@ -507,10 +488,7 @@ public final class TrackerFlowUi {
         FrameLayout summarySlot = new FrameLayout(activity);
         summarySlot.addView(summaryText, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_VERTICAL));
         summarySlot.addView(views.summaryInput, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_VERTICAL));
-        summaryRow.addView(reorder, new LinearLayout.LayoutParams(ui.px(28), ui.px(56)));
-        summaryRow.addView(summarySlot, new LinearLayout.LayoutParams(0, -2, 1));
-        summaryRow.addView(menu, iconActionLp());
-        summaryRow.addView(expand, iconActionLp());
+        LinearLayout summaryRow = ui.listRow(reorder, summarySlot, menu, expand);
         card.addView(summaryRow);
         expandReorderTouchArea(card, summaryRow, reorder);
 
@@ -521,7 +499,7 @@ public final class TrackerFlowUi {
         LinearLayout fieldsHeader = new LinearLayout(activity);
         fieldsHeader.setOrientation(LinearLayout.HORIZONTAL);
         fieldsHeader.setGravity(Gravity.CENTER_VERTICAL);
-        fieldsHeader.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
+        fieldsHeader.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
         fieldsHeader.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
 
         TextView fieldsTitle = new TextView(activity);
@@ -535,18 +513,18 @@ public final class TrackerFlowUi {
         views.fieldsCount.setTextSize(ui.sp(12));
         views.fieldsCount.setTextColor(theme.accentColor());
         views.fieldsCount.setGravity(Gravity.CENTER);
-        views.fieldsCount.setPadding(ui.px(8), ui.px(2), ui.px(8), ui.px(2));
+        views.fieldsCount.setPadding(ui.spaceS(), ui.focusedStrokeWidth(), ui.spaceS(), ui.focusedStrokeWidth());
         views.fieldsCount.setBackground(ui.makeRoundedCard(theme.accentSoftColor(), theme.accentSoftColor()));
         LinearLayout.LayoutParams countLp = new LinearLayout.LayoutParams(-2, -2);
-        countLp.leftMargin = ui.px(8);
+        countLp.leftMargin = ui.spaceS();
         fieldsHeader.addView(views.fieldsCount, countLp);
         fieldsHeader.addView(new View(activity), new LinearLayout.LayoutParams(0, 1, 1));
 
         Button addField = ui.primaryButton("Feld hinzufügen");
-        fieldsHeader.addView(addField, new LinearLayout.LayoutParams(-2, ui.px(48)));
+        fieldsHeader.addView(addField, new LinearLayout.LayoutParams(-2, ui.buttonHeight()));
         LinearLayout.LayoutParams fieldsHeaderLp = new LinearLayout.LayoutParams(-1, -2);
-        fieldsHeaderLp.topMargin = ui.px(12);
-        fieldsHeaderLp.bottomMargin = ui.px(12);
+        fieldsHeaderLp.topMargin = ui.spaceM();
+        fieldsHeaderLp.bottomMargin = ui.spaceM();
         editor.addView(fieldsHeader, fieldsHeaderLp);
 
         LinearLayout fieldsContainer = new LinearLayout(activity);
@@ -595,7 +573,7 @@ public final class TrackerFlowUi {
         shellRef[0] = shell;
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = ui.px(12);
+        lp.bottomMargin = ui.spaceM();
         container.addView(shell, lp);
         updateChildBottomMargins(container, 12, 4);
         views.card = shell;
@@ -670,13 +648,13 @@ public final class TrackerFlowUi {
         typeLayout.setBoxBackgroundColor(theme.surfaceColor());
         typeLayout.setBoxStrokeColor(theme.accentColor());
         typeLayout.setBoxStrokeColorStateList(inputBorderStateList());
-        typeLayout.setBoxStrokeWidth(ui.px(1));
-        typeLayout.setBoxStrokeWidthFocused(ui.px(2));
+        typeLayout.setBoxStrokeWidth(ui.strokeWidth());
+        typeLayout.setBoxStrokeWidthFocused(ui.focusedStrokeWidth());
         typeLayout.setHintTextColor(inputHintStateList());
-        typeLayout.setBoxCornerRadii(ui.px(6), ui.px(6), ui.px(6), ui.px(6));
+        typeLayout.setBoxCornerRadii(ui.cornerRadius(), ui.cornerRadius(), ui.cornerRadius(), ui.cornerRadius());
         typeLayout.setEndIconMode(TextInputLayout.END_ICON_DROPDOWN_MENU);
         LinearLayout.LayoutParams typeLp = new LinearLayout.LayoutParams(-1, -2);
-        typeLp.bottomMargin = ui.px(4);
+        typeLp.bottomMargin = ui.spaceXs();
         typeLayout.setLayoutParams(typeLp);
 
         MaterialAutoCompleteTextView typeInput = new MaterialAutoCompleteTextView(activity);
@@ -711,8 +689,8 @@ public final class TrackerFlowUi {
         typeInput.setHintTextColor(inputHintStateList());
         typeInput.setBackgroundTintList(inputBorderStateList());
         tintCursor(typeInput);
-        typeInput.setPadding(ui.px(12), 0, ui.px(12), 0);
-        typeLayout.addView(typeInput, new LinearLayout.LayoutParams(-1, ui.px(56)));
+        typeInput.setPadding(ui.spaceM(), 0, ui.spaceM(), 0);
+        typeLayout.addView(typeInput, new LinearLayout.LayoutParams(-1, ui.rowHeight()));
         views.typeInput = typeInput;
 
         MaterialCheckBox required = new MaterialCheckBox(activity);
@@ -733,7 +711,7 @@ public final class TrackerFlowUi {
         TextInputLayout incrementWrap = outlinedInput("Schrittweite", views.incrementInput);
         TextInputLayout decimalsWrap = outlinedInput("Nachkommastellen", views.decimalsInput);
         LinearLayout.LayoutParams incrementLp = new LinearLayout.LayoutParams(0, -2, 1);
-        incrementLp.rightMargin = ui.px(8);
+        incrementLp.rightMargin = ui.spaceS();
         numericRow.addView(incrementWrap, incrementLp);
         numericRow.addView(decimalsWrap, new LinearLayout.LayoutParams(0, -2, 1));
         views.incrementWrap = incrementWrap;
@@ -742,23 +720,19 @@ public final class TrackerFlowUi {
 
         LinearLayout editor = new LinearLayout(activity);
         editor.setOrientation(LinearLayout.VERTICAL);
-        editor.setPadding(0, ui.px(12), 0, 0);
+        editor.setPadding(0, ui.spaceM(), 0, 0);
         editor.addView(outlinedInput("Standardwert", views.defaultValueInput));
         editor.addView(typeLayout);
         editor.addView(required);
         editor.addView(prefill);
         TextInputLayout unitInput = outlinedInput("Einheit", views.unitInput);
-        ((LinearLayout.LayoutParams) unitInput.getLayoutParams()).bottomMargin = ui.px(4);
+        ((LinearLayout.LayoutParams) unitInput.getLayoutParams()).bottomMargin = ui.spaceXs();
         editor.addView(unitInput);
         editor.addView(numericRow);
         views.editor = editor;
 
         LinearLayout row = ui.contentCard();
-        row.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
-        LinearLayout summaryRow = new LinearLayout(activity);
-        summaryRow.setOrientation(LinearLayout.HORIZONTAL);
-        summaryRow.setGravity(Gravity.CENTER_VERTICAL);
-        summaryRow.setMinimumHeight(ui.px(56));
+        row.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
         LinearLayout summaryText = new LinearLayout(activity);
         summaryText.setOrientation(LinearLayout.VERTICAL);
         views.summaryTitle = new TextView(activity);
@@ -775,10 +749,7 @@ public final class TrackerFlowUi {
         FrameLayout summarySlot = new FrameLayout(activity);
         summarySlot.addView(summaryText, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_VERTICAL));
         summarySlot.addView(views.summaryInput, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_VERTICAL));
-        summaryRow.addView(reorder, new LinearLayout.LayoutParams(ui.px(28), ui.px(56)));
-        summaryRow.addView(summarySlot, new LinearLayout.LayoutParams(0, -2, 1));
-        summaryRow.addView(menu, iconActionLp());
-        summaryRow.addView(expand, iconActionLp());
+        LinearLayout summaryRow = ui.listRow(reorder, summarySlot, menu, expand);
         row.addView(summaryRow);
         expandReorderTouchArea(row, summaryRow, reorder);
         row.addView(editor);
@@ -825,7 +796,7 @@ public final class TrackerFlowUi {
         shellRef[0] = shell;
 
         LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
-        rowLp.bottomMargin = ui.px(12);
+        rowLp.bottomMargin = ui.spaceM();
         container.addView(shell, rowLp);
         updateChildBottomMargins(container, 12, 4);
         views.row = shell;
@@ -924,100 +895,27 @@ public final class TrackerFlowUi {
             rect.left = 0;
             rect.top = row.getTop();
             rect.bottom = row.getBottom();
-            rect.right = Math.max(rect.right, ui.px(56));
+            rect.right = Math.max(rect.right, ui.rowHeight());
             parent.setTouchDelegate(new TouchDelegate(rect, handle));
         });
     }
 
     private void attachItemReorder(View handle, LinearLayout container, List<ItemEditorViews> editors, ItemEditorViews views, Runnable onChange) {
-        attachReorder(handle, views.card, new ReorderMove() {
-            @Override
-            public int distance(int direction) {
-                return reorderDistance(container, views.card, direction);
-            }
-
-            @Override
-            public int run(int direction) {
-                return moveItemEditor(container, editors, views, direction);
-            }
-        }, onChange);
-    }
-
-    private void attachFieldReorder(View handle, LinearLayout container, List<FieldEditorViews> editors, FieldEditorViews views, Runnable onChange) {
-        attachReorder(handle, views.row, new ReorderMove() {
-            @Override
-            public int distance(int direction) {
-                return reorderDistance(container, views.row, direction);
-            }
-
-            @Override
-            public int run(int direction) {
-                return moveFieldEditor(container, editors, views, direction);
-            }
-        }, onChange);
-    }
-
-    private void attachReorder(View handle, View movedView, ReorderMove move, Runnable onChange) {
-        final float[] startY = new float[1];
-        final float[] consumedY = new float[1];
-        final float[] oldElevation = new float[1];
-        handle.setOnTouchListener((v, event) -> {
-            int action = event.getActionMasked();
-            if (action == MotionEvent.ACTION_DOWN) {
-                disallowParentIntercept(v, true);
-                startY[0] = event.getRawY();
-                consumedY[0] = 0;
-                oldElevation[0] = movedView.getElevation();
-                movedView.setElevation(oldElevation[0] + ui.px(8));
-                movedView.setAlpha(0.82f);
-                return true;
-            }
-            if (action == MotionEvent.ACTION_MOVE) {
-                float delta = event.getRawY() - startY[0] - consumedY[0];
-                int direction = delta > 0 ? 1 : -1;
-                while (delta != 0) {
-                    int distance = move.distance(direction);
-                    if (distance <= 0 || Math.abs(delta) <= distance / 2f) {
-                        break;
-                    }
-                    distance = move.run(direction);
-                    if (distance <= 0) {
-                        break;
-                    }
-                    consumedY[0] += direction * distance;
-                    delta = event.getRawY() - startY[0] - consumedY[0];
-                    direction = delta > 0 ? 1 : -1;
-                    onChange.run();
-                }
-                return true;
-            }
-            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                movedView.setElevation(oldElevation[0]);
-                movedView.setAlpha(1f);
-                disallowParentIntercept(v, false);
-                return true;
-            }
-            return false;
+        ReorderHelper.attach(ui, handle, container, views.card, onChange, direction -> {
+            updateChildBottomMargins(container, 12, 4);
+            reorderList(editors, views, direction);
         });
     }
 
-    private void disallowParentIntercept(View view, boolean disallow) {
-        ViewParent parent = view.getParent();
-        while (parent != null) {
-            parent.requestDisallowInterceptTouchEvent(disallow);
-            parent = parent.getParent();
-        }
+    private void attachFieldReorder(View handle, LinearLayout container, List<FieldEditorViews> editors, FieldEditorViews views, Runnable onChange) {
+        ReorderHelper.attach(ui, handle, container, views.row, onChange, direction -> {
+            updateChildBottomMargins(container, 12, 4);
+            reorderList(editors, views, direction);
+        });
     }
 
     private TextView iconAction(String text) {
-        TextView view = new TextView(activity);
-        view.setText(text);
-        view.setTextSize(ui.sp(24));
-        view.setTextColor(theme.mutedTextColor());
-        view.setGravity(Gravity.CENTER);
-        view.setClickable(true);
-        view.setFocusable(true);
-        return view;
+        return ui.listIcon(text);
     }
 
     private ImageView expandAction() {
@@ -1025,105 +923,31 @@ public final class TrackerFlowUi {
         view.setImageResource(R.drawable.ic_expand_more_24);
         view.setColorFilter(theme.mutedTextColor());
         view.setScaleType(ImageView.ScaleType.CENTER);
-        view.setMinimumHeight(ui.px(56));
+        view.setMinimumHeight(ui.rowHeight());
         view.setClickable(true);
         view.setFocusable(true);
         return view;
     }
 
-    private LinearLayout.LayoutParams iconActionLp() {
-        return new LinearLayout.LayoutParams(ui.px(36), ui.px(56));
-    }
-
     private LinearLayout.LayoutParams compactActionButtonLp() {
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ui.px(48), ui.px(48));
-        lp.rightMargin = ui.px(8);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ui.buttonHeight(), ui.buttonHeight());
+        lp.rightMargin = ui.spaceS();
         return lp;
     }
 
     private LinearLayout.LayoutParams weightedActionButtonLp() {
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ui.px(48), 1);
-        lp.leftMargin = ui.px(8);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ui.buttonHeight(), 1);
+        lp.leftMargin = ui.spaceS();
         return lp;
     }
 
-    private int moveItemEditor(LinearLayout container, List<ItemEditorViews> itemEditors, ItemEditorViews views, int direction) {
-        if (views == null || views.card == null) {
-            return 0;
+    private <T> void reorderList(List<T> list, T item, int direction) {
+        int from = list.indexOf(item);
+        int to = from + direction;
+        if (from >= 0 && to >= 0 && to < list.size()) {
+            list.remove(from);
+            list.add(to, item);
         }
-
-        int fromIndex = container.indexOfChild(views.card);
-        int toIndex = fromIndex + direction;
-        if (fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()) {
-            return 0;
-        }
-
-        View sibling = container.getChildAt(toIndex);
-        int distance = viewHeightWithMargins(sibling);
-        container.removeView(sibling);
-        container.addView(sibling, direction > 0 ? fromIndex : toIndex + 1);
-        animateReorderSibling(sibling, views.card, direction);
-        updateChildBottomMargins(container, 12, 4);
-
-        int listFromIndex = itemEditors.indexOf(views);
-        int listToIndex = listFromIndex + direction;
-        if (listFromIndex >= 0 && listToIndex >= 0 && listToIndex < itemEditors.size()) {
-            itemEditors.remove(listFromIndex);
-            itemEditors.add(listToIndex, views);
-        }
-        return distance;
-    }
-
-    private int moveFieldEditor(LinearLayout container, List<FieldEditorViews> fieldEditors, FieldEditorViews views, int direction) {
-        if (views == null || views.row == null) {
-            return 0;
-        }
-
-        int fromIndex = container.indexOfChild(views.row);
-        int toIndex = fromIndex + direction;
-        if (fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()) {
-            return 0;
-        }
-
-        View sibling = container.getChildAt(toIndex);
-        int distance = viewHeightWithMargins(sibling);
-        container.removeView(sibling);
-        container.addView(sibling, direction > 0 ? fromIndex : toIndex + 1);
-        animateReorderSibling(sibling, views.row, direction);
-        updateChildBottomMargins(container, 12, 4);
-
-        int listFromIndex = fieldEditors.indexOf(views);
-        int listToIndex = listFromIndex + direction;
-        if (listFromIndex >= 0 && listToIndex >= 0 && listToIndex < fieldEditors.size()) {
-            fieldEditors.remove(listFromIndex);
-            fieldEditors.add(listToIndex, views);
-        }
-        return distance;
-    }
-
-    private int reorderDistance(LinearLayout container, View movedView, int direction) {
-        int fromIndex = container.indexOfChild(movedView);
-        int toIndex = fromIndex + direction;
-        if (fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()) {
-            return 0;
-        }
-        return viewHeightWithMargins(container.getChildAt(toIndex));
-    }
-
-    private int viewHeightWithMargins(View view) {
-        int height = view.getHeight();
-        if (view.getLayoutParams() instanceof LinearLayout.LayoutParams) {
-            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
-            height += lp.topMargin + lp.bottomMargin;
-        }
-        return height;
-    }
-
-    private void animateReorderSibling(View sibling, View movedView, int direction) {
-        int distance = Math.max(viewHeightWithMargins(movedView), viewHeightWithMargins(sibling));
-        sibling.animate().cancel();
-        sibling.setTranslationY(direction > 0 ? distance : -distance);
-        sibling.animate().translationY(0).setDuration(140).start();
     }
 
     private void updateChildBottomMargins(LinearLayout container, int normalDp, int lastDp) {
@@ -1144,7 +968,7 @@ public final class TrackerFlowUi {
         title.setText(label);
         title.setTextSize(ui.sp(12));
         title.setTextColor(theme.mutedTextColor());
-        title.setPadding(0, 0, 0, ui.px(4));
+        title.setPadding(0, 0, 0, ui.spaceXs());
         group.addView(title);
         group.addView(view);
         return group;
@@ -1154,10 +978,10 @@ public final class TrackerFlowUi {
         checkBox.setUseMaterialThemeColors(false);
         checkBox.setTextColor(theme.primaryTextColor());
         checkBox.setButtonTintList(checkBoxStateList());
-        checkBox.setMinHeight(ui.px(40));
-        checkBox.setMinimumHeight(ui.px(40));
+        checkBox.setMinHeight(ui.checkRowHeight());
+        checkBox.setMinimumHeight(ui.checkRowHeight());
         checkBox.setPadding(0, 0, 0, 0);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, ui.px(40));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, ui.checkRowHeight());
         checkBox.setLayoutParams(lp);
     }
 
@@ -1217,7 +1041,7 @@ public final class TrackerFlowUi {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             GradientDrawable cursor = new GradientDrawable();
             cursor.setColor(theme.accentColor());
-            cursor.setSize(ui.px(2), ui.px(24));
+            cursor.setSize(ui.focusedStrokeWidth(), ui.cursorHeight());
             input.setTextCursorDrawable(cursor);
         }
     }
@@ -1229,20 +1053,20 @@ public final class TrackerFlowUi {
         layout.setBoxBackgroundColor(theme.surfaceColor());
         layout.setBoxStrokeColor(theme.accentColor());
         layout.setBoxStrokeColorStateList(inputBorderStateList());
-        layout.setBoxStrokeWidth(ui.px(1));
-        layout.setBoxStrokeWidthFocused(ui.px(2));
+        layout.setBoxStrokeWidth(ui.strokeWidth());
+        layout.setBoxStrokeWidthFocused(ui.focusedStrokeWidth());
         layout.setHintTextColor(inputHintStateList());
-        layout.setBoxCornerRadii(ui.px(6), ui.px(6), ui.px(6), ui.px(6));
+        layout.setBoxCornerRadii(ui.cornerRadius(), ui.cornerRadius(), ui.cornerRadius(), ui.cornerRadius());
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = ui.px(12);
+        lp.bottomMargin = ui.spaceM();
         layout.setLayoutParams(lp);
         input.setHint(null);
         input.setHintTextColor(inputHintStateList());
         input.setBackground(null);
         tintCursor(input);
         boolean multiline = input.getMinLines() > 1;
-        input.setPadding(ui.px(12), multiline ? ui.px(12) : 0, ui.px(12), multiline ? ui.px(12) : 0);
-        layout.addView(input, new LinearLayout.LayoutParams(-1, multiline ? -2 : ui.px(56)));
+        input.setPadding(ui.spaceM(), multiline ? ui.spaceM() : 0, ui.spaceM(), multiline ? ui.spaceM() : 0);
+        layout.addView(input, new LinearLayout.LayoutParams(-1, multiline ? -2 : ui.rowHeight()));
         return layout;
     }
 
@@ -1251,12 +1075,12 @@ public final class TrackerFlowUi {
         input.setText(value == null ? "" : value);
         input.setHint(label);
         input.setInputType(inputType);
-        input.setPadding(ui.px(12), ui.px(12), ui.px(12), ui.px(12));
+        input.setPadding(ui.spaceM(), ui.spaceM(), ui.spaceM(), ui.spaceM());
         input.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
         input.setTextColor(theme.primaryTextColor());
         input.setHintTextColor(theme.mutedTextColor());
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = ui.px(12);
+        lp.bottomMargin = ui.spaceM();
         input.setLayoutParams(lp);
         return input;
     }
@@ -1479,7 +1303,7 @@ public final class TrackerFlowUi {
     private LinearLayout footerButton(String text, Runnable onClick) {
         LinearLayout footer = new LinearLayout(activity);
         footer.setOrientation(LinearLayout.VERTICAL);
-        footer.setPadding(ui.px(16), ui.px(8), ui.px(16), ui.px(16));
+        footer.setPadding(ui.spaceL(), ui.spaceS(), ui.spaceL(), ui.spaceL());
 
         Button button = ui.secondaryButton(text);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
@@ -1502,12 +1326,6 @@ public final class TrackerFlowUi {
 
     interface BackActionSetter {
         void accept(Runnable backAction);
-    }
-
-    private interface ReorderMove {
-        int distance(int direction);
-
-        int run(int direction);
     }
 
     private static final class TrackerEditorForm {

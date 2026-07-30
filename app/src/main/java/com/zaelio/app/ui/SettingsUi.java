@@ -14,6 +14,9 @@ import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.shape.ShapeAppearanceModel;
 
+import java.util.function.IntConsumer;
+import java.util.function.IntFunction;
+
 public final class SettingsUi {
     private final Activity activity;
     private final ThemeStore theme;
@@ -65,7 +68,7 @@ public final class SettingsUi {
         LinearLayout row = ui.contentCard();
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        row.setPadding(ui.px(16), ui.px(12), ui.px(12), ui.px(12));
+        row.setPadding(ui.spaceL(), ui.spaceM(), ui.spaceM(), ui.spaceM());
 
         TextView labelView = new TextView(activity);
         labelView.setText(label);
@@ -94,126 +97,65 @@ public final class SettingsUi {
 
     private LinearLayout.LayoutParams cardLp() {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = ui.px(10);
+        lp.bottomMargin = ui.spaceSm();
         return lp;
     }
 
     private View themeCard() {
-        LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, null, "Darstellung", null);
-
-        ChipGroup group = new ChipGroup(activity);
-        group.setSingleSelection(true);
-        group.setSelectionRequired(true);
-        group.setChipSpacingHorizontal(ui.px(8));
-        group.setChipSpacingVertical(ui.px(8));
-
-        group.addView(themeModeChip("System", ThemeStore.THEME_SYSTEM));
-        group.addView(themeModeChip("Hell", ThemeStore.THEME_LIGHT));
-        group.addView(themeModeChip("Dunkel", ThemeStore.THEME_DARK));
-        group.check(themeModeChipId(theme.themeMode()));
-        group.setOnCheckedStateChangeListener((chipGroup, checkedIds) -> {
-            if (checkedIds.isEmpty()) {
-                return;
-            }
-            int checkedId = checkedIds.get(0);
-            if (checkedId == themeModeChipId(ThemeStore.THEME_SYSTEM)) {
-                theme.setThemeMode(ThemeStore.THEME_SYSTEM);
-            } else if (checkedId == themeModeChipId(ThemeStore.THEME_LIGHT)) {
-                theme.setThemeMode(ThemeStore.THEME_LIGHT);
-            } else if (checkedId == themeModeChipId(ThemeStore.THEME_DARK)) {
-                theme.setThemeMode(ThemeStore.THEME_DARK);
-            }
-            refreshSettings.run();
-        });
-        card.addView(group);
-        return card;
+        int[] modes = {ThemeStore.THEME_SYSTEM, ThemeStore.THEME_LIGHT, ThemeStore.THEME_DARK};
+        String[] labels = {"System", "Hell", "Dunkel"};
+        return choiceCard("Darstellung", modes.length, selectedIndex(modes, theme.themeMode()), 9000,
+                i -> labels[i], i -> theme.setThemeMode(modes[i]));
     }
 
     private View fontCard() {
-        LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, null, "Schriftgröße", null);
-
-        ChipGroup group = new ChipGroup(activity);
-        group.setSingleSelection(true);
-        group.setSelectionRequired(true);
-        group.setChipSpacingHorizontal(ui.px(8));
-        group.setChipSpacingVertical(ui.px(8));
-
-        for (int i = 0; i < theme.fontScaleCount(); i++) {
-            group.addView(fontScaleChip(theme.fontScaleName(i), i));
-        }
-        group.check(fontScaleChipId(theme.fontScaleIndex()));
-        group.setOnCheckedStateChangeListener((chipGroup, checkedIds) -> {
-            if (checkedIds.isEmpty()) {
-                return;
-            }
-            int checkedId = checkedIds.get(0);
-            for (int i = 0; i < theme.fontScaleCount(); i++) {
-                if (checkedId == fontScaleChipId(i)) {
-                    theme.setFontScaleIndex(i);
-                    refreshSettings.run();
-                    break;
-                }
-            }
-        });
-        card.addView(group);
-        return card;
-    }
-
-    private Chip themeModeChip(String label, int mode) {
-        Chip chip = new Chip(activity);
-        chip.setId(themeModeChipId(mode));
-        chip.setText(label);
-        styleChoiceChip(chip, theme.themeMode() == mode);
-        return chip;
-    }
-
-    private Chip fontScaleChip(String label, int index) {
-        Chip chip = new Chip(activity);
-        chip.setId(fontScaleChipId(index));
-        chip.setText(label);
-        styleChoiceChip(chip, theme.fontScaleIndex() == index);
-        return chip;
+        return choiceCard("Schriftgröße", theme.fontScaleCount(), theme.fontScaleIndex(), 9100,
+                theme::fontScaleName, theme::setFontScaleIndex);
     }
 
     private View fieldSizeCard() {
+        return choiceCard("Feldgröße", theme.fieldSizeCount(), theme.fieldSizeIndex(), 9200,
+                theme::fieldSizeName, theme::setFieldSizeIndex);
+    }
+
+    private View choiceCard(String title, int count, int selected, int idBase, IntFunction<String> labelAt, IntConsumer selectAt) {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, null, "Feldgröße", null);
+        ui.addSectionHeader(card, null, title, null);
 
         ChipGroup group = new ChipGroup(activity);
         group.setSingleSelection(true);
         group.setSelectionRequired(true);
-        group.setChipSpacingHorizontal(ui.px(8));
-        group.setChipSpacingVertical(ui.px(8));
-
-        for (int i = 0; i < theme.fieldSizeCount(); i++) {
-            group.addView(fieldSizeChip(theme.fieldSizeName(i), i));
+        group.setChipSpacingHorizontal(ui.spaceS());
+        group.setChipSpacingVertical(ui.spaceS());
+        for (int i = 0; i < count; i++) {
+            group.addView(choiceChip(idBase + i, labelAt.apply(i), i == selected));
         }
-        group.check(fieldSizeChipId(theme.fieldSizeIndex()));
+        group.check(idBase + selected);
         group.setOnCheckedStateChangeListener((chipGroup, checkedIds) -> {
-            if (checkedIds.isEmpty()) {
-                return;
-            }
-            int checkedId = checkedIds.get(0);
-            for (int i = 0; i < theme.fieldSizeCount(); i++) {
-                if (checkedId == fieldSizeChipId(i)) {
-                    theme.setFieldSizeIndex(i);
-                    refreshSettings.run();
-                    break;
-                }
+            if (!checkedIds.isEmpty()) {
+                selectAt.accept(checkedIds.get(0) - idBase);
+                refreshSettings.run();
             }
         });
         card.addView(group);
         return card;
     }
 
-    private Chip fieldSizeChip(String label, int index) {
+    private Chip choiceChip(int id, String label, boolean selected) {
         Chip chip = new Chip(activity);
-        chip.setId(fieldSizeChipId(index));
+        chip.setId(id);
         chip.setText(label);
-        styleChoiceChip(chip, theme.fieldSizeIndex() == index);
+        styleChoiceChip(chip, selected);
         return chip;
+    }
+
+    private int selectedIndex(int[] values, int selected) {
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] == selected) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     private void styleChoiceChip(Chip chip, boolean selected) {
@@ -222,13 +164,13 @@ public final class SettingsUi {
         chip.setTextColor(selected ? theme.accentColor() : theme.primaryTextColor());
         chip.setChipBackgroundColor(ColorStateList.valueOf(selected ? theme.accentSoftColor() : theme.surfaceAltColor()));
         chip.setChipStrokeColor(ColorStateList.valueOf(selected ? theme.accentColor() : theme.borderColor()));
-        chip.setChipStrokeWidth(ui.px(1));
+        chip.setChipStrokeWidth(ui.strokeWidth());
         chip.setShapeAppearanceModel(ShapeAppearanceModel.builder()
-                .setAllCornerSizes(ui.px(8))
+                .setAllCornerSizes(ui.spaceS())
                 .build());
         chip.setCheckedIconVisible(false);
         chip.setCheckedIcon(null);
-        chip.setElevation(ui.px(0));
+        chip.setElevation(0);
     }
 
     private View accentCard() {
@@ -239,13 +181,13 @@ public final class SettingsUi {
             LinearLayout row = new LinearLayout(activity);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setWeightSum(4);
-            row.setPadding(0, 0, 0, ui.px(10));
+            row.setPadding(0, 0, 0, ui.spaceSm());
 
             for (int col = 0; col < 4; col++) {
                 int index = rowIndex * 4 + col;
                 LinearLayout.LayoutParams cellLp = new LinearLayout.LayoutParams(0, -2, 1f);
-                cellLp.leftMargin = col == 0 ? 0 : ui.px(4);
-                cellLp.rightMargin = col == 3 ? 0 : ui.px(4);
+                cellLp.leftMargin = col == 0 ? 0 : ui.spaceXs();
+                cellLp.rightMargin = col == 3 ? 0 : ui.spaceXs();
                 if (index >= theme.accentCount()) {
                     View spacer = new View(activity);
                     row.addView(spacer, cellLp);
@@ -265,9 +207,9 @@ public final class SettingsUi {
         Button button = ui.button(theme.accentName(index), fillColor, selected ? android.graphics.Color.WHITE : accent, accent);
         button.setTextSize(ui.sp(12));
         button.setSingleLine(true);
-        button.setMinHeight(ui.px(44));
-        button.setMinimumHeight(ui.px(44));
-        button.setElevation(selected ? ui.px(4) : 0);
+        button.setMinHeight(ui.compactButtonHeight());
+        button.setMinimumHeight(ui.compactButtonHeight());
+        button.setElevation(selected ? ui.spaceXs() : 0);
         button.setOnClickListener(v -> {
             theme.setAccentIndex(index);
             refreshSettings.run();
@@ -283,15 +225,4 @@ public final class SettingsUi {
         }
     }
 
-    private int themeModeChipId(int mode) {
-        return 9000 + mode;
-    }
-
-    private int fontScaleChipId(int index) {
-        return 9100 + index;
-    }
-
-    private int fieldSizeChipId(int index) {
-        return 9200 + index;
-    }
 }

@@ -24,8 +24,26 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public final class AppUi {
     private static final int CORNER_RADIUS_DP = 6;
+    private static final int SPACE_XS_DP = 4;
+    private static final int SPACE_S_DP = 8;
+    private static final int SPACE_SM_DP = 10;
+    private static final int SPACE_M_DP = 12;
+    private static final int SPACE_ML_DP = 14;
+    private static final int SPACE_L_DP = 16;
+    private static final int SPACE_DIALOG_Y_DP = 18;
+    private static final int SPACE_XL_DP = 20;
+    private static final int CHECK_ROW_HEIGHT_DP = 40;
+    private static final int COMPACT_BUTTON_HEIGHT_DP = 44;
     private static final int BUTTON_HEIGHT_DP = 48;
     private static final int ICON_BUTTON_SIZE_DP = 48;
+    private static final int ROW_HEIGHT_DP = 56;
+    private static final int CURSOR_HEIGHT_DP = 24;
+    private static final int DELETE_SWIPE_LEFT_DP = 120;
+    private static final int DELETE_SWIPE_RIGHT_DP = 60;
+    private static final int DELETE_SWIPE_TRIGGER_DP = 80;
+    private static final int DRAG_HANDLE_WIDTH_DP = 28;
+    private static final int LIST_ACTION_WIDTH_DP = 36;
+    private static final int BOTTOM_SAFE_PADDING_DP = 104;
 
     private final Activity activity;
     private final ThemeStore theme;
@@ -254,6 +272,41 @@ public final class AppUi {
         return body;
     }
 
+    public LinearLayout listRow(View leading, View content, View action) {
+        return listRow(leading, content, action, null);
+    }
+
+    public LinearLayout listRow(View leading, View content, View primaryAction, View secondaryAction) {
+        LinearLayout row = new LinearLayout(activity);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setMinimumHeight(rowHeight());
+        if (leading != null) {
+            row.addView(leading, new LinearLayout.LayoutParams(dragHandleWidth(), rowHeight()));
+        }
+        row.addView(content, new LinearLayout.LayoutParams(0, -2, 1));
+        addListAction(row, primaryAction);
+        addListAction(row, secondaryAction);
+        return row;
+    }
+
+    private void addListAction(LinearLayout row, View action) {
+        if (action != null) {
+            row.addView(action, new LinearLayout.LayoutParams(listActionWidth(), rowHeight()));
+        }
+    }
+
+    public TextView listIcon(String text) {
+        TextView view = new TextView(activity);
+        view.setText(text);
+        view.setTextSize(sp(24));
+        view.setTextColor(theme.mutedTextColor());
+        view.setGravity(Gravity.CENTER);
+        view.setClickable(true);
+        view.setFocusable(true);
+        return view;
+    }
+
     public androidx.appcompat.app.AlertDialog showCardDialog(View content) {
         androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(activity)
                 .setView(content)
@@ -350,6 +403,94 @@ public final class AppUi {
                 ColorStateList.valueOf(rippleColor),
                 new ColorDrawable(fillColor),
                 new ColorDrawable(Color.WHITE));
+    }
+
+    public int spaceXs() {
+        return px(SPACE_XS_DP);
+    }
+
+    public int spaceS() {
+        return px(SPACE_S_DP);
+    }
+
+    public int spaceSm() {
+        return px(SPACE_SM_DP);
+    }
+
+    public int spaceM() {
+        return px(SPACE_M_DP);
+    }
+
+    public int spaceMl() {
+        return px(SPACE_ML_DP);
+    }
+
+    public int spaceL() {
+        return px(SPACE_L_DP);
+    }
+
+    public int dialogPaddingY() {
+        return px(SPACE_DIALOG_Y_DP);
+    }
+
+    public int spaceXl() {
+        return px(SPACE_XL_DP);
+    }
+
+    public int checkRowHeight() {
+        return px(CHECK_ROW_HEIGHT_DP);
+    }
+
+    public int compactButtonHeight() {
+        return px(COMPACT_BUTTON_HEIGHT_DP);
+    }
+
+    public int buttonHeight() {
+        return px(BUTTON_HEIGHT_DP);
+    }
+
+    public int cursorHeight() {
+        return px(CURSOR_HEIGHT_DP);
+    }
+
+    public int deleteSwipeLeft() {
+        return px(DELETE_SWIPE_LEFT_DP);
+    }
+
+    public int deleteSwipeRight() {
+        return px(DELETE_SWIPE_RIGHT_DP);
+    }
+
+    public int deleteSwipeTrigger() {
+        return px(DELETE_SWIPE_TRIGGER_DP);
+    }
+
+    public int cornerRadius() {
+        return px(CORNER_RADIUS_DP);
+    }
+
+    public int strokeWidth() {
+        return px(1);
+    }
+
+    public int focusedStrokeWidth() {
+        return px(2);
+    }
+
+    public int rowHeight() {
+        return px(ROW_HEIGHT_DP);
+    }
+
+    private int dragHandleWidth() {
+        return px(DRAG_HANDLE_WIDTH_DP);
+    }
+
+    private int listActionWidth() {
+        return px(LIST_ACTION_WIDTH_DP);
+    }
+
+    public int bottomSafePadding() {
+        return px(BOTTOM_SAFE_PADDING_DP);
     }
 
     public int px(int dp) {

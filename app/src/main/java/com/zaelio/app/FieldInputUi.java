@@ -48,7 +48,7 @@ final class FieldInputUi {
         LinearLayout fieldBox = new LinearLayout(activity);
         fieldBox.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams fieldBoxLp = new LinearLayout.LayoutParams(-1, -2);
-        fieldBoxLp.bottomMargin = ui.px(18);
+        fieldBoxLp.bottomMargin = ui.dialogPaddingY();
         box.addView(fieldBox, fieldBoxLp);
 
         TextView label = new TextView(activity);
@@ -56,7 +56,7 @@ final class FieldInputUi {
         label.setTextSize(ui.sp(15));
         label.setTextColor(theme.primaryTextColor());
         label.setTypeface(Typeface.DEFAULT_BOLD);
-        label.setPadding(0, 0, 0, ui.px(8));
+        label.setPadding(0, 0, 0, ui.spaceS());
         fieldBox.addView(label);
 
         Object value = values.get(field.key);
@@ -78,7 +78,7 @@ final class FieldInputUi {
         editText.setMaxLines(stringMaxLines());
         editText.setGravity(Gravity.TOP | Gravity.START);
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        editText.setPadding(ui.px(12), ui.px(10), ui.px(12), ui.px(10));
+        editText.setPadding(ui.spaceM(), ui.spaceSm(), ui.spaceM(), ui.spaceSm());
         editText.setEnabled(!readOnly);
         if (!readOnly) {
             watchTextChange(editText, onChange);
@@ -103,7 +103,7 @@ final class FieldInputUi {
         Button toggle = timers.containsKey(field.key) ? ui.dangerButton("Stop") : ui.primaryButton("Start");
         Button reset = ui.ghostButton("Reset");
         LinearLayout.LayoutParams toggleLp = new LinearLayout.LayoutParams(0, timerHeight, 2f);
-        toggleLp.rightMargin = ui.px(8);
+        toggleLp.rightMargin = ui.spaceS();
         row.addView(toggle, toggleLp);
         row.addView(reset, new LinearLayout.LayoutParams(0, timerHeight, 1f));
         fieldBox.addView(row);
@@ -146,7 +146,7 @@ final class FieldInputUi {
                 : InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
         editText.setGravity(Gravity.CENTER);
         editText.setTextSize(ui.sp(14));
-        editText.setPadding(ui.px(12), 0, ui.px(12), 0);
+        editText.setPadding(ui.spaceM(), 0, ui.spaceM(), 0);
         editText.setEnabled(!readOnly);
         minus.setEnabled(!readOnly);
         plus.setEnabled(!readOnly);
@@ -168,9 +168,9 @@ final class FieldInputUi {
 
         int inputHeight = numericHeight();
         LinearLayout.LayoutParams minusLp = new LinearLayout.LayoutParams(0, inputHeight, 1f);
-        minusLp.rightMargin = ui.px(8);
+        minusLp.rightMargin = ui.spaceS();
         LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(numericValueWidth(), inputHeight);
-        editLp.rightMargin = ui.px(8);
+        editLp.rightMargin = ui.spaceS();
         row.addView(minus, minusLp);
         row.addView(editText, editLp);
         row.addView(plus, new LinearLayout.LayoutParams(0, inputHeight, 1f));
@@ -183,7 +183,7 @@ final class FieldInputUi {
         editText.setText(value == null ? "" : String.valueOf(value));
         editText.setTextColor(theme.primaryTextColor());
         editText.setHintTextColor(theme.mutedTextColor());
-        editText.setMinHeight(ui.px(48));
+        editText.setMinHeight(ui.buttonHeight());
         editText.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
         return editText;
     }

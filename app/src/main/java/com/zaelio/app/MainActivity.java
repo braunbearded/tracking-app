@@ -151,7 +151,7 @@ public class MainActivity extends Activity {
 
     private void showOverflowMenu(View anchor) {
         LinearLayout card = ui.contentCard();
-        card.setPadding(ui.px(20), ui.px(18), ui.px(20), ui.px(16));
+        card.setPadding(ui.spaceXl(), ui.dialogPaddingY(), ui.spaceXl(), ui.spaceL());
         ui.addDialogTitle(card, "Menü");
 
         final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
@@ -175,7 +175,7 @@ public class MainActivity extends Activity {
         Button button = ui.secondaryButton(text);
         button.setOnClickListener(v -> onClick.run());
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = ui.px(8);
+        lp.bottomMargin = ui.spaceS();
         button.setLayoutParams(lp);
         return button;
     }
@@ -200,11 +200,11 @@ public class MainActivity extends Activity {
         exportButton.setOnClickListener(v -> chooseExportJson(mode));
         row.addView(importButton, new LinearLayout.LayoutParams(0, -2, 1));
         LinearLayout.LayoutParams exportLp = new LinearLayout.LayoutParams(0, -2, 1);
-        exportLp.leftMargin = ui.px(8);
+        exportLp.leftMargin = ui.spaceS();
         row.addView(exportButton, exportLp);
         card.addView(row);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = ui.px(12);
+        lp.bottomMargin = ui.spaceM();
         card.setLayoutParams(lp);
         return card;
     }

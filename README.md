@@ -113,6 +113,7 @@ app/src/main/java/com/zaelio/app/
 ├── JsonUtil.java                  # JSON-Helfer
 ├── Models.java                    # Datenmodelle
 ├── HomeUi.java                    # Session-/Tracker-Übersicht
+├── ReorderHelper.java             # Gemeinsames Drag-Reorder-Verhalten
 ├── TrackerFlowUi.java             # Tracker-Editor und Session-Routing
 ├── FieldInputUi.java              # Eingabefelder, Timer und Zahlensteuerung
 ├── theme/ThemeStore.java          # Theme, Akzentfarbe, Schriftgröße

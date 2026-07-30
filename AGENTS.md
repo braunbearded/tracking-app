@@ -10,6 +10,7 @@ This is a single-module Android app without Google Play Services.
 - `ui/AppUi.java` builds shared Material-style widgets.
 - `ui/SettingsUi.java` renders the settings and About screens.
 - `HomeUi.java` renders the session and tracker overviews, including long-press/left-swipe/overflow-menu delete gestures and drag-handle ordering.
+- `ReorderHelper.java` contains shared constrained drag-reorder touch logic for overview and editor lists.
 - `TrackerFlowUi.java` owns the tracker editor, session flow, and tracker selection.
 - `FieldInputUi.java` renders session field controls, including timers, numeric controls, and multiline text.
 - `TrackerJsonRepository.java`, `BackupJsonRepository.java`, `JsonUtil.java`, and `Models.java` cover JSON persistence, backup import/export, and model classes.
@@ -50,6 +51,8 @@ Keep UI changes consistent with the current Material 3 direction:
 - settings, data transfer, and about screens should remain compact and scrollable on small screens
 - shared screen/dialog helpers belong in `ui/AppUi.java`; screen-specific settings logic belongs in `ui/SettingsUi.java`
 - overview lists, delete gestures, and drag ordering belong in `HomeUi.java`; keep `MainActivity.java` focused on routing and lifecycle
+- shared spacing/touch-size constants and list-row/action-icon widgets belong in `ui/AppUi.java`; avoid scattering repeated `ui.px(...)` literals through screen code
+- shared reorder mechanics belong in `ReorderHelper.java`; list-specific persistence stays with the owning screen/database code
 - tracker editing and session routing belong in `TrackerFlowUi.java`; individual session input widgets belong in `FieldInputUi.java`
 
 ## Testing Guidelines
