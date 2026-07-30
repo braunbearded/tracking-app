@@ -13,7 +13,6 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
@@ -56,15 +55,16 @@ public final class HomeUi {
                 continue;
             }
 
-            OverviewCard row = overviewCard(
+            LinearLayout card = overviewCard(
                     tracker.name,
                     date(session.createdAt),
                     preview(session.id, tracker),
                     () -> openSession.accept(session.id),
-                    restore -> confirmDeleteSession(session, restore));
-            row.card.setTag(session.id);
-            attachOverviewReorder(row.handle, box, row.card, () -> db.reorderSessions(childIds(box)));
-            box.addView(row.card, cardLayoutParams());
+                    restore -> confirmDeleteSession(session, restore),
+                    box,
+                    () -> db.reorderSessions(childIds(box)));
+            card.setTag(session.id);
+            box.addView(card, cardLayoutParams());
         }
 
         if (sessions.isEmpty()) {
@@ -80,15 +80,16 @@ public final class HomeUi {
 
         java.util.List<Tracker> trackers = db.trackers();
         for (Tracker tracker : trackers) {
-            OverviewCard row = overviewCard(
+            LinearLayout card = overviewCard(
                     tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name,
                     null,
                     fieldPreview(tracker),
                     () -> editTracker.accept(tracker.id),
-                    restore -> confirmDeleteTracker(tracker, restore));
-            row.card.setTag(tracker.id);
-            attachOverviewReorder(row.handle, box, row.card, () -> db.reorderTrackers(childIds(box)));
-            box.addView(row.card, cardLayoutParams());
+                    restore -> confirmDeleteTracker(tracker, restore),
+                    box,
+                    () -> db.reorderTrackers(childIds(box)));
+            card.setTag(tracker.id);
+            box.addView(card, cardLayoutParams());
         }
 
         body.addView(scrollView);
@@ -108,7 +109,9 @@ public final class HomeUi {
         return box;
     }
 
-    private OverviewCard overviewCard(String title, String meta, String previewText, Runnable open, Consumer<Runnable> deleteAction) {
+    private LinearLayout overviewCard(String title, String meta, String previewText, Runnable open,
+                                      Consumer<Runnable> deleteAction, LinearLayout reorderContainer,
+                                      Runnable onReorder) {
         LinearLayout card = createCard();
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
@@ -160,7 +163,8 @@ public final class HomeUi {
         arrow.setOnClickListener(v -> open.run());
 
         card.addView(ui.listRow(handle, content, menu, arrow), new LinearLayout.LayoutParams(-1, -2));
-        return new OverviewCard(card, handle);
+        attachOverviewReorder(handle, reorderContainer, card, onReorder);
+        return card;
     }
 
     private LinearLayout createCard() {
@@ -308,7 +312,7 @@ public final class HomeUi {
     }
 
     private void confirmDeleteSession(Session session, Runnable restore) {
-        showDeleteDialog("Session löschen", "Diese Session wirklich löschen?", () -> {
+        ui.confirmDelete("Session löschen", "Diese Session wirklich löschen?", () -> {
             db.deleteSession(session.id);
             refresh.run();
         }, restore);
@@ -316,38 +320,12 @@ public final class HomeUi {
 
     private void confirmDeleteTracker(Tracker tracker, Runnable restore) {
         String name = tracker.name == null || tracker.name.trim().isEmpty() ? "Diesen Tracker" : tracker.name;
-        showDeleteDialog("Tracker löschen", name + " wirklich löschen?", () -> {
+        ui.confirmDelete("Tracker löschen", name + " wirklich löschen?", () -> {
             db.deleteTracker(tracker.id);
             refresh.run();
         }, restore);
     }
 
-    private void showDeleteDialog(String title, String message, Runnable onDelete, Runnable onDismiss) {
-        LinearLayout card = ui.contentCard();
-        card.setPadding(ui.spaceXl(), ui.dialogPaddingY(), ui.spaceXl(), ui.spaceL());
-
-        ui.addDialogTitle(card, title);
-        ui.addDialogMessage(card, message);
-
-        LinearLayout buttons = new LinearLayout(activity);
-        buttons.setOrientation(LinearLayout.HORIZONTAL);
-        Button cancel = ui.secondaryButton("Abbrechen");
-        Button delete = ui.dangerButton("Löschen");
-        buttons.addView(cancel, new LinearLayout.LayoutParams(0, -2, 1));
-        LinearLayout.LayoutParams deleteLp = new LinearLayout.LayoutParams(0, -2, 1);
-        deleteLp.leftMargin = ui.spaceS();
-        buttons.addView(delete, deleteLp);
-        card.addView(buttons);
-
-        final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
-        dialog[0] = ui.showCardDialog(card);
-        dialog[0].setOnDismissListener(d -> onDismiss.run());
-        cancel.setOnClickListener(v -> dialog[0].dismiss());
-        delete.setOnClickListener(v -> {
-            dialog[0].dismiss();
-            onDelete.run();
-        });
-    }
 
     private String preview(long sessionId, Tracker tracker) {
         java.util.Map<Long, ItemRecord> records = db.records(sessionId);
@@ -427,13 +405,4 @@ public final class HomeUi {
                 .format(new java.util.Date(millis));
     }
 
-    private static final class OverviewCard {
-        final LinearLayout card;
-        final View handle;
-
-        OverviewCard(LinearLayout card, View handle) {
-            this.card = card;
-            this.handle = handle;
-        }
-    }
 }

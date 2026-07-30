@@ -191,7 +191,7 @@ public class MainActivity extends Activity {
 
     private View transferCard(String title, String subtitle, int mode) {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, null, title, subtitle);
+        ui.addSectionHeader(card, title, subtitle);
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         Button importButton = ui.secondaryButton("Importieren");

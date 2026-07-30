@@ -43,6 +43,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -55,14 +56,14 @@ public final class TrackerFlowUi {
     private final Handler handler;
     private final Runnable backToSessions;
     private final Runnable backToTrackers;
-    private final BackActionSetter setBackAction;
+    private final Consumer<Runnable> setBackAction;
     private final Map<String, Long> timers = new HashMap<>();
     private final FieldInputUi fieldInputUi;
     private LinearLayout root;
 
     public TrackerFlowUi(Activity activity, TrackingDatabase db, ThemeStore theme, AppUi ui,
                          Handler handler, Runnable backToSessions, Runnable backToTrackers,
-                         BackActionSetter setBackAction) {
+                         Consumer<Runnable> setBackAction) {
         this.activity = activity;
         this.db = db;
         this.theme = theme;
@@ -193,7 +194,7 @@ public final class TrackerFlowUi {
         TrackerEditorForm form = buildTrackerEditorForm(tracker);
         LinearLayout formCard = ui.contentCard();
         formCard.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
-        ui.addSectionHeader(formCard, null, "Grunddaten", null);
+        ui.addSectionHeader(formCard, "Grunddaten", null);
 
         formCard.addView(outlinedInput("Tracker-Name", form.nameInput));
         TextInputLayout descriptionInput = outlinedInput("Beschreibung", form.descriptionInput);
@@ -275,13 +276,14 @@ public final class TrackerFlowUi {
 
         if (!tracker.items.isEmpty()) {
             for (Item item : tracker.items) {
-                addItemEditor(itemsContainer, form.items, item, scheduleSave);
+                addItemEditor(scrollView, itemsContainer, form.items, item, scheduleSave);
             }
         }
         updateItemsHeaderRef[0].run();
 
         addItem.setOnClickListener(v -> {
-            addItemEditor(itemsContainer, form.items, null, scheduleSave);
+            ItemEditorViews added = addItemEditor(scrollView, itemsContainer, form.items, null, scheduleSave);
+            scrollIntoView(scrollView, added.card);
             scheduleSave.run();
         });
 
@@ -311,7 +313,7 @@ public final class TrackerFlowUi {
             LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
             cardLp.bottomMargin = ui.spaceXl();
 
-            ui.addSectionHeader(card, null, item.title, null);
+            ui.addSectionHeader(card, item.title, null);
 
             for (FieldDefinition field : item.fields) {
                 fieldInputUi.fieldControl(card, field, values, inputs, false, () -> saveSessionItem(session, item, inputs));
@@ -457,7 +459,7 @@ public final class TrackerFlowUi {
         watchTextChange(form.descriptionInput, scheduleSave);
     }
 
-    private ItemEditorViews addItemEditor(LinearLayout container, List<ItemEditorViews> itemEditors, Item item, Runnable scheduleSave) {
+    private ItemEditorViews addItemEditor(ScrollView scrollView, LinearLayout container, List<ItemEditorViews> itemEditors, Item item, Runnable scheduleSave) {
         ItemEditorViews views = new ItemEditorViews();
 
         if (itemEditors.isEmpty() && container.getChildCount() == 1) {
@@ -539,20 +541,22 @@ public final class TrackerFlowUi {
         };
         if (item != null) {
             for (FieldDefinition field : item.fields) {
-                addFieldEditor(fieldsContainer, views.fields, field, itemChanged);
+                addFieldEditor(scrollView, fieldsContainer, views.fields, field, itemChanged);
             }
         } else {
-            addFieldEditor(fieldsContainer, views.fields, null, itemChanged);
+            addFieldEditor(scrollView, fieldsContainer, views.fields, null, itemChanged);
         }
 
         watchTextChange(views.titleInput, itemChanged);
         addField.setOnClickListener(v -> {
-            addFieldEditor(fieldsContainer, views.fields, null, itemChanged);
+            FieldEditorViews added = addFieldEditor(scrollView, fieldsContainer, views.fields, null, itemChanged);
+            scrollIntoView(scrollView, added.row);
             itemChanged.run();
         });
         final LinearLayout[] shellRef = new LinearLayout[1];
         Runnable duplicateAction = () -> {
-            addItemEditor(container, itemEditors, itemFromViews(views), scheduleSave);
+            ItemEditorViews added = addItemEditor(scrollView, container, itemEditors, itemFromViews(views), scheduleSave);
+            scrollIntoView(scrollView, added.card);
             scheduleSave.run();
         };
         Runnable removeAction = () -> {
@@ -628,7 +632,7 @@ public final class TrackerFlowUi {
         }
     }
 
-    private FieldEditorViews addFieldEditor(LinearLayout container, List<FieldEditorViews> fieldEditors, FieldDefinition field, Runnable scheduleSave) {
+    private FieldEditorViews addFieldEditor(ScrollView scrollView, LinearLayout container, List<FieldEditorViews> fieldEditors, FieldDefinition field, Runnable scheduleSave) {
         FieldEditorViews views = new FieldEditorViews();
 
         View reorder = reorderHandle();
@@ -775,7 +779,8 @@ public final class TrackerFlowUi {
 
         final LinearLayout[] shellRef = new LinearLayout[1];
         Runnable duplicateAction = () -> {
-            addFieldEditor(container, fieldEditors, fieldFromViews(views), scheduleSave);
+            FieldEditorViews added = addFieldEditor(scrollView, container, fieldEditors, fieldFromViews(views), scheduleSave);
+            scrollIntoView(scrollView, added.row);
             scheduleSave.run();
         };
         Runnable removeAction = () -> {
@@ -887,6 +892,18 @@ public final class TrackerFlowUi {
         return handle;
     }
 
+    private void scrollIntoView(ScrollView scrollView, View target) {
+        if (target == null) {
+            return;
+        }
+        target.post(() -> {
+            Rect rect = new Rect();
+            target.getDrawingRect(rect);
+            scrollView.offsetDescendantRectToMyCoords(target, rect);
+            scrollView.smoothScrollTo(0, Math.max(0, rect.top - ui.spaceM()));
+        });
+    }
+
     private void expandReorderTouchArea(View parent, View row, View handle) {
         parent.post(() -> {
             Rect rect = new Rect();
@@ -927,18 +944,6 @@ public final class TrackerFlowUi {
         view.setClickable(true);
         view.setFocusable(true);
         return view;
-    }
-
-    private LinearLayout.LayoutParams compactActionButtonLp() {
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ui.buttonHeight(), ui.buttonHeight());
-        lp.rightMargin = ui.spaceS();
-        return lp;
-    }
-
-    private LinearLayout.LayoutParams weightedActionButtonLp() {
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ui.buttonHeight(), 1);
-        lp.leftMargin = ui.spaceS();
-        return lp;
     }
 
     private <T> void reorderList(List<T> list, T item, int direction) {
@@ -1275,29 +1280,21 @@ public final class TrackerFlowUi {
     }
 
     private void confirmDeleteTracker(long trackerId, String trackerName) {
-        new android.app.AlertDialog.Builder(activity)
-                .setTitle("Tracker löschen")
-                .setMessage((trackerName == null || trackerName.trim().isEmpty() ? "Diesen Tracker" : trackerName) + " wirklich löschen?")
-                .setPositiveButton("Löschen", (dialog, which) -> {
+        ui.confirmDelete("Tracker löschen",
+                (trackerName == null || trackerName.trim().isEmpty() ? "Diesen Tracker" : trackerName) + " wirklich löschen?",
+                () -> {
                     db.deleteTracker(trackerId);
                     clearTimers();
                     backToTrackers.run();
-                })
-                .setNegativeButton("Abbrechen", null)
-                .show();
+                }, null);
     }
 
     private void confirmDeleteSession(long sessionId) {
-        new android.app.AlertDialog.Builder(activity)
-                .setTitle("Session löschen")
-                .setMessage("Diese Session wirklich löschen?")
-                .setPositiveButton("Löschen", (dialog, which) -> {
-                    db.deleteSession(sessionId);
-                    clearTimers();
-                    backToSessions.run();
-                })
-                .setNegativeButton("Abbrechen", null)
-                .show();
+        ui.confirmDelete("Session löschen", "Diese Session wirklich löschen?", () -> {
+            db.deleteSession(sessionId);
+            clearTimers();
+            backToSessions.run();
+        }, null);
     }
 
     private LinearLayout footerButton(String text, Runnable onClick) {
@@ -1322,10 +1319,6 @@ public final class TrackerFlowUi {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(theme.backgroundColor());
         activity.setContentView(root);
-    }
-
-    interface BackActionSetter {
-        void accept(Runnable backAction);
     }
 
     private static final class TrackerEditorForm {

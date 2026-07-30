@@ -332,13 +332,9 @@ public final class AppUi {
         card.addView(message);
     }
 
-    public void addSectionHeader(LinearLayout container, String eyebrowText, String titleText, String subtitleText) {
-        if (eyebrowText != null && !eyebrowText.isEmpty()) {
-            container.addView(chip(eyebrowText, theme.surfaceAltColor(), theme.mutedTextColor()));
-        }
-
+    public void addSectionHeader(LinearLayout container, String titleText, String subtitleText) {
         TextView title = tv(titleText, 18);
-        title.setPadding(0, eyebrowText == null || eyebrowText.isEmpty() ? 0 : px(4), 0, px(4));
+        title.setPadding(0, 0, 0, spaceXs());
         container.addView(title);
 
         if (subtitleText != null && !subtitleText.isEmpty()) {
@@ -346,48 +342,39 @@ public final class AppUi {
             subtitle.setText(subtitleText);
             subtitle.setTextSize(sp(14));
             subtitle.setTextColor(theme.secondaryTextColor());
-            subtitle.setPadding(0, 0, 0, px(12));
+            subtitle.setPadding(0, 0, 0, spaceM());
             container.addView(subtitle);
         }
     }
 
-    public LinearLayout metaRow(String left, String right) {
-        LinearLayout metaRow = new LinearLayout(activity);
-        metaRow.setOrientation(LinearLayout.HORIZONTAL);
-        metaRow.setWeightSum(2);
-        metaRow.setPadding(0, 0, 0, px(12));
+    public void confirmDelete(String title, String message, Runnable onDelete, Runnable onDismiss) {
+        LinearLayout card = contentCard();
+        card.setPadding(spaceXl(), dialogPaddingY(), spaceXl(), spaceL());
+        addDialogTitle(card, title);
+        addDialogMessage(card, message);
 
-        TextView leftMeta = new TextView(activity);
-        leftMeta.setText(left);
-        leftMeta.setTextSize(sp(13));
-        leftMeta.setTextColor(theme.mutedTextColor());
-        metaRow.addView(leftMeta, new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout buttons = new LinearLayout(activity);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        Button cancel = secondaryButton("Abbrechen");
+        Button delete = dangerButton("Löschen");
+        buttons.addView(cancel, new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout.LayoutParams deleteLp = new LinearLayout.LayoutParams(0, -2, 1);
+        deleteLp.leftMargin = spaceS();
+        buttons.addView(delete, deleteLp);
+        card.addView(buttons);
 
-        TextView rightMeta = new TextView(activity);
-        rightMeta.setText(right);
-        rightMeta.setTextSize(sp(13));
-        rightMeta.setTextColor(theme.mutedTextColor());
-        rightMeta.setGravity(Gravity.END);
-        metaRow.addView(rightMeta, new LinearLayout.LayoutParams(0, -2, 1));
-        return metaRow;
-    }
-
-    public TextView chip(String text, int backgroundColor, int textColor) {
-        TextView chip = new TextView(activity);
-        chip.setText(text);
-        chip.setTextSize(sp(12));
-        chip.setTextColor(textColor);
-        chip.setPadding(px(10), px(6), px(10), px(6));
-
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(backgroundColor);
-        drawable.setCornerRadius(px(CORNER_RADIUS_DP));
-        chip.setBackground(drawable);
-
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
-        lp.rightMargin = px(8);
-        chip.setLayoutParams(lp);
-        return chip;
+        final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
+        dialog[0] = showCardDialog(card);
+        dialog[0].setOnDismissListener(d -> {
+            if (onDismiss != null) {
+                onDismiss.run();
+            }
+        });
+        cancel.setOnClickListener(v -> dialog[0].dismiss());
+        delete.setOnClickListener(v -> {
+            dialog[0].dismiss();
+            onDelete.run();
+        });
     }
 
     public GradientDrawable makeRoundedCard(int fillColor, int strokeColor) {

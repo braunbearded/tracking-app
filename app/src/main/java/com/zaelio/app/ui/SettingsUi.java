@@ -56,7 +56,7 @@ public final class SettingsUi {
         }
 
         LinearLayout appCard = ui.contentCard();
-        ui.addSectionHeader(appCard, null, "Zaelio", "Offline Tracker ohne Google-Dienste");
+        ui.addSectionHeader(appCard, "Zaelio", "Offline Tracker ohne Google-Dienste");
         box.addView(appCard, cardLp());
 
         box.addView(aboutInfoCard("Quellcode", "github.com/zaelio/zaelio", true));
@@ -120,7 +120,7 @@ public final class SettingsUi {
 
     private View choiceCard(String title, int count, int selected, int idBase, IntFunction<String> labelAt, IntConsumer selectAt) {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, null, title, null);
+        ui.addSectionHeader(card, title, null);
 
         ChipGroup group = new ChipGroup(activity);
         group.setSingleSelection(true);
@@ -175,7 +175,7 @@ public final class SettingsUi {
 
     private View accentCard() {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, null, "Akzentfarbe", null);
+        ui.addSectionHeader(card, "Akzentfarbe", null);
 
         for (int rowIndex = 0; rowIndex < 2; rowIndex++) {
             LinearLayout row = new LinearLayout(activity);
