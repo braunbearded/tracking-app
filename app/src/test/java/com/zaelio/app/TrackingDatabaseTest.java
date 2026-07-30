@@ -6,7 +6,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import androidx.test.core.app.ApplicationProvider;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.After;
@@ -83,5 +85,50 @@ public class TrackingDatabaseTest {
 
         assertNotEquals(first, second);
         assertNotNull(db.session(second));
+    }
+
+    @Test
+    public void overviewOrderPersistsForTrackersAndSessions() {
+        Tracker seed = db.trackers().get(0);
+        long secondTrackerId = db.insertTracker(db.getWritableDatabase(), "Second", "");
+        long firstSessionId = db.createSession(seed.id);
+        long secondSessionId = db.createSession(seed.id);
+
+        assertEquals(secondTrackerId, db.trackers().get(0).id);
+        assertEquals(secondSessionId, db.sessions().get(0).id);
+
+        db.reorderTrackers(Arrays.asList(seed.id, secondTrackerId));
+        db.reorderSessions(Arrays.asList(firstSessionId, secondSessionId));
+        db.close();
+        db = new TrackingDatabase(context);
+
+        assertEquals(seed.id, db.trackers().get(0).id);
+        assertEquals(secondTrackerId, db.trackers().get(1).id);
+        assertEquals(firstSessionId, db.sessions().get(0).id);
+        assertEquals(secondSessionId, db.sessions().get(1).id);
+    }
+
+    @Test
+    public void upgradeFromVersionFiveAddsOverviewOrderAndKeepsOldSort() {
+        db.close();
+        context.deleteDatabase("tracking.sqlite");
+        SQLiteDatabase old = SQLiteDatabase.openOrCreateDatabase(context.getDatabasePath("tracking.sqlite"), null);
+        old.execSQL("CREATE TABLE trackers(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,description TEXT,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL)");
+        old.execSQL("CREATE TABLE fields(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,itemTitle TEXT,itemOrder INTEGER NOT NULL DEFAULT 0,fieldKey TEXT NOT NULL,label TEXT NOT NULL,type TEXT NOT NULL,sortOrder INTEGER NOT NULL,defaultValue TEXT,incrementValue REAL,unit TEXT,required INTEGER NOT NULL,prefillFromPrevious INTEGER NOT NULL)");
+        old.execSQL("CREATE TABLE sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL)");
+        old.execSQL("CREATE TABLE field_records(id INTEGER PRIMARY KEY AUTOINCREMENT,sessionId INTEGER NOT NULL,trackerId INTEGER NOT NULL,fieldId INTEGER NOT NULL,fieldKey TEXT NOT NULL,valuesJson TEXT NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,UNIQUE(sessionId,fieldId))");
+        old.execSQL("INSERT INTO trackers(id,name,description,createdAt,updatedAt) VALUES(1,'Old','',100,100)");
+        old.execSQL("INSERT INTO trackers(id,name,description,createdAt,updatedAt) VALUES(2,'New','',100,200)");
+        old.execSQL("INSERT INTO sessions(id,trackerId,createdAt,updatedAt) VALUES(1,1,100,100)");
+        old.execSQL("INSERT INTO sessions(id,trackerId,createdAt,updatedAt) VALUES(2,1,200,200)");
+        old.setVersion(5);
+        old.close();
+
+        db = new TrackingDatabase(context);
+
+        assertEquals(2, db.trackers().get(0).id);
+        assertEquals(1, db.trackers().get(1).id);
+        assertEquals(2, db.sessions().get(0).id);
+        assertEquals(1, db.sessions().get(1).id);
     }
 }

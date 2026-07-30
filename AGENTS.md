@@ -5,11 +5,11 @@ This is a single-module Android app without Google Play Services.
 
 - `app/src/main/java/com/zaelio/app/` contains app code.
   - `MainActivity.java` owns routing, lifecycle, top app bar actions, and bottom navigation.
-- `TrackingDatabase.java` handles SQLite schema, migrations, seed data, and data access. Current schema version is 5.
+- `TrackingDatabase.java` handles SQLite schema, migrations, seed data, and data access. Current schema version is 6.
 - `theme/ThemeStore.java` stores theme mode, accent color, font scale, and derived palette values.
 - `ui/AppUi.java` builds shared Material-style widgets.
 - `ui/SettingsUi.java` renders the settings and About screens.
-- `HomeUi.java` renders the session and tracker overviews, including long-press/left-swipe delete gestures.
+- `HomeUi.java` renders the session and tracker overviews, including long-press/left-swipe/overflow-menu delete gestures and drag-handle ordering.
 - `TrackerFlowUi.java` owns the tracker editor, session flow, and tracker selection.
 - `FieldInputUi.java` renders session field controls, including timers, numeric controls, and multiline text.
 - `TrackerJsonRepository.java`, `BackupJsonRepository.java`, `JsonUtil.java`, and `Models.java` cover JSON persistence, backup import/export, and model classes.
@@ -20,9 +20,13 @@ This is a single-module Android app without Google Play Services.
 Use the Gradle wrapper from the repository root.
 
 - `./gradlew assembleDebug` builds a debug APK.
-- `./gradlew testDebugUnitTest` runs local JVM/Robolectric tests.
+- `./gradlew testDebugUnitTest` runs local JVM/Robolectric tests. Run this before reporting a completed code change unless the user explicitly asks not to.
 - `./gradlew assembleRelease` builds a release APK if signing is configured.
 - `./gradlew clean` removes build outputs.
+
+After code changes, run `./gradlew testDebugUnitTest` and inspect the output for real failures, warnings, or skipped coverage concerns; do not rely only on the final success line. For UI/build-impacting changes, also run `./gradlew assembleDebug`.
+
+When behavior, commands, schema, project structure, or user-facing features change, update the relevant docs in the same change (`README.md`, `AGENTS.md`, or other docs).
 
 Keep the standard Gradle wrapper files committed: `gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar`, and `gradle/wrapper/gradle-wrapper.properties`.
 
@@ -45,7 +49,7 @@ Keep UI changes consistent with the current Material 3 direction:
 - footer touch areas should stay rectangular and extend to the edges
 - settings, data transfer, and about screens should remain compact and scrollable on small screens
 - shared screen/dialog helpers belong in `ui/AppUi.java`; screen-specific settings logic belongs in `ui/SettingsUi.java`
-- overview lists and their delete gestures belong in `HomeUi.java`; keep `MainActivity.java` focused on routing and lifecycle
+- overview lists, delete gestures, and drag ordering belong in `HomeUi.java`; keep `MainActivity.java` focused on routing and lifecycle
 - tracker editing and session routing belong in `TrackerFlowUi.java`; individual session input widgets belong in `FieldInputUi.java`
 
 ## Testing Guidelines
@@ -53,7 +57,7 @@ Unit tests live under `app/src/test/` and use JUnit 4 plus Robolectric for Andro
 
 Prioritize tests for:
 
-- SQLite migrations, especially upgrades from schema versions before 3.
+- SQLite migrations, especially upgrades from schema versions before 3 and the schema 6 overview-order migration.
 - Tracker/session JSON import/export and editor autosave behavior.
 - Session record preservation when tracker definitions are edited or imported.
 - Numeric, duration, and string field parsing and field-size behavior.
@@ -76,6 +80,7 @@ Before changing persistence or editor flows, check these areas carefully:
 - The app builds its UI programmatically. Keep shared widgets in `ui/AppUi.java` and avoid duplicating style logic in screen classes.
 - Timer state in `TrackerFlowUi` is in-memory and should be cleared on screen exit or activity destruction.
 - Delete candidate feedback in overview lists should stay clear even when the accent color is red; keep the non-color cue (strikethrough/scale/alpha) alongside vibration.
+- Overview ordering is persisted through `overviewOrder`; new rows should remain visible near the top and migrations should preserve the old newest-first default order.
 
 ## Security & Configuration Tips
 Do not commit `local.properties`, keystores, or other machine-specific Android SDK settings. The project is intended to stay Android-only, with SQLite storage and no hidden Google service dependency.

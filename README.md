@@ -6,7 +6,9 @@ Eine kleine Android-App zum Erstellen eigener Tracker, Starten von Sessions und 
 
 - Eigene Tracker mit Feldern und Items erstellen
 - Sessions erfassen und fortsetzen
-- Listen-Einträge per Long-Press oder Links-Swipe zum Löschen markieren, inklusive Vibration und visueller Hervorhebung
+- Listen-Einträge per Long-Press, Links-Swipe oder `...`-Menü löschen
+- Sessions und Tracker per Drag-Handle in der Übersicht sortieren
+- Android-Zurück navigiert sinnvoll; auf Home beendet erst ein schneller Doppel-Zurück-Druck die App
 - Werte lokal in SQLite speichern
 - Tracker, Sessions oder komplette Backups als JSON importieren/exportieren
 - Helles/dunkles Design, Schriftgröße, Akzentfarbe und globale Feldgröße einstellbar
@@ -105,7 +107,7 @@ Danach eine Signing Config in `app/build.gradle` ergänzen oder die APK extern m
 ```text
 app/src/main/java/com/zaelio/app/
 ├── MainActivity.java              # Routing, Lifecycle, Top Bar, Navigation
-├── TrackingDatabase.java          # SQLite Schema, Migrationen, Datenzugriff
+├── TrackingDatabase.java          # SQLite Schema v6, Migrationen, Datenzugriff
 ├── TrackerJsonRepository.java     # JSON Import/Export und Tracker-Speicherung
 ├── BackupJsonRepository.java      # JSON Backup für Tracker, Sessions und Werte
 ├── JsonUtil.java                  # JSON-Helfer
@@ -130,7 +132,7 @@ Lokale Unit-Tests laufen mit JUnit und Robolectric:
 Aktueller Fokus:
 
 - `JsonUtilTest` prüft JSON-Roundtrips und Tracker-Export.
-- `TrackingDatabaseTest` prüft Seed-Daten, Sessions, Records, Previous Values und Löschlogik.
+- `TrackingDatabaseTest` prüft Seed-Daten, Sessions, Records, Previous Values, Löschlogik, Übersichtssortierung und Migration auf Schema v6.
 - `BackupJsonRepositoryTest` prüft kompletten Export/Import sowie Tracker-only Export.
 
 Zusätzlicher Build-Check:
