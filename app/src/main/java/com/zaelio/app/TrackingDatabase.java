@@ -16,7 +16,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
     static final Object NO_PREVIOUS = new Object();
 
     TrackingDatabase(Context context) {
-        super(context, "tracking.sqlite", null, 5);
+        super(context, "tracking.sqlite", null, 6);
     }
 
     @Override
@@ -26,9 +26,9 @@ final class TrackingDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE trackers(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,description TEXT,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE trackers(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,description TEXT,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,overviewOrder INTEGER NOT NULL DEFAULT 0)");
         db.execSQL("CREATE TABLE fields(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,itemTitle TEXT,itemOrder INTEGER NOT NULL DEFAULT 0,fieldKey TEXT NOT NULL,label TEXT NOT NULL,type TEXT NOT NULL,sortOrder INTEGER NOT NULL,defaultValue TEXT,incrementValue REAL,unit TEXT,required INTEGER NOT NULL,prefillFromPrevious INTEGER NOT NULL,FOREIGN KEY(trackerId) REFERENCES trackers(id) ON DELETE CASCADE)");
-        db.execSQL("CREATE TABLE sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,FOREIGN KEY(trackerId) REFERENCES trackers(id))");
+        db.execSQL("CREATE TABLE sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,overviewOrder INTEGER NOT NULL DEFAULT 0,FOREIGN KEY(trackerId) REFERENCES trackers(id))");
         db.execSQL("CREATE TABLE field_records(id INTEGER PRIMARY KEY AUTOINCREMENT,sessionId INTEGER NOT NULL,trackerId INTEGER NOT NULL,fieldId INTEGER NOT NULL,fieldKey TEXT NOT NULL,valuesJson TEXT NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,UNIQUE(sessionId,fieldId),FOREIGN KEY(sessionId) REFERENCES sessions(id),FOREIGN KEY(fieldId) REFERENCES fields(id))");
         seed(db);
     }
@@ -44,6 +44,16 @@ final class TrackingDatabase extends SQLiteOpenHelper {
         if (oldVersion < 4) {
             migrateFieldItemColumns(db);
         }
+        if (oldVersion < 6) {
+            migrateOverviewOrder(db);
+        }
+    }
+
+    private void migrateOverviewOrder(SQLiteDatabase db) {
+        db.execSQL("ALTER TABLE trackers ADD COLUMN overviewOrder INTEGER NOT NULL DEFAULT 0");
+        db.execSQL("ALTER TABLE sessions ADD COLUMN overviewOrder INTEGER NOT NULL DEFAULT 0");
+        initializeOverviewOrder(db, "trackers", "updatedAt DESC");
+        initializeOverviewOrder(db, "sessions", "createdAt DESC");
     }
 
     private void migrateFieldItemColumns(SQLiteDatabase db) {
@@ -197,6 +207,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
         values.put("description", desc);
         values.put("createdAt", now);
         values.put("updatedAt", now);
+        values.put("overviewOrder", nextOverviewOrder(db, "trackers"));
         return db.insert("trackers", null, values);
     }
 
@@ -242,7 +253,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
     List<Tracker> trackers() {
         SQLiteDatabase db = getReadableDatabase();
         List<Tracker> list = new ArrayList<>();
-        Cursor cursor = db.rawQuery("SELECT id FROM trackers ORDER BY updatedAt DESC", null);
+        Cursor cursor = db.rawQuery("SELECT id FROM trackers ORDER BY overviewOrder,id", null);
         try {
             while (cursor.moveToNext()) {
                 list.add(readTracker(db, cursor.getLong(0)));
@@ -329,7 +340,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
     List<Session> sessions() {
         List<Session> sessions = new ArrayList<>();
         Cursor cursor = getReadableDatabase().rawQuery(
-                "SELECT id,trackerId,createdAt,updatedAt FROM sessions ORDER BY createdAt DESC",
+                "SELECT id,trackerId,createdAt,updatedAt FROM sessions ORDER BY overviewOrder,id",
                 null);
         try {
             while (cursor.moveToNext()) {
@@ -372,7 +383,54 @@ final class TrackingDatabase extends SQLiteOpenHelper {
         values.put("trackerId", trackerId);
         values.put("createdAt", now);
         values.put("updatedAt", now);
+        values.put("overviewOrder", nextOverviewOrder(getWritableDatabase(), "sessions"));
         return getWritableDatabase().insert("sessions", null, values);
+    }
+
+    void reorderTrackers(List<Long> ids) {
+        reorderOverview("trackers", ids);
+    }
+
+    void reorderSessions(List<Long> ids) {
+        reorderOverview("sessions", ids);
+    }
+
+    private void reorderOverview(String table, List<Long> ids) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            for (int i = 0; i < ids.size(); i++) {
+                ContentValues values = new ContentValues();
+                values.put("overviewOrder", i);
+                db.update(table, values, "id=?", new String[]{String.valueOf(ids.get(i))});
+            }
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    private long nextOverviewOrder(SQLiteDatabase db, String table) {
+        Cursor cursor = db.rawQuery("SELECT COALESCE(MIN(overviewOrder),0)-1 FROM " + table, null);
+        try {
+            return cursor.moveToFirst() ? cursor.getLong(0) : 0;
+        } finally {
+            cursor.close();
+        }
+    }
+
+    private void initializeOverviewOrder(SQLiteDatabase db, String table, String orderBy) {
+        Cursor cursor = db.rawQuery("SELECT id FROM " + table + " ORDER BY " + orderBy, null);
+        try {
+            int order = 0;
+            while (cursor.moveToNext()) {
+                ContentValues values = new ContentValues();
+                values.put("overviewOrder", order++);
+                db.update(table, values, "id=?", new String[]{String.valueOf(cursor.getLong(0))});
+            }
+        } finally {
+            cursor.close();
+        }
     }
 
     void deleteSession(long sessionId) {

@@ -37,6 +37,8 @@ public class MainActivity extends Activity {
     private LinearLayout root;
     private int currentTab = 0;
     private int transferMode = 0;
+    private long lastBackPressMs = 0;
+    private Runnable currentBackAction;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
@@ -46,7 +48,7 @@ public class MainActivity extends Activity {
         ui = new AppUi(this, theme);
         db = new TrackingDatabase(this);
         settingsUi = new SettingsUi(this, theme, ui, this::refreshSettings, this::refreshHome);
-        trackerFlowUi = new TrackerFlowUi(this, db, theme, ui, handler, () -> showHome(0), () -> showHome(1));
+        trackerFlowUi = new TrackerFlowUi(this, db, theme, ui, handler, () -> showHome(0), () -> showHome(1), this::setBackAction);
         homeUi = new HomeUi(this, db, theme, ui, trackerFlowUi::openSession, trackerFlowUi::editTracker, this::refreshHome);
         showHome(0);
     }
@@ -65,6 +67,21 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    public void onBackPressed() {
+        if (currentBackAction != null) {
+            currentBackAction.run();
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastBackPressMs < 2000) {
+            super.onBackPressed();
+            return;
+        }
+        lastBackPressMs = now;
+        Toast.makeText(this, "Zum Beenden erneut Zurück drücken", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
     protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);
         if (trackerFlowUi != null) {
@@ -79,6 +96,11 @@ public class MainActivity extends Activity {
 
     private void refreshSettings() {
         showSettingsScreen();
+    }
+
+    private void setBackAction(Runnable backAction) {
+        currentBackAction = backAction;
+        lastBackPressMs = 0;
     }
 
     private View bottomNav(int selectedTab) {
@@ -104,6 +126,7 @@ public class MainActivity extends Activity {
 
     private void showHome(int tab) {
         currentTab = tab;
+        setBackAction(null);
         base();
 
         root.addView(ui.appBar("Zaelio", false, null, true, this::showOverflowMenu));
@@ -136,7 +159,7 @@ public class MainActivity extends Activity {
             dialog[0].dismiss();
             showSettingsScreen();
         }));
-        card.addView(menuButton("Daten ex/importieren", () -> {
+        card.addView(menuButton("Daten übertragen", () -> {
             dialog[0].dismiss();
             showDataTransferScreen();
         }));
@@ -158,16 +181,17 @@ public class MainActivity extends Activity {
     }
 
     private void showDataTransferScreen() {
+        setBackAction(this::refreshHome);
         base();
-        LinearLayout box = ui.screenBody(root, "Daten ex/importieren", this::refreshHome);
-        box.addView(transferCard("Alles", 0));
-        box.addView(transferCard("Tracker", 1));
-        box.addView(transferCard("Sessions", 2));
+        LinearLayout box = ui.screenBody(root, "Daten übertragen", this::refreshHome);
+        box.addView(transferCard("Vollständiges Backup", "Tracker und Sessions", 0));
+        box.addView(transferCard("Nur Tracker", "Vorlagen ohne Session-Einträge", 1));
+        box.addView(transferCard("Nur Sessions", "Gespeicherte Einträge", 2));
     }
 
-    private View transferCard(String title, int mode) {
+    private View transferCard(String title, String subtitle, int mode) {
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, null, title, null);
+        ui.addSectionHeader(card, null, title, subtitle);
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         Button importButton = ui.secondaryButton("Importieren");
@@ -242,11 +266,13 @@ public class MainActivity extends Activity {
     }
 
     private void showSettingsScreen() {
+        setBackAction(this::refreshHome);
         base();
         settingsUi.render(root);
     }
 
     private void showAboutScreen() {
+        setBackAction(this::refreshHome);
         base();
         settingsUi.renderAbout(root);
     }

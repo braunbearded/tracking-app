@@ -235,14 +235,22 @@ public final class AppUi {
     }
 
     public LinearLayout screenBody(LinearLayout root, String title, Runnable onBack) {
-        root.addView(appBar(title, true, onBack, false, null));
+        root.addView(appBar(title, false, null, false, null));
         ScrollView scrollView = new ScrollView(activity);
         scrollView.setFillViewport(true);
         LinearLayout body = new LinearLayout(activity);
         body.setOrientation(LinearLayout.VERTICAL);
-        body.setPadding(px(16), px(16), px(16), px(104));
+        body.setPadding(px(16), px(16), px(16), px(16));
         scrollView.addView(body);
         root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
+        if (onBack != null) {
+            LinearLayout footer = new LinearLayout(activity);
+            footer.setPadding(px(16), px(8), px(16), px(16));
+            Button button = secondaryButton("Zurück");
+            button.setOnClickListener(v -> onBack.run());
+            footer.addView(button, new LinearLayout.LayoutParams(-1, -2));
+            root.addView(footer);
+        }
         return body;
     }
 

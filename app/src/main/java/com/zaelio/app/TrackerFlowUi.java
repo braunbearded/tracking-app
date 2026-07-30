@@ -1,7 +1,8 @@
 package com.zaelio.app;
 
 import android.app.Activity;
-import android.content.ClipData;
+import android.content.res.ColorStateList;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -11,17 +12,19 @@ import android.os.Build;
 import android.os.Handler;
 import android.text.InputType;
 import android.text.Editable;
+import android.widget.Filter;
 import android.text.TextWatcher;
 import android.view.Gravity;
+import android.view.MotionEvent;
+import android.view.TouchDelegate;
 import android.view.View;
 import android.view.ViewParent;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -29,6 +32,10 @@ import android.widget.Toast;
 
 import com.zaelio.app.theme.ThemeStore;
 import com.zaelio.app.ui.AppUi;
+import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -50,13 +57,14 @@ public final class TrackerFlowUi {
     private final Handler handler;
     private final Runnable backToSessions;
     private final Runnable backToTrackers;
+    private final BackActionSetter setBackAction;
     private final Map<String, Long> timers = new HashMap<>();
     private final FieldInputUi fieldInputUi;
     private LinearLayout root;
-    private View dropIndicator;
 
     public TrackerFlowUi(Activity activity, TrackingDatabase db, ThemeStore theme, AppUi ui,
-                         Handler handler, Runnable backToSessions, Runnable backToTrackers) {
+                         Handler handler, Runnable backToSessions, Runnable backToTrackers,
+                         BackActionSetter setBackAction) {
         this.activity = activity;
         this.db = db;
         this.theme = theme;
@@ -64,6 +72,7 @@ public final class TrackerFlowUi {
         this.handler = handler;
         this.backToSessions = backToSessions;
         this.backToTrackers = backToTrackers;
+        this.setBackAction = setBackAction;
         this.fieldInputUi = new FieldInputUi(activity, theme, ui, handler, timers);
     }
 
@@ -73,6 +82,7 @@ public final class TrackerFlowUi {
 
     public void chooseTracker() {
         List<Tracker> trackers = db.trackers();
+        setBackAction.accept(backToSessions);
         base();
         root.addView(ui.appBar("Tracker auswählen", true, backToSessions, false, null));
 
@@ -184,6 +194,7 @@ public final class TrackerFlowUi {
             return;
         }
 
+        setBackAction.accept(backToTrackers);
         base();
         root.addView(ui.appBar(isNew ? "Neuer Tracker" : "Tracker bearbeiten", false, null, !isNew, v -> showTrackerMenu(v, id, tracker.name)));
 
@@ -196,24 +207,67 @@ public final class TrackerFlowUi {
 
         TrackerEditorForm form = buildTrackerEditorForm(tracker);
         LinearLayout formCard = ui.contentCard();
+        formCard.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
         ui.addSectionHeader(formCard, null, "Grunddaten", null);
 
-        formCard.addView(form.nameInput);
-        formCard.addView(form.descriptionInput);
+        formCard.addView(outlinedInput("Tracker-Name", form.nameInput));
+        TextInputLayout descriptionInput = outlinedInput("Beschreibung", form.descriptionInput);
+        ((LinearLayout.LayoutParams) descriptionInput.getLayoutParams()).bottomMargin = ui.px(4);
+        formCard.addView(descriptionInput);
         body.addView(formCard);
 
+        LinearLayout itemsHeader = new LinearLayout(activity);
+        itemsHeader.setOrientation(LinearLayout.HORIZONTAL);
+        itemsHeader.setGravity(Gravity.CENTER_VERTICAL);
+        itemsHeader.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
+        itemsHeader.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
+
+        TextView itemsTitle = new TextView(activity);
+        itemsTitle.setText("Items");
+        itemsTitle.setTextSize(ui.sp(16));
+        itemsTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        itemsTitle.setTextColor(theme.primaryTextColor());
+        itemsHeader.addView(itemsTitle);
+
+        TextView itemsCount = new TextView(activity);
+        itemsCount.setTextSize(ui.sp(12));
+        itemsCount.setTextColor(theme.accentColor());
+        itemsCount.setGravity(Gravity.CENTER);
+        itemsCount.setPadding(ui.px(8), ui.px(2), ui.px(8), ui.px(2));
+        itemsCount.setBackground(ui.makeRoundedCard(theme.accentSoftColor(), theme.accentSoftColor()));
+        LinearLayout.LayoutParams itemCountLp = new LinearLayout.LayoutParams(-2, -2);
+        itemCountLp.leftMargin = ui.px(8);
+        itemsHeader.addView(itemsCount, itemCountLp);
+        itemsHeader.addView(new View(activity), new LinearLayout.LayoutParams(0, 1, 1));
+
         Button addItem = ui.primaryButton("Item hinzufügen");
-        LinearLayout.LayoutParams addItemLp = new LinearLayout.LayoutParams(-1, -2);
-        addItemLp.bottomMargin = ui.px(16);
-        body.addView(addItem, addItemLp);
+        itemsHeader.addView(addItem, new LinearLayout.LayoutParams(-2, ui.px(48)));
+        LinearLayout.LayoutParams itemsHeaderLp = new LinearLayout.LayoutParams(-1, -2);
+        itemsHeaderLp.topMargin = ui.px(12);
+        itemsHeaderLp.bottomMargin = ui.px(12);
+        body.addView(itemsHeader, itemsHeaderLp);
 
         LinearLayout itemsContainer = new LinearLayout(activity);
         itemsContainer.setOrientation(LinearLayout.VERTICAL);
         body.addView(itemsContainer, new LinearLayout.LayoutParams(-1, -2));
 
+        final Runnable[] updateItemsHeaderRef = new Runnable[1];
+        updateItemsHeaderRef[0] = () -> {
+            int count = 0;
+            for (ItemEditorViews itemViews : form.items) {
+                if (!itemViews.removed) {
+                    count++;
+                }
+            }
+            itemsCount.setText(String.valueOf(count));
+        };
+
         final long[] trackerIdRef = new long[]{id};
         final Runnable[] persistRef = new Runnable[1];
         Runnable scheduleSave = () -> {
+            if (updateItemsHeaderRef[0] != null) {
+                updateItemsHeaderRef[0].run();
+            }
             if (persistRef[0] != null) {
                 persistRef[0].run();
             }
@@ -234,16 +288,12 @@ public final class TrackerFlowUi {
             }
         };
 
-        if (tracker.items.isEmpty()) {
-            LinearLayout empty = ui.contentCard();
-            ui.addSectionHeader(empty, "ITEMS", "Items", null);
-
-            itemsContainer.addView(empty);
-        } else {
+        if (!tracker.items.isEmpty()) {
             for (Item item : tracker.items) {
                 addItemEditor(itemsContainer, form.items, item, scheduleSave);
             }
         }
+        updateItemsHeaderRef[0].run();
 
         addItem.setOnClickListener(v -> {
             addItemEditor(itemsContainer, form.items, null, scheduleSave);
@@ -285,12 +335,14 @@ public final class TrackerFlowUi {
             box.addView(card, cardLp);
         }
 
-        root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
-        root.addView(footerButton("Zurück", () -> {
+        Runnable back = () -> {
             saveSessionItems(session, tracker, inputsByItem);
             clearTimers();
             backToSessions.run();
-        }));
+        };
+        setBackAction.accept(back);
+        root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
+        root.addView(footerButton("Zurück", back));
     }
 
     private Map<String, Object> initialValues(Session session, Item item) {
@@ -428,224 +480,399 @@ public final class TrackerFlowUi {
         }
 
         LinearLayout card = ui.contentCard();
-        ui.addSectionHeader(card, null, item == null ? "Neues Item" : item.title, null);
+        card.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
+        View reorder = reorderHandle();
+        TextView menu = iconAction("⋮");
+        ImageView expand = expandAction();
 
-        View drag = dragHandle();
-        Button duplicate = ui.secondaryButton("Duplizieren");
-        Button remove = ui.dangerButton("Entfernen");
-        LinearLayout actionRow = new LinearLayout(activity);
-        actionRow.setOrientation(LinearLayout.HORIZONTAL);
-        actionRow.addView(drag);
-        actionRow.addView(new View(activity), new LinearLayout.LayoutParams(0, -2, 1));
-        actionRow.addView(duplicate);
-        actionRow.addView(remove);
-        card.addView(actionRow);
+        views.titleInput = labeledInput("Item-Name", item == null ? "" : item.title, InputType.TYPE_CLASS_TEXT);
 
-        views.titleInput = labeledInput("Titel", item == null ? "" : item.title, InputType.TYPE_CLASS_TEXT);
-        watchTextChange(views.titleInput, scheduleSave);
-        card.addView(views.titleInput);
+        LinearLayout summaryRow = new LinearLayout(activity);
+        summaryRow.setOrientation(LinearLayout.HORIZONTAL);
+        summaryRow.setGravity(Gravity.CENTER_VERTICAL);
+        summaryRow.setMinimumHeight(ui.px(56));
+        LinearLayout summaryText = new LinearLayout(activity);
+        summaryText.setOrientation(LinearLayout.VERTICAL);
+        views.summaryTitle = new TextView(activity);
+        views.summaryTitle.setTextSize(ui.sp(16));
+        views.summaryTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        views.summaryTitle.setTextColor(theme.primaryTextColor());
+        views.summaryMeta = new TextView(activity);
+        views.summaryMeta.setTextSize(ui.sp(13));
+        views.summaryMeta.setTextColor(theme.secondaryTextColor());
+        summaryText.addView(views.summaryTitle);
+        summaryText.addView(views.summaryMeta);
+        views.summaryText = summaryText;
+        views.summaryInput = outlinedInput("Item-Name", views.titleInput);
+        FrameLayout summarySlot = new FrameLayout(activity);
+        summarySlot.addView(summaryText, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_VERTICAL));
+        summarySlot.addView(views.summaryInput, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_VERTICAL));
+        summaryRow.addView(reorder, new LinearLayout.LayoutParams(ui.px(28), ui.px(56)));
+        summaryRow.addView(summarySlot, new LinearLayout.LayoutParams(0, -2, 1));
+        summaryRow.addView(menu, iconActionLp());
+        summaryRow.addView(expand, iconActionLp());
+        card.addView(summaryRow);
+        expandReorderTouchArea(card, summaryRow, reorder);
+
+        LinearLayout editor = new LinearLayout(activity);
+        editor.setOrientation(LinearLayout.VERTICAL);
+        views.editor = editor;
 
         LinearLayout fieldsHeader = new LinearLayout(activity);
         fieldsHeader.setOrientation(LinearLayout.HORIZONTAL);
-        fieldsHeader.setPadding(0, ui.px(8), 0, ui.px(8));
-        TextView fieldsTitle = ui.tv("Felder", 16);
-        fieldsTitle.setPadding(0, 0, 0, 0);
-        fieldsHeader.addView(fieldsTitle, new LinearLayout.LayoutParams(0, -2, 1));
+        fieldsHeader.setGravity(Gravity.CENTER_VERTICAL);
+        fieldsHeader.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
+        fieldsHeader.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
+
+        TextView fieldsTitle = new TextView(activity);
+        fieldsTitle.setText("Felder");
+        fieldsTitle.setTextSize(ui.sp(16));
+        fieldsTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        fieldsTitle.setTextColor(theme.primaryTextColor());
+        fieldsHeader.addView(fieldsTitle);
+
+        views.fieldsCount = new TextView(activity);
+        views.fieldsCount.setTextSize(ui.sp(12));
+        views.fieldsCount.setTextColor(theme.accentColor());
+        views.fieldsCount.setGravity(Gravity.CENTER);
+        views.fieldsCount.setPadding(ui.px(8), ui.px(2), ui.px(8), ui.px(2));
+        views.fieldsCount.setBackground(ui.makeRoundedCard(theme.accentSoftColor(), theme.accentSoftColor()));
+        LinearLayout.LayoutParams countLp = new LinearLayout.LayoutParams(-2, -2);
+        countLp.leftMargin = ui.px(8);
+        fieldsHeader.addView(views.fieldsCount, countLp);
+        fieldsHeader.addView(new View(activity), new LinearLayout.LayoutParams(0, 1, 1));
 
         Button addField = ui.primaryButton("Feld hinzufügen");
-        fieldsHeader.addView(addField);
-        card.addView(fieldsHeader);
+        fieldsHeader.addView(addField, new LinearLayout.LayoutParams(-2, ui.px(48)));
+        LinearLayout.LayoutParams fieldsHeaderLp = new LinearLayout.LayoutParams(-1, -2);
+        fieldsHeaderLp.topMargin = ui.px(12);
+        fieldsHeaderLp.bottomMargin = ui.px(12);
+        editor.addView(fieldsHeader, fieldsHeaderLp);
 
         LinearLayout fieldsContainer = new LinearLayout(activity);
         fieldsContainer.setOrientation(LinearLayout.VERTICAL);
-        card.addView(fieldsContainer);
+        editor.addView(fieldsContainer);
         views.fieldsContainer = fieldsContainer;
+        card.addView(editor);
 
+        Runnable itemChanged = () -> {
+            updateItemSummary(views);
+            scheduleSave.run();
+        };
         if (item != null) {
             for (FieldDefinition field : item.fields) {
-                addFieldEditor(fieldsContainer, views.fields, field, scheduleSave);
+                addFieldEditor(fieldsContainer, views.fields, field, itemChanged);
             }
         } else {
-            addFieldEditor(fieldsContainer, views.fields, null, scheduleSave);
+            addFieldEditor(fieldsContainer, views.fields, null, itemChanged);
         }
 
+        watchTextChange(views.titleInput, itemChanged);
         addField.setOnClickListener(v -> {
-            addFieldEditor(fieldsContainer, views.fields, null, scheduleSave);
-            scheduleSave.run();
+            addFieldEditor(fieldsContainer, views.fields, null, itemChanged);
+            itemChanged.run();
         });
-        duplicate.setOnClickListener(v -> {
+        final LinearLayout[] shellRef = new LinearLayout[1];
+        Runnable duplicateAction = () -> {
             addItemEditor(container, itemEditors, itemFromViews(views), scheduleSave);
             scheduleSave.run();
-        });
-        remove.setOnClickListener(v -> {
-            container.removeView(card);
+        };
+        Runnable removeAction = () -> {
+            container.removeView(shellRef[0]);
+            updateChildBottomMargins(container, 12, 4);
             views.removed = true;
             scheduleSave.run();
-        });
+        };
+        menu.setOnClickListener(v -> showItemMenu(v, duplicateAction, removeAction));
+        View.OnClickListener toggle = v -> toggleItemEditor(views, expand);
+        expand.setOnClickListener(toggle);
+        summaryRow.setOnClickListener(toggle);
+        summarySlot.setOnClickListener(toggle);
+        summaryText.setOnClickListener(toggle);
+        views.summaryTitle.setOnClickListener(toggle);
+        views.summaryMeta.setOnClickListener(toggle);
+        LinearLayout shell = reorderShell(reorder, card);
+        shellRef[0] = shell;
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = ui.px(16);
-        container.addView(card, lp);
-        views.card = card;
+        lp.bottomMargin = ui.px(12);
+        container.addView(shell, lp);
+        updateChildBottomMargins(container, 12, 4);
+        views.card = shell;
         views.container = container;
         itemEditors.add(views);
-        card.setTag(views);
-        drag.setOnLongClickListener(v -> {
-            startCardDrag(card);
+        shell.setTag(views);
+        attachItemReorder(reorder, container, itemEditors, views, scheduleSave);
+        updateItemSummary(views);
+        setItemExpanded(views, expand, item == null);
+        return views;
+    }
+
+    private void showItemMenu(View anchor, Runnable duplicateAction, Runnable removeAction) {
+        PopupMenu menu = new PopupMenu(activity, anchor);
+        menu.getMenu().add(0, 1, 0, "Kopieren");
+        menu.getMenu().add(0, 2, 1, "Löschen");
+        menu.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) {
+                duplicateAction.run();
+            } else if (item.getItemId() == 2) {
+                removeAction.run();
+            }
             return true;
         });
-        drag.setOnTouchListener((v, event) -> {
-            ViewParent parent = v.getParent();
-            while (parent != null) {
-                parent.requestDisallowInterceptTouchEvent(true);
-                if (parent instanceof View) {
-                    parent = ((View) parent).getParent();
-                } else {
-                    break;
-                }
+        menu.show();
+    }
+
+    private void toggleItemEditor(ItemEditorViews views, ImageView expand) {
+        setItemExpanded(views, expand, views.editor.getVisibility() != View.VISIBLE);
+    }
+
+    private void setItemExpanded(ItemEditorViews views, ImageView expand, boolean expanded) {
+        views.summaryText.setVisibility(expanded ? View.GONE : View.VISIBLE);
+        views.summaryInput.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        views.editor.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        expand.setRotation(expanded ? 180f : 0f);
+    }
+
+    private void updateItemSummary(ItemEditorViews views) {
+        String title = views.titleInput.getText().toString().trim();
+        views.summaryTitle.setText(title.isEmpty() ? "Neues Item" : title);
+        int count = 0;
+        for (FieldEditorViews fieldViews : views.fields) {
+            if (!fieldViews.removed) {
+                count++;
             }
-            return false;
-        });
-        configureItemDragTarget(container, card, itemEditors, scheduleSave);
-        return views;
+        }
+        String countText = count == 1 ? "1 Feld" : count + " Felder";
+        views.summaryMeta.setText(countText);
+        if (views.fieldsCount != null) {
+            views.fieldsCount.setText(String.valueOf(count));
+        }
     }
 
     private FieldEditorViews addFieldEditor(LinearLayout container, List<FieldEditorViews> fieldEditors, FieldDefinition field, Runnable scheduleSave) {
         FieldEditorViews views = new FieldEditorViews();
 
-        LinearLayout row = ui.contentCard();
-        ui.addSectionHeader(row, null, field == null ? "Neues Feld" : field.label, null);
-        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
-        rowLp.bottomMargin = ui.px(12);
-
-        View drag = dragHandle();
-        Button moveUp = ui.secondaryButton("↑");
-        Button moveDown = ui.secondaryButton("↓");
-        Button duplicate = ui.secondaryButton("Duplizieren");
-        Button remove = ui.dangerButton("Entfernen");
-        LinearLayout actionRow = new LinearLayout(activity);
-        actionRow.setOrientation(LinearLayout.HORIZONTAL);
-        actionRow.setGravity(Gravity.CENTER_VERTICAL);
-        actionRow.addView(drag);
-        actionRow.addView(new View(activity), new LinearLayout.LayoutParams(0, -2, 1));
-        actionRow.addView(moveUp, compactActionButtonLp());
-        actionRow.addView(moveDown, compactActionButtonLp());
-        actionRow.addView(duplicate);
-        actionRow.addView(remove);
-        row.addView(actionRow);
+        View reorder = reorderHandle();
+        TextView menu = iconAction("⋮");
+        ImageView expand = expandAction();
 
         views.keyInput = labeledInput("Key", field == null ? "" : field.key, InputType.TYPE_CLASS_TEXT);
-        views.labelInput = labeledInput("Label", field == null ? "" : field.label, InputType.TYPE_CLASS_TEXT);
-        views.defaultValueInput = labeledInput("Default", field == null ? "" : String.valueOf(field.defaultValue == null ? "" : field.defaultValue), InputType.TYPE_CLASS_TEXT);
-        views.unitInput = labeledInput("Unit", field == null ? "" : field.unit, InputType.TYPE_CLASS_TEXT);
-        views.incrementInput = labeledInput("Increment", field == null ? "1" : String.valueOf(field.increment), InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        views.decimalsInput = labeledInput("Decimals", field == null ? "1" : String.valueOf(field.decimals), InputType.TYPE_CLASS_NUMBER);
-        watchTextChange(views.keyInput, scheduleSave);
-        watchTextChange(views.labelInput, scheduleSave);
-        watchTextChange(views.defaultValueInput, scheduleSave);
-        watchTextChange(views.unitInput, scheduleSave);
-        watchTextChange(views.incrementInput, scheduleSave);
-        watchTextChange(views.decimalsInput, scheduleSave);
+        views.labelInput = labeledInput("Feldname", field == null ? "" : field.label, InputType.TYPE_CLASS_TEXT);
+        views.defaultValueInput = labeledInput("Standardwert", field == null ? "" : String.valueOf(field.defaultValue == null ? "" : field.defaultValue), InputType.TYPE_CLASS_TEXT);
+        views.unitInput = labeledInput("Einheit", field == null ? "" : field.unit, InputType.TYPE_CLASS_TEXT);
+        views.incrementInput = labeledInput("Schrittweite", field == null ? "1" : String.valueOf(field.increment), InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        views.decimalsInput = labeledInput("Nachkommastellen", field == null ? "1" : String.valueOf(field.decimals), InputType.TYPE_CLASS_NUMBER);
 
-        row.addView(views.labelInput);
-        row.addView(views.defaultValueInput);
+        TextInputLayout typeLayout = new TextInputLayout(activity);
+        typeLayout.setHint("Typ");
+        typeLayout.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
+        typeLayout.setBoxBackgroundColor(theme.surfaceColor());
+        typeLayout.setBoxStrokeColor(theme.accentColor());
+        typeLayout.setBoxStrokeColorStateList(inputBorderStateList());
+        typeLayout.setBoxStrokeWidth(ui.px(1));
+        typeLayout.setBoxStrokeWidthFocused(ui.px(2));
+        typeLayout.setHintTextColor(inputHintStateList());
+        typeLayout.setBoxCornerRadii(ui.px(6), ui.px(6), ui.px(6), ui.px(6));
+        typeLayout.setEndIconMode(TextInputLayout.END_ICON_DROPDOWN_MENU);
+        LinearLayout.LayoutParams typeLp = new LinearLayout.LayoutParams(-1, -2);
+        typeLp.bottomMargin = ui.px(4);
+        typeLayout.setLayoutParams(typeLp);
 
-        RadioGroup typeGroup = new RadioGroup(activity);
-        typeGroup.setOrientation(RadioGroup.VERTICAL);
-        typeGroup.setPadding(0, ui.px(4), 0, ui.px(4));
-        typeGroup.setTag("type");
-        views.typeGroup = typeGroup;
+        MaterialAutoCompleteTextView typeInput = new MaterialAutoCompleteTextView(activity);
+        String[] typeLabels = {"Text", "Ganzzahl", "Dezimalzahl", "Timer"};
+        ArrayAdapter<String> typeAdapter = new ArrayAdapter<String>(activity, android.R.layout.simple_dropdown_item_1line, typeLabels) {
+            private final Filter filter = new Filter() {
+                @Override
+                protected FilterResults performFiltering(CharSequence constraint) {
+                    FilterResults results = new FilterResults();
+                    results.values = typeLabels;
+                    results.count = typeLabels.length;
+                    return results;
+                }
 
-        RadioButton stringType = radioType("String", "string", field == null || field.type == null || "string".equals(field.type));
-        RadioButton intType = radioType("Integer", "int", field != null && "int".equals(field.type));
-        RadioButton floatType = radioType("Decimal", "float", field != null && "float".equals(field.type));
-        RadioButton durationType = radioType("Timer", "duration", field != null && "duration".equals(field.type));
-        typeGroup.addView(stringType);
-        typeGroup.addView(intType);
-        typeGroup.addView(floatType);
-        typeGroup.addView(durationType);
+                @Override
+                protected void publishResults(CharSequence constraint, FilterResults results) {
+                    notifyDataSetChanged();
+                }
+            };
 
-        LinearLayout optionsRow = new LinearLayout(activity);
-        optionsRow.setOrientation(LinearLayout.VERTICAL);
-        optionsRow.addView(wrapLabeledView("Type", typeGroup));
+            @Override
+            public Filter getFilter() {
+                return filter;
+            }
+        };
+        typeInput.setAdapter(typeAdapter);
+        typeInput.setThreshold(0);
+        typeInput.setOnClickListener(v -> typeInput.showDropDown());
+        typeInput.setText(typeLabels[typeIndex(field == null ? null : field.type)], false);
+        typeInput.setInputType(0);
+        typeInput.setTextColor(theme.primaryTextColor());
+        typeInput.setHintTextColor(inputHintStateList());
+        typeInput.setBackgroundTintList(inputBorderStateList());
+        tintCursor(typeInput);
+        typeInput.setPadding(ui.px(12), 0, ui.px(12), 0);
+        typeLayout.addView(typeInput, new LinearLayout.LayoutParams(-1, ui.px(56)));
+        views.typeInput = typeInput;
 
-        CheckBox required = new CheckBox(activity);
-        required.setText("Required");
+        MaterialCheckBox required = new MaterialCheckBox(activity);
+        required.setText("Pflichtfeld");
         required.setChecked(field != null && field.required);
-        required.setTextColor(theme.primaryTextColor());
+        styleCheckBox(required);
         views.requiredCheck = required;
-        required.setOnCheckedChangeListener((buttonView, isChecked) -> scheduleSave.run());
-        optionsRow.addView(required);
-        row.addView(optionsRow);
 
-        CheckBox prefill = new CheckBox(activity);
-        prefill.setText("Prefill from previous");
+        MaterialCheckBox prefill = new MaterialCheckBox(activity);
+        prefill.setText("Vorherigen Wert übernehmen");
         prefill.setChecked(field != null && field.prefillFromPrevious);
-        prefill.setTextColor(theme.primaryTextColor());
+        styleCheckBox(prefill);
         views.prefillCheck = prefill;
-        prefill.setOnCheckedChangeListener((buttonView, isChecked) -> scheduleSave.run());
-        row.addView(prefill);
 
         LinearLayout numericRow = new LinearLayout(activity);
         numericRow.setOrientation(LinearLayout.HORIZONTAL);
         numericRow.setWeightSum(2);
-
-        LinearLayout incrementWrap = wrapLabeledView("Increment", views.incrementInput);
-        LinearLayout decimalsWrap = wrapLabeledView("Decimals", views.decimalsInput);
-        numericRow.addView(incrementWrap, new LinearLayout.LayoutParams(0, -2, 1));
+        TextInputLayout incrementWrap = outlinedInput("Schrittweite", views.incrementInput);
+        TextInputLayout decimalsWrap = outlinedInput("Nachkommastellen", views.decimalsInput);
+        LinearLayout.LayoutParams incrementLp = new LinearLayout.LayoutParams(0, -2, 1);
+        incrementLp.rightMargin = ui.px(8);
+        numericRow.addView(incrementWrap, incrementLp);
         numericRow.addView(decimalsWrap, new LinearLayout.LayoutParams(0, -2, 1));
-        row.addView(numericRow);
-
         views.incrementWrap = incrementWrap;
         views.decimalsWrap = decimalsWrap;
         views.numericRow = numericRow;
-        updateFieldEditorControls(views, selectedType(typeGroup));
-        typeGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            updateFieldEditorControls(views, selectedType(group));
+
+        LinearLayout editor = new LinearLayout(activity);
+        editor.setOrientation(LinearLayout.VERTICAL);
+        editor.setPadding(0, ui.px(12), 0, 0);
+        editor.addView(outlinedInput("Standardwert", views.defaultValueInput));
+        editor.addView(typeLayout);
+        editor.addView(required);
+        editor.addView(prefill);
+        TextInputLayout unitInput = outlinedInput("Einheit", views.unitInput);
+        ((LinearLayout.LayoutParams) unitInput.getLayoutParams()).bottomMargin = ui.px(4);
+        editor.addView(unitInput);
+        editor.addView(numericRow);
+        views.editor = editor;
+
+        LinearLayout row = ui.contentCard();
+        row.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
+        LinearLayout summaryRow = new LinearLayout(activity);
+        summaryRow.setOrientation(LinearLayout.HORIZONTAL);
+        summaryRow.setGravity(Gravity.CENTER_VERTICAL);
+        summaryRow.setMinimumHeight(ui.px(56));
+        LinearLayout summaryText = new LinearLayout(activity);
+        summaryText.setOrientation(LinearLayout.VERTICAL);
+        views.summaryTitle = new TextView(activity);
+        views.summaryTitle.setTextSize(ui.sp(16));
+        views.summaryTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        views.summaryTitle.setTextColor(theme.primaryTextColor());
+        views.summaryMeta = new TextView(activity);
+        views.summaryMeta.setTextSize(ui.sp(13));
+        views.summaryMeta.setTextColor(theme.secondaryTextColor());
+        summaryText.addView(views.summaryTitle);
+        summaryText.addView(views.summaryMeta);
+        views.summaryText = summaryText;
+        views.summaryInput = outlinedInput("Feldname", views.labelInput);
+        FrameLayout summarySlot = new FrameLayout(activity);
+        summarySlot.addView(summaryText, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_VERTICAL));
+        summarySlot.addView(views.summaryInput, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_VERTICAL));
+        summaryRow.addView(reorder, new LinearLayout.LayoutParams(ui.px(28), ui.px(56)));
+        summaryRow.addView(summarySlot, new LinearLayout.LayoutParams(0, -2, 1));
+        summaryRow.addView(menu, iconActionLp());
+        summaryRow.addView(expand, iconActionLp());
+        row.addView(summaryRow);
+        expandReorderTouchArea(row, summaryRow, reorder);
+        row.addView(editor);
+
+        Runnable fieldChanged = () -> {
+            updateFieldSummary(views);
             scheduleSave.run();
+        };
+        watchTextChange(views.keyInput, fieldChanged);
+        watchTextChange(views.labelInput, fieldChanged);
+        watchTextChange(views.defaultValueInput, fieldChanged);
+        watchTextChange(views.unitInput, fieldChanged);
+        watchTextChange(views.incrementInput, fieldChanged);
+        watchTextChange(views.decimalsInput, fieldChanged);
+        required.setOnCheckedChangeListener((buttonView, isChecked) -> fieldChanged.run());
+        prefill.setOnCheckedChangeListener((buttonView, isChecked) -> fieldChanged.run());
+        updateFieldEditorControls(views, selectedType(typeInput));
+        updateFieldSummary(views);
+        typeInput.setOnItemClickListener((parent, view, position, id) -> {
+            updateFieldEditorControls(views, selectedType(typeInput));
+            fieldChanged.run();
         });
 
-        moveUp.setOnClickListener(v -> {
-            moveFieldEditor(container, fieldEditors, views, -1);
-            scheduleSave.run();
-        });
-        moveDown.setOnClickListener(v -> {
-            moveFieldEditor(container, fieldEditors, views, 1);
-            scheduleSave.run();
-        });
-        duplicate.setOnClickListener(v -> {
+        final LinearLayout[] shellRef = new LinearLayout[1];
+        Runnable duplicateAction = () -> {
             addFieldEditor(container, fieldEditors, fieldFromViews(views), scheduleSave);
             scheduleSave.run();
-        });
-        remove.setOnClickListener(v -> {
-            container.removeView(row);
+        };
+        Runnable removeAction = () -> {
+            container.removeView(shellRef[0]);
+            updateChildBottomMargins(container, 12, 4);
             views.removed = true;
             scheduleSave.run();
-        });
+        };
+        menu.setOnClickListener(v -> showFieldMenu(v, duplicateAction, removeAction));
+        View.OnClickListener toggle = v -> toggleFieldEditor(views, expand);
+        expand.setOnClickListener(toggle);
+        summaryRow.setOnClickListener(toggle);
+        summarySlot.setOnClickListener(toggle);
+        summaryText.setOnClickListener(toggle);
+        views.summaryTitle.setOnClickListener(toggle);
+        views.summaryMeta.setOnClickListener(toggle);
+        LinearLayout shell = reorderShell(reorder, row);
+        shellRef[0] = shell;
 
-        container.addView(row, rowLp);
-        views.row = row;
+        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
+        rowLp.bottomMargin = ui.px(12);
+        container.addView(shell, rowLp);
+        updateChildBottomMargins(container, 12, 4);
+        views.row = shell;
         views.container = container;
         fieldEditors.add(views);
-        row.setTag(views);
-        drag.setOnLongClickListener(v -> {
-            startCardDrag(row);
+        shell.setTag(views);
+        attachFieldReorder(reorder, container, fieldEditors, views, scheduleSave);
+        setFieldExpanded(views, expand, field == null);
+        return views;
+    }
+
+    private void showFieldMenu(View anchor, Runnable duplicateAction, Runnable removeAction) {
+        PopupMenu menu = new PopupMenu(activity, anchor);
+        menu.getMenu().add(0, 1, 0, "Kopieren");
+        menu.getMenu().add(0, 2, 1, "Löschen");
+        menu.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) {
+                duplicateAction.run();
+            } else if (item.getItemId() == 2) {
+                removeAction.run();
+            }
             return true;
         });
-        drag.setOnTouchListener((v, event) -> {
-            ViewParent parent = v.getParent();
-            while (parent != null) {
-                parent.requestDisallowInterceptTouchEvent(true);
-                if (parent instanceof View) {
-                    parent = ((View) parent).getParent();
-                } else {
-                    break;
-                }
-            }
-            return false;
-        });
-        configureFieldDragTarget(container, row, fieldEditors, scheduleSave);
-        return views;
+        menu.show();
+    }
+
+    private void toggleFieldEditor(FieldEditorViews views, ImageView expand) {
+        setFieldExpanded(views, expand, views.editor.getVisibility() != View.VISIBLE);
+    }
+
+    private void setFieldExpanded(FieldEditorViews views, ImageView expand, boolean expanded) {
+        views.summaryText.setVisibility(expanded ? View.GONE : View.VISIBLE);
+        views.summaryInput.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        views.editor.setVisibility(expanded ? View.VISIBLE : View.GONE);
+        expand.setRotation(expanded ? 180f : 0f);
+    }
+
+    private void updateFieldSummary(FieldEditorViews views) {
+        String label = views.labelInput.getText().toString().trim();
+        if (label.isEmpty()) {
+            label = "Neues Feld";
+        }
+        views.summaryTitle.setText(label);
+        String type = selectedType(views.typeInput);
+        String typeLabel = "string".equals(type) ? "Text" : "int".equals(type) ? "Ganzzahl" : "float".equals(type) ? "Dezimalzahl" : "Timer";
+        String unit = views.unitInput.getText().toString().trim();
+        views.summaryMeta.setText(unit.isEmpty() ? typeLabel : typeLabel + " · " + unit);
     }
 
     private Item itemFromViews(ItemEditorViews views) {
@@ -667,10 +894,145 @@ public final class TrackerFlowUi {
         field.unit = views.unitInput.getText().toString();
         field.increment = parseDoubleSafe(views.incrementInput.getText().toString(), 1);
         field.decimals = parseIntSafe(views.decimalsInput.getText().toString(), 1);
-        field.type = selectedType(views.typeGroup);
+        field.type = selectedType(views.typeInput);
         field.required = views.requiredCheck.isChecked();
         field.prefillFromPrevious = views.prefillCheck.isChecked();
         return field;
+    }
+
+    private LinearLayout reorderShell(View reorder, View content) {
+        return (LinearLayout) content;
+    }
+
+    private View reorderHandle() {
+        TextView handle = new TextView(activity);
+        handle.setText("⠿");
+        handle.setTextSize(ui.sp(24));
+        handle.setGravity(Gravity.CENTER);
+        handle.setTextColor(theme.mutedTextColor());
+        handle.setContentDescription("Verschieben");
+        handle.setClickable(true);
+        handle.setFocusable(true);
+        return handle;
+    }
+
+    private void expandReorderTouchArea(View parent, View row, View handle) {
+        parent.post(() -> {
+            Rect rect = new Rect();
+            handle.getHitRect(rect);
+            rect.offset(row.getLeft(), row.getTop());
+            rect.left = 0;
+            rect.top = row.getTop();
+            rect.bottom = row.getBottom();
+            rect.right = Math.max(rect.right, ui.px(56));
+            parent.setTouchDelegate(new TouchDelegate(rect, handle));
+        });
+    }
+
+    private void attachItemReorder(View handle, LinearLayout container, List<ItemEditorViews> editors, ItemEditorViews views, Runnable onChange) {
+        attachReorder(handle, views.card, new ReorderMove() {
+            @Override
+            public int distance(int direction) {
+                return reorderDistance(container, views.card, direction);
+            }
+
+            @Override
+            public int run(int direction) {
+                return moveItemEditor(container, editors, views, direction);
+            }
+        }, onChange);
+    }
+
+    private void attachFieldReorder(View handle, LinearLayout container, List<FieldEditorViews> editors, FieldEditorViews views, Runnable onChange) {
+        attachReorder(handle, views.row, new ReorderMove() {
+            @Override
+            public int distance(int direction) {
+                return reorderDistance(container, views.row, direction);
+            }
+
+            @Override
+            public int run(int direction) {
+                return moveFieldEditor(container, editors, views, direction);
+            }
+        }, onChange);
+    }
+
+    private void attachReorder(View handle, View movedView, ReorderMove move, Runnable onChange) {
+        final float[] startY = new float[1];
+        final float[] consumedY = new float[1];
+        final float[] oldElevation = new float[1];
+        handle.setOnTouchListener((v, event) -> {
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                disallowParentIntercept(v, true);
+                startY[0] = event.getRawY();
+                consumedY[0] = 0;
+                oldElevation[0] = movedView.getElevation();
+                movedView.setElevation(oldElevation[0] + ui.px(8));
+                movedView.setAlpha(0.82f);
+                return true;
+            }
+            if (action == MotionEvent.ACTION_MOVE) {
+                float delta = event.getRawY() - startY[0] - consumedY[0];
+                int direction = delta > 0 ? 1 : -1;
+                while (delta != 0) {
+                    int distance = move.distance(direction);
+                    if (distance <= 0 || Math.abs(delta) <= distance / 2f) {
+                        break;
+                    }
+                    distance = move.run(direction);
+                    if (distance <= 0) {
+                        break;
+                    }
+                    consumedY[0] += direction * distance;
+                    delta = event.getRawY() - startY[0] - consumedY[0];
+                    direction = delta > 0 ? 1 : -1;
+                    onChange.run();
+                }
+                return true;
+            }
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                movedView.setElevation(oldElevation[0]);
+                movedView.setAlpha(1f);
+                disallowParentIntercept(v, false);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void disallowParentIntercept(View view, boolean disallow) {
+        ViewParent parent = view.getParent();
+        while (parent != null) {
+            parent.requestDisallowInterceptTouchEvent(disallow);
+            parent = parent.getParent();
+        }
+    }
+
+    private TextView iconAction(String text) {
+        TextView view = new TextView(activity);
+        view.setText(text);
+        view.setTextSize(ui.sp(24));
+        view.setTextColor(theme.mutedTextColor());
+        view.setGravity(Gravity.CENTER);
+        view.setClickable(true);
+        view.setFocusable(true);
+        return view;
+    }
+
+    private ImageView expandAction() {
+        ImageView view = new ImageView(activity);
+        view.setImageResource(R.drawable.ic_expand_more_24);
+        view.setColorFilter(theme.mutedTextColor());
+        view.setScaleType(ImageView.ScaleType.CENTER);
+        view.setMinimumHeight(ui.px(56));
+        view.setClickable(true);
+        view.setFocusable(true);
+        return view;
+    }
+
+    private LinearLayout.LayoutParams iconActionLp() {
+        return new LinearLayout.LayoutParams(ui.px(36), ui.px(56));
     }
 
     private LinearLayout.LayoutParams compactActionButtonLp() {
@@ -679,25 +1041,99 @@ public final class TrackerFlowUi {
         return lp;
     }
 
-    private void moveFieldEditor(LinearLayout container, List<FieldEditorViews> fieldEditors, FieldEditorViews views, int direction) {
+    private LinearLayout.LayoutParams weightedActionButtonLp() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ui.px(48), 1);
+        lp.leftMargin = ui.px(8);
+        return lp;
+    }
+
+    private int moveItemEditor(LinearLayout container, List<ItemEditorViews> itemEditors, ItemEditorViews views, int direction) {
+        if (views == null || views.card == null) {
+            return 0;
+        }
+
+        int fromIndex = container.indexOfChild(views.card);
+        int toIndex = fromIndex + direction;
+        if (fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()) {
+            return 0;
+        }
+
+        View sibling = container.getChildAt(toIndex);
+        int distance = viewHeightWithMargins(sibling);
+        container.removeView(sibling);
+        container.addView(sibling, direction > 0 ? fromIndex : toIndex + 1);
+        animateReorderSibling(sibling, views.card, direction);
+        updateChildBottomMargins(container, 12, 4);
+
+        int listFromIndex = itemEditors.indexOf(views);
+        int listToIndex = listFromIndex + direction;
+        if (listFromIndex >= 0 && listToIndex >= 0 && listToIndex < itemEditors.size()) {
+            itemEditors.remove(listFromIndex);
+            itemEditors.add(listToIndex, views);
+        }
+        return distance;
+    }
+
+    private int moveFieldEditor(LinearLayout container, List<FieldEditorViews> fieldEditors, FieldEditorViews views, int direction) {
         if (views == null || views.row == null) {
-            return;
+            return 0;
         }
 
         int fromIndex = container.indexOfChild(views.row);
         int toIndex = fromIndex + direction;
         if (fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()) {
-            return;
+            return 0;
         }
 
-        container.removeView(views.row);
-        container.addView(views.row, toIndex);
+        View sibling = container.getChildAt(toIndex);
+        int distance = viewHeightWithMargins(sibling);
+        container.removeView(sibling);
+        container.addView(sibling, direction > 0 ? fromIndex : toIndex + 1);
+        animateReorderSibling(sibling, views.row, direction);
+        updateChildBottomMargins(container, 12, 4);
 
         int listFromIndex = fieldEditors.indexOf(views);
         int listToIndex = listFromIndex + direction;
         if (listFromIndex >= 0 && listToIndex >= 0 && listToIndex < fieldEditors.size()) {
             fieldEditors.remove(listFromIndex);
             fieldEditors.add(listToIndex, views);
+        }
+        return distance;
+    }
+
+    private int reorderDistance(LinearLayout container, View movedView, int direction) {
+        int fromIndex = container.indexOfChild(movedView);
+        int toIndex = fromIndex + direction;
+        if (fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()) {
+            return 0;
+        }
+        return viewHeightWithMargins(container.getChildAt(toIndex));
+    }
+
+    private int viewHeightWithMargins(View view) {
+        int height = view.getHeight();
+        if (view.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
+            height += lp.topMargin + lp.bottomMargin;
+        }
+        return height;
+    }
+
+    private void animateReorderSibling(View sibling, View movedView, int direction) {
+        int distance = Math.max(viewHeightWithMargins(movedView), viewHeightWithMargins(sibling));
+        sibling.animate().cancel();
+        sibling.setTranslationY(direction > 0 ? distance : -distance);
+        sibling.animate().translationY(0).setDuration(140).start();
+    }
+
+    private void updateChildBottomMargins(LinearLayout container, int normalDp, int lastDp) {
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            if (child.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+                LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) child.getLayoutParams();
+                lp.bottomMargin = ui.px(i == container.getChildCount() - 1 ? lastDp : normalDp);
+                child.setLayoutParams(lp);
+            }
         }
     }
 
@@ -714,8 +1150,104 @@ public final class TrackerFlowUi {
         return group;
     }
 
+    private void styleCheckBox(MaterialCheckBox checkBox) {
+        checkBox.setUseMaterialThemeColors(false);
+        checkBox.setTextColor(theme.primaryTextColor());
+        checkBox.setButtonTintList(checkBoxStateList());
+        checkBox.setMinHeight(ui.px(40));
+        checkBox.setMinimumHeight(ui.px(40));
+        checkBox.setPadding(0, 0, 0, 0);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, ui.px(40));
+        checkBox.setLayoutParams(lp);
+    }
+
+    private ColorStateList checkBoxStateList() {
+        int accent = theme.accentColor();
+        int normal = theme.darkMode() ? theme.secondaryTextColor() : theme.borderColor();
+        return new ColorStateList(
+                new int[][]{
+                        new int[]{android.R.attr.state_checked},
+                        new int[]{android.R.attr.state_hovered},
+                        new int[]{android.R.attr.state_focused},
+                        new int[]{android.R.attr.state_enabled},
+                        new int[]{}
+                },
+                new int[]{accent, accent, accent, normal, normal});
+    }
+
+    private ColorStateList inputHintStateList() {
+        int accent = theme.accentColor();
+        int normal = theme.mutedTextColor();
+        return new ColorStateList(
+                new int[][]{
+                        new int[]{android.R.attr.state_focused},
+                        new int[]{android.R.attr.state_hovered},
+                        new int[]{android.R.attr.state_enabled},
+                        new int[]{}
+                },
+                new int[]{accent, accent, normal, normal});
+    }
+
+    private ColorStateList inputBorderStateList() {
+        int accent = theme.accentColor();
+        int normal = theme.darkMode() ? theme.secondaryTextColor() : theme.borderColor();
+        return new ColorStateList(
+                new int[][]{
+                        new int[]{android.R.attr.state_focused},
+                        new int[]{android.R.attr.state_hovered},
+                        new int[]{android.R.attr.state_enabled},
+                        new int[]{}
+                },
+                new int[]{accent, accent, normal, normal});
+    }
+
+    private ColorStateList accentStateList() {
+        int accent = theme.accentColor();
+        return new ColorStateList(
+                new int[][]{
+                        new int[]{android.R.attr.state_hovered},
+                        new int[]{android.R.attr.state_focused},
+                        new int[]{android.R.attr.state_enabled},
+                        new int[]{}
+                },
+                new int[]{accent, accent, accent, accent});
+    }
+
+    private void tintCursor(EditText input) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            GradientDrawable cursor = new GradientDrawable();
+            cursor.setColor(theme.accentColor());
+            cursor.setSize(ui.px(2), ui.px(24));
+            input.setTextCursorDrawable(cursor);
+        }
+    }
+
+    private TextInputLayout outlinedInput(String label, EditText input) {
+        TextInputLayout layout = new TextInputLayout(activity);
+        layout.setHint(label);
+        layout.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
+        layout.setBoxBackgroundColor(theme.surfaceColor());
+        layout.setBoxStrokeColor(theme.accentColor());
+        layout.setBoxStrokeColorStateList(inputBorderStateList());
+        layout.setBoxStrokeWidth(ui.px(1));
+        layout.setBoxStrokeWidthFocused(ui.px(2));
+        layout.setHintTextColor(inputHintStateList());
+        layout.setBoxCornerRadii(ui.px(6), ui.px(6), ui.px(6), ui.px(6));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.bottomMargin = ui.px(12);
+        layout.setLayoutParams(lp);
+        input.setHint(null);
+        input.setHintTextColor(inputHintStateList());
+        input.setBackground(null);
+        tintCursor(input);
+        boolean multiline = input.getMinLines() > 1;
+        input.setPadding(ui.px(12), multiline ? ui.px(12) : 0, ui.px(12), multiline ? ui.px(12) : 0);
+        layout.addView(input, new LinearLayout.LayoutParams(-1, multiline ? -2 : ui.px(56)));
+        return layout;
+    }
+
     private EditText labeledInput(String label, String value, int inputType) {
-        EditText input = new EditText(activity);
+        EditText input = new TextInputEditText(activity);
         input.setText(value == null ? "" : value);
         input.setHint(label);
         input.setInputType(inputType);
@@ -780,7 +1312,7 @@ public final class TrackerFlowUi {
                 JSONObject field = new JSONObject();
                 field.put("key", fieldKey);
                 field.put("label", fieldLabel);
-                field.put("type", selectedType(fieldViews.typeGroup));
+                field.put("type", selectedType(fieldViews.typeInput));
                 field.put("order", fieldOrder++);
 
                 String defaultValue = fieldViews.defaultValueInput.getText().toString().trim();
@@ -833,32 +1365,31 @@ public final class TrackerFlowUi {
         }
     }
 
-    private RadioButton radioType(String label, String value, boolean checked) {
-        RadioButton button = new RadioButton(activity);
-        button.setId(View.generateViewId());
-        button.setText(label);
-        button.setTag(value);
-        button.setChecked(checked);
-        button.setTextSize(ui.sp(14));
-        button.setTextColor(theme.primaryTextColor());
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
-        lp.rightMargin = ui.px(12);
-        button.setLayoutParams(lp);
-        return button;
-    }
-
-    private String selectedType(RadioGroup group) {
-        return selectedRadioValue(group, "string");
-    }
-
-    private String selectedRadioValue(RadioGroup group, String fallback) {
-        int checkedId = group.getCheckedRadioButtonId();
-        if (checkedId == -1) {
-            return fallback;
+    private int typeIndex(String type) {
+        if ("int".equals(type)) {
+            return 1;
         }
-        RadioButton checked = group.findViewById(checkedId);
-        Object tag = checked == null ? null : checked.getTag();
-        return tag == null ? fallback : String.valueOf(tag);
+        if ("float".equals(type)) {
+            return 2;
+        }
+        if ("duration".equals(type)) {
+            return 3;
+        }
+        return 0;
+    }
+
+    private String selectedType(MaterialAutoCompleteTextView input) {
+        String value = String.valueOf(input.getText());
+        if ("Ganzzahl".equals(value)) {
+            return "int";
+        }
+        if ("Dezimalzahl".equals(value)) {
+            return "float";
+        }
+        if ("Timer".equals(value)) {
+            return "duration";
+        }
+        return "string";
     }
 
     private void updateFieldEditorControls(FieldEditorViews views, String type) {
@@ -871,283 +1402,6 @@ public final class TrackerFlowUi {
         if (views.decimalsWrap != null) {
             views.decimalsWrap.setVisibility(showDecimals ? View.VISIBLE : View.GONE);
         }
-    }
-
-    private View dragHandle() {
-        LinearLayout handle = new LinearLayout(activity);
-        handle.setOrientation(LinearLayout.VERTICAL);
-        handle.setGravity(Gravity.CENTER);
-        handle.setPadding(ui.px(10), ui.px(8), ui.px(10), ui.px(8));
-        handle.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
-        handle.setContentDescription("Verschieben");
-        handle.setClickable(true);
-        handle.setFocusable(true);
-
-        for (int i = 0; i < 3; i++) {
-            View bar = new View(activity);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ui.px(14), ui.px(2));
-            if (i < 2) {
-                lp.bottomMargin = ui.px(3);
-            }
-            bar.setLayoutParams(lp);
-            bar.setBackgroundColor(theme.mutedTextColor());
-            handle.addView(bar);
-        }
-
-        return handle;
-    }
-
-    private void startCardDrag(View view) {
-        ClipData data = ClipData.newPlainText("tracker-editor-drag", "card");
-        View.DragShadowBuilder shadow = new View.DragShadowBuilder(view);
-        view.setAlpha(0.35f);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            view.startDragAndDrop(data, shadow, view, 0);
-        } else {
-            view.startDrag(data, shadow, view, 0);
-        }
-    }
-
-    private void configureItemDragTarget(LinearLayout container, View target, List<ItemEditorViews> itemEditors, Runnable onChange) {
-        View.OnDragListener listener = (v, event) -> handleDrop(container, target, itemEditors, v, event, onChange);
-        setDragListenerDeep(target, listener);
-        container.setOnDragListener((v, event) -> handleContainerDrop(container, itemEditors, v, event, onChange));
-    }
-
-    private void configureFieldDragTarget(LinearLayout container, View target, List<FieldEditorViews> fieldEditors, Runnable onChange) {
-        View.OnDragListener listener = (v, event) -> handleDrop(container, target, fieldEditors, v, event, onChange);
-        setDragListenerDeep(target, listener);
-        container.setOnDragListener((v, event) -> handleContainerDrop(container, fieldEditors, v, event, onChange));
-    }
-
-    private void setDragListenerDeep(View view, View.OnDragListener listener) {
-        view.setOnDragListener(listener);
-        if (view instanceof android.view.ViewGroup) {
-            android.view.ViewGroup group = (android.view.ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                setDragListenerDeep(group.getChildAt(i), listener);
-            }
-        }
-    }
-
-    private boolean handleDrop(LinearLayout container, View target, List<?> list, View eventView, android.view.DragEvent event, Runnable onChange) {
-        if (!(event.getLocalState() instanceof View)) {
-            return false;
-        }
-
-        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_LOCATION
-                || event.getAction() == android.view.DragEvent.ACTION_DRAG_ENTERED) {
-            View dragged = (View) event.getLocalState();
-            autoScrollDuringDrag(eventView, container, event);
-            if (dragged.getParent() == container) {
-                showDropIndicatorBefore(container, target);
-            }
-            return true;
-        }
-        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_ENDED) {
-            restoreDraggedView(event);
-            hideDropIndicator();
-            return true;
-        }
-        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_STARTED
-                || event.getAction() == android.view.DragEvent.ACTION_DRAG_EXITED) {
-            return true;
-        }
-
-        View dragged = (View) event.getLocalState();
-        if (event.getAction() == android.view.DragEvent.ACTION_DROP) {
-            restoreDraggedView(event);
-            hideDropIndicator();
-            if (dragged == target || dragged.getParent() != container) {
-                return true;
-            }
-            moveViewBefore(container, dragged, target);
-            moveListBefore(list, dragged.getTag(), target.getTag());
-            if (onChange != null) {
-                onChange.run();
-            }
-            return true;
-        }
-
-        return true;
-    }
-
-    private boolean handleContainerDrop(LinearLayout container, List<?> list, View eventView, android.view.DragEvent event, Runnable onChange) {
-        if (!(event.getLocalState() instanceof View)) {
-            return false;
-        }
-
-        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_LOCATION
-                || event.getAction() == android.view.DragEvent.ACTION_DRAG_ENTERED) {
-            View dragged = (View) event.getLocalState();
-            autoScrollDuringDrag(eventView, container, event);
-            if (dragged.getParent() == container) {
-                showDropIndicator(container, container.getChildCount());
-            }
-            return true;
-        }
-        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_ENDED) {
-            restoreDraggedView(event);
-            hideDropIndicator();
-            return true;
-        }
-        if (event.getAction() == android.view.DragEvent.ACTION_DRAG_STARTED
-                || event.getAction() == android.view.DragEvent.ACTION_DRAG_EXITED) {
-            return true;
-        }
-
-        View dragged = (View) event.getLocalState();
-        if (event.getAction() == android.view.DragEvent.ACTION_DROP) {
-            restoreDraggedView(event);
-            hideDropIndicator();
-            if (dragged.getParent() != container) {
-                return true;
-            }
-            moveViewToEnd(container, dragged);
-            moveListToEnd(list, dragged.getTag());
-            if (onChange != null) {
-                onChange.run();
-            }
-            return true;
-        }
-
-        return true;
-    }
-
-    private void restoreDraggedView(android.view.DragEvent event) {
-        if (event.getLocalState() instanceof View) {
-            ((View) event.getLocalState()).setAlpha(1f);
-        }
-    }
-
-    private void showDropIndicatorBefore(LinearLayout container, View target) {
-        hideDropIndicator();
-        showDropIndicator(container, container.indexOfChild(target));
-    }
-
-    private void showDropIndicator(LinearLayout container, int index) {
-        if (container == null) {
-            return;
-        }
-        if (dropIndicator == null) {
-            dropIndicator = new View(activity);
-            dropIndicator.setBackground(ui.makeRoundedCard(theme.accentSoftColor(), theme.accentColor()));
-        }
-
-        ViewParent parent = dropIndicator.getParent();
-        if (parent instanceof LinearLayout) {
-            ((LinearLayout) parent).removeView(dropIndicator);
-        }
-
-        int safeIndex = Math.max(0, Math.min(index, container.getChildCount()));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, ui.px(28));
-        lp.leftMargin = ui.px(8);
-        lp.rightMargin = ui.px(8);
-        lp.topMargin = ui.px(6);
-        lp.bottomMargin = ui.px(14);
-        container.addView(dropIndicator, safeIndex, lp);
-    }
-
-    private void hideDropIndicator() {
-        if (dropIndicator == null) {
-            return;
-        }
-        ViewParent parent = dropIndicator.getParent();
-        if (parent instanceof LinearLayout) {
-            ((LinearLayout) parent).removeView(dropIndicator);
-        }
-    }
-
-    private void autoScrollDuringDrag(View eventView, View scrollAnchor, android.view.DragEvent event) {
-        ScrollView scrollView = findParentScrollView(scrollAnchor);
-        if (scrollView == null || eventView == null) {
-            return;
-        }
-
-        int[] eventViewLocation = new int[2];
-        int[] scrollViewLocation = new int[2];
-        eventView.getLocationOnScreen(eventViewLocation);
-        scrollView.getLocationOnScreen(scrollViewLocation);
-
-        int pointerY = eventViewLocation[1] + Math.round(event.getY());
-        int topEdge = scrollViewLocation[1] + ui.px(72);
-        int bottomEdge = scrollViewLocation[1] + scrollView.getHeight() - ui.px(72);
-        int step = ui.px(18);
-
-        if (pointerY < topEdge) {
-            scrollView.smoothScrollBy(0, -step);
-        } else if (pointerY > bottomEdge) {
-            scrollView.smoothScrollBy(0, step);
-        }
-    }
-
-    private ScrollView findParentScrollView(View view) {
-        ViewParent parent = view == null ? null : view.getParent();
-        while (parent != null) {
-            if (parent instanceof ScrollView) {
-                return (ScrollView) parent;
-            }
-            if (parent instanceof View) {
-                parent = ((View) parent).getParent();
-            } else {
-                break;
-            }
-        }
-        return null;
-    }
-
-    private void moveViewBefore(LinearLayout container, View dragged, View target) {
-        int fromIndex = container.indexOfChild(dragged);
-        int toIndex = container.indexOfChild(target);
-        if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) {
-            return;
-        }
-        container.removeView(dragged);
-        if (fromIndex < toIndex) {
-            toIndex--;
-        }
-        container.addView(dragged, toIndex);
-    }
-
-    private void moveViewToEnd(LinearLayout container, View dragged) {
-        int fromIndex = container.indexOfChild(dragged);
-        if (fromIndex < 0) {
-            return;
-        }
-        container.removeView(dragged);
-        container.addView(dragged);
-    }
-
-    private void moveListBefore(List<?> list, Object dragged, Object target) {
-        if (dragged == null || target == null || dragged == target) {
-            return;
-        }
-
-        int fromIndex = list.indexOf(dragged);
-        int toIndex = list.indexOf(target);
-        if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) {
-            return;
-        }
-
-        Object value = list.remove(fromIndex);
-        if (fromIndex < toIndex) {
-            toIndex--;
-        }
-        ((List) list).add(toIndex, value);
-    }
-
-    private void moveListToEnd(List<?> list, Object dragged) {
-        if (dragged == null) {
-            return;
-        }
-
-        int fromIndex = list.indexOf(dragged);
-        if (fromIndex < 0) {
-            return;
-        }
-
-        Object value = list.remove(fromIndex);
-        ((List) list).add(value);
     }
 
     private void saveSessionItem(Session session, Item item, Map<String, View> inputs) {
@@ -1246,6 +1500,16 @@ public final class TrackerFlowUi {
         activity.setContentView(root);
     }
 
+    interface BackActionSetter {
+        void accept(Runnable backAction);
+    }
+
+    private interface ReorderMove {
+        int distance(int direction);
+
+        int run(int direction);
+    }
+
     private static final class TrackerEditorForm {
         EditText nameInput;
         EditText descriptionInput;
@@ -1256,7 +1520,13 @@ public final class TrackerFlowUi {
         LinearLayout card;
         LinearLayout container;
         EditText titleInput;
+        TextView summaryTitle;
+        TextView summaryMeta;
+        View summaryText;
+        View summaryInput;
+        LinearLayout editor;
         LinearLayout fieldsContainer;
+        TextView fieldsCount;
         final List<FieldEditorViews> fields = new ArrayList<>();
         boolean removed;
     }
@@ -1265,17 +1535,22 @@ public final class TrackerFlowUi {
         LinearLayout row;
         LinearLayout container;
         LinearLayout numericRow;
-        LinearLayout incrementWrap;
-        LinearLayout decimalsWrap;
+        View incrementWrap;
+        View decimalsWrap;
         EditText keyInput;
         EditText labelInput;
         EditText defaultValueInput;
         EditText unitInput;
         EditText incrementInput;
         EditText decimalsInput;
-        RadioGroup typeGroup;
-        CheckBox requiredCheck;
-        CheckBox prefillCheck;
+        MaterialAutoCompleteTextView typeInput;
+        TextView summaryTitle;
+        TextView summaryMeta;
+        View summaryText;
+        View summaryInput;
+        LinearLayout editor;
+        MaterialCheckBox requiredCheck;
+        MaterialCheckBox prefillCheck;
         boolean removed;
     }
 }

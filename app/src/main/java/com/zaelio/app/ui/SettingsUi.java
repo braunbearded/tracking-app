@@ -52,45 +52,50 @@ public final class SettingsUi {
         } catch (Exception ignored) {
         }
 
-        LinearLayout body = ui.contentCard();
-        body.setPadding(ui.px(20), ui.px(18), ui.px(20), ui.px(16));
-        box.addView(body);
+        LinearLayout appCard = ui.contentCard();
+        ui.addSectionHeader(appCard, null, "Zaelio", "Offline Tracker ohne Google-Dienste");
+        box.addView(appCard, cardLp());
 
-        ui.addDialogTitle(body, "Über die App");
-        ui.addDialogMessage(body, "Zaelio");
-        body.addView(aboutInfoCard("Repository", "Zaelio", true));
-        body.addView(aboutInfoCard("Version", versionName, false));
-        body.addView(aboutInfoCard("Build", String.valueOf(versionCode), false));
+        box.addView(aboutInfoCard("Quellcode", "github.com/zaelio/zaelio", true));
+        box.addView(aboutInfoCard("Version", versionName, false));
+        box.addView(aboutInfoCard("Build", String.valueOf(versionCode), false));
     }
 
     private View aboutInfoCard(String label, String value, boolean clickable) {
         LinearLayout row = ui.contentCard();
-        row.setPadding(ui.px(16), ui.px(12), ui.px(16), ui.px(12));
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPadding(ui.px(16), ui.px(12), ui.px(12), ui.px(12));
 
         TextView labelView = new TextView(activity);
-        labelView.setText(label.toUpperCase(java.util.Locale.ROOT));
-        labelView.setTextSize(ui.sp(12));
-        labelView.setTextColor(theme.mutedTextColor());
-        row.addView(labelView);
+        labelView.setText(label);
+        labelView.setTextSize(ui.sp(15));
+        labelView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        labelView.setTextColor(theme.primaryTextColor());
+        row.addView(labelView, new LinearLayout.LayoutParams(0, -2, 1));
 
         TextView valueView = new TextView(activity);
         valueView.setText(value);
-        valueView.setTextSize(ui.sp(15));
-        valueView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        valueView.setTextColor(theme.primaryTextColor());
+        valueView.setTextSize(ui.sp(13));
+        valueView.setTextColor(theme.mutedTextColor());
+        valueView.setGravity(android.view.Gravity.END);
         row.addView(valueView);
 
-        if (clickable && "Repository".equals(label)) {
+        if (clickable) {
             row.setClickable(true);
             row.setFocusable(true);
             row.setOnClickListener(v -> openUrl("https://github.com/zaelio/zaelio"));
             row.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
         }
 
+        row.setLayoutParams(cardLp());
+        return row;
+    }
+
+    private LinearLayout.LayoutParams cardLp() {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
         lp.bottomMargin = ui.px(10);
-        row.setLayoutParams(lp);
-        return row;
+        return lp;
     }
 
     private View themeCard() {

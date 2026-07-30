@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
+import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
@@ -15,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import com.zaelio.app.theme.ThemeStore;
@@ -54,29 +56,14 @@ public final class HomeUi {
                 continue;
             }
 
-            int recordCount = db.recordCount(session.id);
-            LinearLayout card = createCard();
-            ui.addSectionHeader(card, null, tracker.name, null);
-            card.addView(ui.metaRow(date(session.createdAt), ""));
-
-            TextView preview = new TextView(activity);
-            preview.setText(preview(session.id, tracker));
-            preview.setTextSize(ui.sp(14));
-            preview.setTextColor(theme.primaryTextColor());
-            preview.setLineSpacing(0f, 1.15f);
-            preview.setMaxLines(2);
-            preview.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            card.addView(preview);
-
-            final boolean[] skipClick = new boolean[1];
-            card.setOnClickListener(v -> {
-                if (skipClick[0]) {
-                    skipClick[0] = false;
-                    return;
-                }
-                openSession.accept(session.id);
-            });
-            attachDeleteGestures(card, restore -> confirmDeleteSession(session, restore), skipClick);
+            LinearLayout card = overviewCard(
+                    tracker.name,
+                    date(session.createdAt),
+                    preview(session.id, tracker),
+                    () -> openSession.accept(session.id),
+                    restore -> confirmDeleteSession(session, restore));
+            card.setTag(session.id);
+            attachOverviewReorder(card.getChildAt(0), box, card, () -> db.reorderSessions(childIds(box)));
             box.addView(card, cardLayoutParams());
         }
 
@@ -93,26 +80,14 @@ public final class HomeUi {
 
         java.util.List<Tracker> trackers = db.trackers();
         for (Tracker tracker : trackers) {
-            LinearLayout card = createCard();
-            ui.addSectionHeader(card, null, tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name, null);
-            TextView preview = new TextView(activity);
-            preview.setText(fieldPreview(tracker));
-            preview.setTextSize(ui.sp(14));
-            preview.setTextColor(theme.primaryTextColor());
-            preview.setLineSpacing(0f, 1.15f);
-            preview.setMaxLines(2);
-            preview.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            card.addView(preview);
-
-            final boolean[] skipClick = new boolean[1];
-            card.setOnClickListener(v -> {
-                if (skipClick[0]) {
-                    skipClick[0] = false;
-                    return;
-                }
-                editTracker.accept(tracker.id);
-            });
-            attachDeleteGestures(card, restore -> confirmDeleteTracker(tracker, restore), skipClick);
+            LinearLayout card = overviewCard(
+                    tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name,
+                    null,
+                    fieldPreview(tracker),
+                    () -> editTracker.accept(tracker.id),
+                    restore -> confirmDeleteTracker(tracker, restore));
+            card.setTag(tracker.id);
+            attachOverviewReorder(card.getChildAt(0), box, card, () -> db.reorderTrackers(childIds(box)));
             box.addView(card, cardLayoutParams());
         }
 
@@ -133,13 +108,91 @@ public final class HomeUi {
         return box;
     }
 
+    private LinearLayout overviewCard(String title, String meta, String previewText, Runnable open, Consumer<Runnable> deleteAction) {
+        LinearLayout card = createCard();
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+
+        final boolean[] skipClick = new boolean[1];
+        card.setOnClickListener(v -> {
+            if (skipClick[0]) {
+                skipClick[0] = false;
+                return;
+            }
+            open.run();
+        });
+        attachDeleteGestures(card, deleteAction, skipClick);
+
+        card.addView(listIcon("⠿"), new LinearLayout.LayoutParams(ui.px(28), ui.px(56)));
+
+        LinearLayout content = new LinearLayout(activity);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView titleView = new TextView(activity);
+        titleView.setText(title);
+        titleView.setTextSize(ui.sp(16));
+        titleView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        titleView.setTextColor(theme.primaryTextColor());
+        content.addView(titleView);
+
+        if (meta != null && !meta.isEmpty()) {
+            TextView metaView = new TextView(activity);
+            metaView.setText(meta);
+            metaView.setTextSize(ui.sp(13));
+            metaView.setTextColor(theme.mutedTextColor());
+            content.addView(metaView);
+        }
+
+        TextView preview = new TextView(activity);
+        preview.setText(previewText);
+        preview.setTextSize(ui.sp(14));
+        preview.setTextColor(theme.primaryTextColor());
+        preview.setLineSpacing(0f, 1.15f);
+        preview.setMaxLines(2);
+        preview.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        content.addView(preview);
+
+        card.addView(content, new LinearLayout.LayoutParams(0, -2, 1));
+
+        TextView menu = listIcon("...");
+        menu.setOnClickListener(v -> showDeleteMenu(menu, () -> deleteAction.accept(() -> {})));
+        card.addView(menu, new LinearLayout.LayoutParams(ui.px(36), ui.px(56)));
+
+        TextView arrow = listIcon("›");
+        arrow.setTextSize(ui.sp(24));
+        arrow.setOnClickListener(v -> open.run());
+        card.addView(arrow, new LinearLayout.LayoutParams(ui.px(28), ui.px(56)));
+        return card;
+    }
+
     private LinearLayout createCard() {
         LinearLayout card = new LinearLayout(activity);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(ui.px(16), ui.px(16), ui.px(16), ui.px(16));
+        card.setPadding(ui.px(12), ui.px(8), ui.px(8), ui.px(8));
         card.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.accentSoftColor()));
         card.setElevation(ui.px(1));
         return card;
+    }
+
+    private TextView listIcon(String text) {
+        TextView view = new TextView(activity);
+        view.setText(text);
+        view.setTextSize(ui.sp(24));
+        view.setTextColor(theme.mutedTextColor());
+        view.setGravity(Gravity.CENTER);
+        view.setClickable(true);
+        view.setFocusable(true);
+        return view;
+    }
+
+    private void showDeleteMenu(View anchor, Runnable delete) {
+        PopupMenu menu = new PopupMenu(activity, anchor, Gravity.END);
+        menu.getMenu().add("Löschen");
+        menu.setOnMenuItemClickListener(item -> {
+            delete.run();
+            return true;
+        });
+        menu.show();
     }
 
     private LinearLayout.LayoutParams cardLayoutParams() {
@@ -170,6 +223,93 @@ public final class HomeUi {
         emptyLp.topMargin = ui.px(4);
         empty.setLayoutParams(emptyLp);
         return empty;
+    }
+
+    private void attachOverviewReorder(View handle, LinearLayout container, View movedView, Runnable onChange) {
+        final float[] startY = new float[1];
+        final float[] consumedY = new float[1];
+        final float[] oldElevation = new float[1];
+        handle.setOnTouchListener((v, event) -> {
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                container.requestDisallowInterceptTouchEvent(true);
+                startY[0] = event.getRawY();
+                consumedY[0] = 0;
+                oldElevation[0] = movedView.getElevation();
+                movedView.setElevation(oldElevation[0] + ui.px(8));
+                movedView.setAlpha(0.82f);
+                return true;
+            }
+            if (action == MotionEvent.ACTION_MOVE) {
+                float delta = event.getRawY() - startY[0] - consumedY[0];
+                int direction = delta > 0 ? 1 : -1;
+                while (delta != 0) {
+                    int distance = overviewReorderDistance(container, movedView, direction);
+                    if (distance <= 0 || Math.abs(delta) <= distance / 2f) {
+                        break;
+                    }
+                    if (!moveOverviewCard(container, movedView, direction)) {
+                        break;
+                    }
+                    consumedY[0] += direction * distance;
+                    delta = event.getRawY() - startY[0] - consumedY[0];
+                    direction = delta > 0 ? 1 : -1;
+                    onChange.run();
+                }
+                return true;
+            }
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                movedView.setElevation(oldElevation[0]);
+                movedView.setAlpha(1f);
+                container.requestDisallowInterceptTouchEvent(false);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private boolean moveOverviewCard(LinearLayout container, View movedView, int direction) {
+        int fromIndex = container.indexOfChild(movedView);
+        int toIndex = fromIndex + direction;
+        if (fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()) {
+            return false;
+        }
+        View sibling = container.getChildAt(toIndex);
+        int distance = viewHeightWithMargins(sibling);
+        container.removeView(sibling);
+        container.addView(sibling, direction > 0 ? fromIndex : toIndex + 1);
+        sibling.animate().cancel();
+        sibling.setTranslationY(direction > 0 ? distance : -distance);
+        sibling.animate().translationY(0).setDuration(140).start();
+        return true;
+    }
+
+    private int overviewReorderDistance(LinearLayout container, View movedView, int direction) {
+        int fromIndex = container.indexOfChild(movedView);
+        int toIndex = fromIndex + direction;
+        return fromIndex < 0 || toIndex < 0 || toIndex >= container.getChildCount()
+                ? 0
+                : viewHeightWithMargins(container.getChildAt(toIndex));
+    }
+
+    private int viewHeightWithMargins(View view) {
+        int height = view.getHeight();
+        if (view.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
+            height += lp.topMargin + lp.bottomMargin;
+        }
+        return height;
+    }
+
+    private java.util.List<Long> childIds(LinearLayout container) {
+        java.util.List<Long> ids = new java.util.ArrayList<>();
+        for (int i = 0; i < container.getChildCount(); i++) {
+            Object tag = container.getChildAt(i).getTag();
+            if (tag instanceof Long) {
+                ids.add((Long) tag);
+            }
+        }
+        return ids;
     }
 
     private void attachDeleteGestures(View card, Consumer<Runnable> deleteAction, boolean[] skipClick) {
