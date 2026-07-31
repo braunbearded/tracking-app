@@ -19,7 +19,6 @@ final class FieldDefinition {
     String label;
     String type;
     String defaultValue;
-    String unit;
     double increment = 1;
     int order;
     boolean required;

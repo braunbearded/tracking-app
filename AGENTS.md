@@ -5,7 +5,7 @@ This is a single-module Android app without Google Play Services.
 
 - `app/src/main/java/com/zaelio/app/` contains app code.
   - `MainActivity.java` owns routing, lifecycle, top app bar actions, and bottom navigation.
-- `TrackingDatabase.java` handles SQLite schema, destructive upgrades, seed data, and data access. Current schema version is 7.
+- `TrackingDatabase.java` handles SQLite schema, destructive upgrades, seed data, and data access. Current schema version is 8.
 - `theme/ThemeStore.java` stores theme mode, accent color, font scale, and derived palette values.
 - `ui/AppUi.java` builds shared Material-style widgets.
 - `ui/SettingsUi.java` renders the settings and About screens.

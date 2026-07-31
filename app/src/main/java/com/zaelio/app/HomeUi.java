@@ -366,9 +366,9 @@ public final class HomeUi {
         }
         if ("float".equals(field.type) && value instanceof Number) {
             return String.format(java.util.Locale.US, "%." + field.decimals + "f", ((Number) value).doubleValue())
-                    + unitSuffix(field);
+;
         }
-        return String.valueOf(value) + unitSuffix(field);
+        return String.valueOf(value);
     }
 
     private long parseLong(Object value) {
@@ -377,12 +377,6 @@ public final class HomeUi {
         } catch (Exception e) {
             return 0;
         }
-    }
-
-    private String unitSuffix(FieldDefinition field) {
-        return field.unit == null || field.unit.trim().isEmpty() || "string".equals(field.type) || "duration".equals(field.type)
-                ? ""
-                : " " + field.unit;
     }
 
     private String fieldPreview(Tracker tracker) {

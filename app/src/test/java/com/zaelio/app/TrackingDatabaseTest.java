@@ -125,6 +125,7 @@ public class TrackingDatabaseTest {
                 assertNotEquals("itemTitle", name);
                 assertNotEquals("itemOrder", name);
                 assertNotEquals("itemId", name);
+                assertNotEquals("u" + "nit", name);
             }
         } finally {
             columns.close();

@@ -16,7 +16,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
     static final Object NO_PREVIOUS = new Object();
 
     TrackingDatabase(Context context) {
-        super(context, "tracking.sqlite", null, 7);
+        super(context, "tracking.sqlite", null, 8);
     }
 
     @Override
@@ -27,7 +27,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE trackers(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,description TEXT,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,overviewOrder INTEGER NOT NULL DEFAULT 0)");
-        db.execSQL("CREATE TABLE fields(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,fieldKey TEXT NOT NULL,label TEXT NOT NULL,type TEXT NOT NULL,sortOrder INTEGER NOT NULL,defaultValue TEXT,incrementValue REAL,unit TEXT,required INTEGER NOT NULL,prefillFromPrevious INTEGER NOT NULL,FOREIGN KEY(trackerId) REFERENCES trackers(id) ON DELETE CASCADE)");
+        db.execSQL("CREATE TABLE fields(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,fieldKey TEXT NOT NULL,label TEXT NOT NULL,type TEXT NOT NULL,sortOrder INTEGER NOT NULL,defaultValue TEXT,incrementValue REAL,required INTEGER NOT NULL,prefillFromPrevious INTEGER NOT NULL,FOREIGN KEY(trackerId) REFERENCES trackers(id) ON DELETE CASCADE)");
         db.execSQL("CREATE TABLE sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,overviewOrder INTEGER NOT NULL DEFAULT 0,FOREIGN KEY(trackerId) REFERENCES trackers(id))");
         db.execSQL("CREATE TABLE field_records(id INTEGER PRIMARY KEY AUTOINCREMENT,sessionId INTEGER NOT NULL,trackerId INTEGER NOT NULL,fieldId INTEGER NOT NULL,fieldKey TEXT NOT NULL,valuesJson TEXT NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,UNIQUE(sessionId,fieldId),FOREIGN KEY(sessionId) REFERENCES sessions(id),FOREIGN KEY(fieldId) REFERENCES fields(id))");
         seed(db);
@@ -50,10 +50,10 @@ final class TrackingDatabase extends SQLiteOpenHelper {
 
     private void seed(SQLiteDatabase db) {
         long trackerId = insertTracker(db, "Training", "Beispiel-Tracker");
-        field(db, trackerId, "reps", "Wiederholungen", "int", 0, "8", 1, "", true);
-        field(db, trackerId, "weight", "Zusatzgewicht", "float", 1, "0", 2.5, "kg", true);
-        field(db, trackerId, "note", "Notiz", "string", 2, "", 1, "", false);
-        field(db, trackerId, "duration", "Dauer", "duration", 3, "60000", 1, "", true);
+        field(db, trackerId, "reps", "Wiederholungen", "int", 0, "8", 1, true);
+        field(db, trackerId, "weight", "Zusatzgewicht", "float", 1, "0", 2.5, true);
+        field(db, trackerId, "note", "Notiz", "string", 2, "", 1, false);
+        field(db, trackerId, "duration", "Dauer", "duration", 3, "60000", 1, true);
     }
 
     long insertTracker(SQLiteDatabase db, String name, String desc) {
@@ -76,7 +76,6 @@ final class TrackingDatabase extends SQLiteOpenHelper {
             int order,
             String def,
             double inc,
-            String unit,
             boolean prefillFromPrevious) {
         ContentValues values = new ContentValues();
         values.put("trackerId", trackerId);
@@ -86,7 +85,6 @@ final class TrackingDatabase extends SQLiteOpenHelper {
         values.put("sortOrder", order);
         values.put("defaultValue", def);
         values.put("incrementValue", inc);
-        values.put("unit", unit);
         values.put("required", 0);
         values.put("prefillFromPrevious", prefillFromPrevious ? 1 : 0);
         return db.insert("fields", null, values);
@@ -101,9 +99,8 @@ final class TrackingDatabase extends SQLiteOpenHelper {
             int order,
             String def,
             double inc,
-            String unit,
             boolean prefillFromPrevious) {
-        insertField(db, trackerId, key, label, type, order, def, inc, unit, prefillFromPrevious);
+        insertField(db, trackerId, key, label, type, order, def, inc, prefillFromPrevious);
     }
 
     List<Tracker> trackers() {
@@ -141,7 +138,7 @@ final class TrackingDatabase extends SQLiteOpenHelper {
             tracker.updatedAt = trackerCursor.getLong(4);
 
             Cursor fieldCursor = db.rawQuery(
-                    "SELECT id,trackerId,fieldKey,label,type,sortOrder,defaultValue,incrementValue,unit,required,prefillFromPrevious FROM fields WHERE trackerId=? ORDER BY sortOrder,id",
+                    "SELECT id,trackerId,fieldKey,label,type,sortOrder,defaultValue,incrementValue,required,prefillFromPrevious FROM fields WHERE trackerId=? ORDER BY sortOrder,id",
                     new String[]{String.valueOf(id)});
             try {
                 while (fieldCursor.moveToNext()) {
@@ -154,9 +151,8 @@ final class TrackingDatabase extends SQLiteOpenHelper {
                     definition.order = fieldCursor.getInt(5);
                     definition.defaultValue = fieldCursor.getString(6);
                     definition.increment = fieldCursor.getDouble(7);
-                    definition.unit = fieldCursor.getString(8);
-                    definition.required = fieldCursor.getInt(9) == 1;
-                    definition.prefillFromPrevious = fieldCursor.getInt(10) == 1;
+                    definition.required = fieldCursor.getInt(8) == 1;
+                    definition.prefillFromPrevious = fieldCursor.getInt(9) == 1;
                     tracker.fields.add(definition);
                 }
             } finally {

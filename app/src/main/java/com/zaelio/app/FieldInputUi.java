@@ -189,7 +189,7 @@ final class FieldInputUi {
 
 
     private String fieldLabel(FieldDefinition field) {
-        return field.label + (field.unit == null || field.unit.isEmpty() ? "" : " · " + field.unit);
+        return field.label;
     }
 
     private void styleTimerToggle(Button button, boolean running) {

@@ -417,9 +417,6 @@ public final class TrackerFlowUi {
                 builder.append(String.valueOf(value));
             }
 
-            if (field.unit != null && !field.unit.isEmpty() && value != null && !"string".equals(field.type)) {
-                builder.append(" ").append(field.unit);
-            }
         }
         return builder.toString();
     }
@@ -457,7 +454,6 @@ public final class TrackerFlowUi {
         views.keyInput = labeledInput("Key", field == null ? "" : field.key, InputType.TYPE_CLASS_TEXT);
         views.labelInput = labeledInput("Feldname", field == null ? "" : field.label, InputType.TYPE_CLASS_TEXT);
         views.defaultValueInput = labeledInput("Standardwert", field == null ? "" : String.valueOf(field.defaultValue == null ? "" : field.defaultValue), InputType.TYPE_CLASS_TEXT);
-        views.unitInput = labeledInput("Einheit", field == null ? "" : field.unit, InputType.TYPE_CLASS_TEXT);
         views.incrementInput = labeledInput("Schrittweite", field == null ? "1" : String.valueOf(field.increment), InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         views.decimalsInput = labeledInput("Nachkommastellen", field == null ? "1" : String.valueOf(field.decimals), InputType.TYPE_CLASS_NUMBER);
 
@@ -544,9 +540,6 @@ public final class TrackerFlowUi {
         editor.addView(typeLayout);
         editor.addView(required);
         editor.addView(prefill);
-        TextInputLayout unitInput = outlinedInput("Einheit", views.unitInput);
-        ((LinearLayout.LayoutParams) unitInput.getLayoutParams()).bottomMargin = ui.spaceXs();
-        editor.addView(unitInput);
         editor.addView(numericRow);
         views.editor = editor;
 
@@ -580,7 +573,6 @@ public final class TrackerFlowUi {
         ui.onTextChanged(views.keyInput, fieldChanged);
         ui.onTextChanged(views.labelInput, fieldChanged);
         ui.onTextChanged(views.defaultValueInput, fieldChanged);
-        ui.onTextChanged(views.unitInput, fieldChanged);
         ui.onTextChanged(views.incrementInput, fieldChanged);
         ui.onTextChanged(views.decimalsInput, fieldChanged);
         required.setOnCheckedChangeListener((buttonView, isChecked) -> fieldChanged.run());
@@ -662,8 +654,7 @@ public final class TrackerFlowUi {
         views.summaryTitle.setText(label);
         String type = selectedType(views.typeInput);
         String typeLabel = "string".equals(type) ? "Text" : "int".equals(type) ? "Ganzzahl" : "float".equals(type) ? "Dezimalzahl" : "Timer";
-        String unit = views.unitInput.getText().toString().trim();
-        views.summaryMeta.setText(unit.isEmpty() ? typeLabel : typeLabel + " · " + unit);
+        views.summaryMeta.setText(typeLabel);
     }
 
     private FieldDefinition fieldFromViews(FieldEditorViews views) {
@@ -671,7 +662,6 @@ public final class TrackerFlowUi {
         field.key = views.keyInput.getText().toString();
         field.label = views.labelInput.getText().toString();
         field.defaultValue = views.defaultValueInput.getText().toString();
-        field.unit = views.unitInput.getText().toString();
         field.increment = parseDoubleSafe(views.incrementInput.getText().toString(), 1);
         field.decimals = parseIntSafe(views.decimalsInput.getText().toString(), 1);
         field.type = selectedType(views.typeInput);
@@ -904,7 +894,6 @@ public final class TrackerFlowUi {
             field.put("defaultValue", defaultValue.isEmpty() ? JSONObject.NULL : defaultValue);
             field.put("increment", parseDoubleSafe(fieldViews.incrementInput.getText().toString(), 1));
             field.put("decimals", parseIntSafe(fieldViews.decimalsInput.getText().toString(), 1));
-            field.put("unit", fieldViews.unitInput.getText().toString().trim());
             field.put("required", fieldViews.requiredCheck.isChecked());
             field.put("prefillFromPrevious", fieldViews.prefillCheck.isChecked());
             fields.put(field);
@@ -1080,7 +1069,6 @@ public final class TrackerFlowUi {
         EditText keyInput;
         EditText labelInput;
         EditText defaultValueInput;
-        EditText unitInput;
         EditText incrementInput;
         EditText decimalsInput;
         MaterialAutoCompleteTextView typeInput;

@@ -36,7 +36,6 @@ public class JsonUtilTest {
         field.type = "float";
         field.defaultValue = "0";
         field.increment = 2.5;
-        field.unit = "kg";
         field.required = true;
         field.prefillFromPrevious = true;
         tracker.fields.add(field);

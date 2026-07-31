@@ -66,7 +66,6 @@ final class JsonUtil {
         fieldJson.put("order", field.order);
         fieldJson.put("defaultValue", field.defaultValue == null ? JSONObject.NULL : field.defaultValue);
         fieldJson.put("increment", field.increment);
-        fieldJson.put("unit", field.unit == null ? "" : field.unit);
         fieldJson.put("required", field.required);
         fieldJson.put("prefillFromPrevious", field.prefillFromPrevious);
         return fieldJson;
@@ -83,7 +82,6 @@ final class JsonUtil {
             values.put("defaultValue", String.valueOf(field.get("defaultValue")));
         }
         values.put("incrementValue", field.optDouble("increment", 1));
-        values.put("unit", field.optString("unit", ""));
         values.put("required", field.optBoolean("required", false) ? 1 : 0);
         values.put("prefillFromPrevious", field.optBoolean("prefillFromPrevious", false) ? 1 : 0);
         return values;
