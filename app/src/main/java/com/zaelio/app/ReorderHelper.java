@@ -24,6 +24,7 @@ final class ReorderHelper {
         final float[] startY = new float[1];
         final float[] consumedY = new float[1];
         final float[] oldElevation = new float[1];
+        final float[] oldTranslationY = new float[1];
         final float[] oldTranslationZ = new float[1];
         final Drawable[] oldBackground = new Drawable[1];
         handle.setOnTouchListener((v, event) -> {
@@ -33,6 +34,7 @@ final class ReorderHelper {
                 startY[0] = event.getRawY();
                 consumedY[0] = 0;
                 oldElevation[0] = movedView.getElevation();
+                oldTranslationY[0] = movedView.getTranslationY();
                 oldTranslationZ[0] = movedView.getTranslationZ();
                 oldBackground[0] = movedView.getBackground();
                 movedView.animate().cancel();
@@ -43,7 +45,8 @@ final class ReorderHelper {
                 return true;
             }
             if (action == MotionEvent.ACTION_MOVE) {
-                float delta = event.getRawY() - startY[0] - consumedY[0];
+                float delta = clampEdgeDelta(container, movedView, event.getRawY() - startY[0] - consumedY[0]);
+                movedView.setTranslationY(oldTranslationY[0] + delta);
                 int direction = delta > 0 ? 1 : -1;
                 while (delta != 0) {
                     int distance = distance(container, movedView, direction);
@@ -58,7 +61,8 @@ final class ReorderHelper {
                         afterSwap.accept(direction);
                     }
                     consumedY[0] += direction * distance;
-                    delta = event.getRawY() - startY[0] - consumedY[0];
+                    delta = clampEdgeDelta(container, movedView, event.getRawY() - startY[0] - consumedY[0]);
+                    movedView.setTranslationY(oldTranslationY[0] + delta);
                     direction = delta > 0 ? 1 : -1;
                     onChange.run();
                 }
@@ -68,12 +72,22 @@ final class ReorderHelper {
                 movedView.setElevation(oldElevation[0]);
                 movedView.setTranslationZ(oldTranslationZ[0]);
                 movedView.setBackground(oldBackground[0]);
-                movedView.animate().alpha(1f).setDuration(ANIMATION_MS).start();
+                movedView.animate().translationY(oldTranslationY[0]).alpha(1f).setDuration(ANIMATION_MS).start();
                 disallowParentIntercept(v, false);
                 return true;
             }
             return false;
         });
+    }
+
+    private static float clampEdgeDelta(LinearLayout container, View movedView, float delta) {
+        if (delta > 0 && distance(container, movedView, 1) <= 0) {
+            return 0;
+        }
+        if (delta < 0 && distance(container, movedView, -1) <= 0) {
+            return 0;
+        }
+        return delta;
     }
 
     private static int distance(LinearLayout container, View movedView, int direction) {

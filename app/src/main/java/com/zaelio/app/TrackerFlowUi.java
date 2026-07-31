@@ -728,7 +728,7 @@ public final class TrackerFlowUi {
             rect.offset(row.getLeft(), row.getTop());
             rect.left = 0;
             rect.top = row.getTop();
-            rect.bottom = row.getBottom();
+            rect.bottom = parent.getHeight();
             rect.right = Math.max(rect.right, ui.rowHeight());
             parent.setTouchDelegate(new TouchDelegate(rect, handle));
         });
