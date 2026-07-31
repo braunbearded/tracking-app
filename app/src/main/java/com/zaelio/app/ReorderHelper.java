@@ -1,5 +1,6 @@
 package com.zaelio.app;
 
+import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewParent;
@@ -23,6 +24,8 @@ final class ReorderHelper {
         final float[] startY = new float[1];
         final float[] consumedY = new float[1];
         final float[] oldElevation = new float[1];
+        final float[] oldTranslationZ = new float[1];
+        final Drawable[] oldBackground = new Drawable[1];
         handle.setOnTouchListener((v, event) -> {
             int action = event.getActionMasked();
             if (action == MotionEvent.ACTION_DOWN) {
@@ -30,8 +33,13 @@ final class ReorderHelper {
                 startY[0] = event.getRawY();
                 consumedY[0] = 0;
                 oldElevation[0] = movedView.getElevation();
-                movedView.setElevation(oldElevation[0] + ui.spaceS());
-                movedView.setAlpha(0.82f);
+                oldTranslationZ[0] = movedView.getTranslationZ();
+                oldBackground[0] = movedView.getBackground();
+                movedView.animate().cancel();
+                movedView.setElevation(oldElevation[0] + ui.spaceXl());
+                movedView.setTranslationZ(oldTranslationZ[0] + ui.spaceXl());
+                movedView.setBackground(ui.dragSelectedCard());
+                movedView.setAlpha(0.96f);
                 return true;
             }
             if (action == MotionEvent.ACTION_MOVE) {
@@ -58,7 +66,9 @@ final class ReorderHelper {
             }
             if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                 movedView.setElevation(oldElevation[0]);
-                movedView.setAlpha(1f);
+                movedView.setTranslationZ(oldTranslationZ[0]);
+                movedView.setBackground(oldBackground[0]);
+                movedView.animate().alpha(1f).setDuration(ANIMATION_MS).start();
                 disallowParentIntercept(v, false);
                 return true;
             }

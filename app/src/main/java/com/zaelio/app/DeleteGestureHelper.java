@@ -29,6 +29,20 @@ final class DeleteGestureHelper {
     private DeleteGestureHelper() {
     }
 
+    static void attachToTree(Activity activity, ThemeStore theme, AppUi ui, View rootView, View targetView,
+                             DeleteAction deleteAction, boolean[] skipClick, View... excluded) {
+        if (isExcluded(rootView, excluded)) {
+            return;
+        }
+        attach(activity, theme, ui, rootView, targetView, deleteAction, skipClick);
+        if (rootView instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) rootView;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                attachToTree(activity, theme, ui, group.getChildAt(i), targetView, deleteAction, skipClick, excluded);
+            }
+        }
+    }
+
     static void attach(Activity activity, ThemeStore theme, AppUi ui, View touchView, View targetView,
                        DeleteAction deleteAction, boolean[] skipClick) {
         final float[] downX = new float[1];
@@ -77,6 +91,18 @@ final class DeleteGestureHelper {
             }
             return false;
         });
+    }
+
+    private static boolean isExcluded(View view, View... excluded) {
+        if (excluded == null) {
+            return false;
+        }
+        for (View excludedView : excluded) {
+            if (view == excludedView) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static void animateDelete(AppUi ui, View targetView) {

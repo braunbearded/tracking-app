@@ -435,6 +435,12 @@ public final class AppUi {
         return drawable;
     }
 
+    public GradientDrawable dragSelectedCard() {
+        GradientDrawable drawable = makeRoundedCard(theme.accentSoftColor(), theme.accentColor());
+        drawable.setStroke(px(2), theme.accentColor());
+        return drawable;
+    }
+
     public Drawable squareRipple(int fillColor, int rippleColor) {
         return new RippleDrawable(
                 ColorStateList.valueOf(rippleColor),

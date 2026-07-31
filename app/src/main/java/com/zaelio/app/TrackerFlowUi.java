@@ -179,7 +179,6 @@ public final class TrackerFlowUi {
             return;
         }
 
-        setBackAction.accept(backToTrackers);
         base();
         root.addView(ui.appBar(isNew ? "Neuer Tracker" : "Tracker bearbeiten", false, null, !isNew, v -> showTrackerMenu(v, id, tracker.name)));
 
@@ -284,8 +283,17 @@ public final class TrackerFlowUi {
             scheduleSave.run();
         });
 
+        Runnable editorBack = () -> {
+            try {
+                trackerEditorToJson(form);
+                backToTrackers.run();
+            } catch (Exception e) {
+                Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        };
+        setBackAction.accept(editorBack);
         root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
-        root.addView(footerButton("Zurück", backToTrackers));
+        root.addView(footerButton("Zurück", editorBack));
         attachTrackerAutosave(form, scheduleSave);
     }
 
@@ -447,6 +455,7 @@ public final class TrackerFlowUi {
 
     private FieldEditorViews addFieldEditor(ScrollView scrollView, LinearLayout container, List<FieldEditorViews> fieldEditors, FieldDefinition field, Runnable scheduleSave) {
         FieldEditorViews views = new FieldEditorViews();
+        views.existing = field != null && field.id > 0;
 
         View reorder = reorderHandle();
         TextView menu = iconAction("⋮");
@@ -619,12 +628,7 @@ public final class TrackerFlowUi {
         shell.setTag(views);
         attachFieldReorder(reorder, container, fieldEditors, views, scheduleSave);
         DeleteGestureHelper.DeleteAction deleteGesture = (restore, animateDelete) -> confirmDeleteField(views, restore, animateDelete, removeNow);
-        DeleteGestureHelper.attach(activity, theme, ui, shell, shell, deleteGesture, null);
-        DeleteGestureHelper.attach(activity, theme, ui, summaryRow, shell, deleteGesture, null);
-        DeleteGestureHelper.attach(activity, theme, ui, summarySlot, shell, deleteGesture, null);
-        DeleteGestureHelper.attach(activity, theme, ui, summaryText, shell, deleteGesture, null);
-        DeleteGestureHelper.attach(activity, theme, ui, views.summaryTitle, shell, deleteGesture, null);
-        DeleteGestureHelper.attach(activity, theme, ui, views.summaryMeta, shell, deleteGesture, null);
+        DeleteGestureHelper.attachToTree(activity, theme, ui, shell, shell, deleteGesture, null, reorder);
         setFieldExpanded(views, expand, field == null);
         return views;
     }
@@ -899,7 +903,10 @@ public final class TrackerFlowUi {
 
             String fieldLabel = fieldViews.labelInput.getText().toString().trim();
             if (fieldLabel.isEmpty()) {
-                fieldLabel = "Field " + (fieldOrder + 1);
+                if (fieldViews.existing) {
+                    throw new IllegalStateException("Bestehende Felder brauchen einen Namen.");
+                }
+                continue;
             }
             String fieldKey = uniqueFieldKey(fieldLabel, usedFieldKeys);
 
@@ -1119,6 +1126,7 @@ public final class TrackerFlowUi {
         LinearLayout editor;
         MaterialCheckBox requiredCheck;
         MaterialCheckBox prefillCheck;
+        boolean existing;
         boolean removed;
     }
 }
