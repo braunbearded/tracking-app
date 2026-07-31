@@ -26,9 +26,9 @@ import java.util.function.LongConsumer;
 import org.json.JSONObject;
 
 public final class HomeUi {
-    private static final int DELETE_SWIPE_LEFT_DP = 120;
+    private static final int DELETE_SWIPE_LEFT_DP = 180;
     private static final int DELETE_SWIPE_RIGHT_DP = 60;
-    private static final int DELETE_SWIPE_TRIGGER_DP = 80;
+    private static final int DELETE_SWIPE_TRIGGER_DP = 140;
 
     private final Activity activity;
     private final TrackingDatabase db;
@@ -250,30 +250,39 @@ public final class HomeUi {
 
     private void attachDeleteGestures(View card, DeleteAction deleteAction, boolean[] skipClick) {
         final float[] downX = new float[1];
+        final float[] downY = new float[1];
         final boolean[] dragging = new boolean[1];
         final boolean[] deleteStarted = new boolean[1];
         card.setOnLongClickListener(v -> {
+            if (dragging[0]) {
+                return true;
+            }
             deleteStarted[0] = true;
             deleteAction.request(markDeleteCandidate(card), () -> animateDelete(card));
             return true;
         });
         card.setOnTouchListener((v, event) -> {
             float dx = event.getRawX() - downX[0];
+            float dy = event.getRawY() - downY[0];
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 downX[0] = event.getRawX();
+                downY[0] = event.getRawY();
                 dragging[0] = false;
                 deleteStarted[0] = false;
+                card.setLongClickable(true);
             } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
                 if (Math.abs(dx) > ui.spaceS()) {
                     dragging[0] = true;
+                    card.setLongClickable(false);
                     card.getParent().requestDisallowInterceptTouchEvent(true);
                     card.setTranslationX(Math.max(-ui.px(DELETE_SWIPE_LEFT_DP), Math.min(ui.px(DELETE_SWIPE_RIGHT_DP), dx)));
                 }
             } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
+                card.setLongClickable(true);
                 card.animate().translationX(0).setDuration(120).start();
                 if (dragging[0]) {
                     skipClick[0] = true;
-                    if (!deleteStarted[0] && dx < -ui.px(DELETE_SWIPE_TRIGGER_DP)) {
+                    if (!deleteStarted[0] && dx < -ui.px(DELETE_SWIPE_TRIGGER_DP) && Math.abs(dx) > Math.abs(dy) * 1.5f) {
                         deleteStarted[0] = true;
                         deleteAction.request(markDeleteCandidate(card), () -> animateDelete(card));
                     }
