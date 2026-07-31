@@ -34,10 +34,10 @@ public final class SettingsUi {
 
     public void render(LinearLayout root) {
         LinearLayout box = ui.screenBody(root, "Einstellungen", backHome);
-        box.addView(themeCard());
-        box.addView(fontCard());
-        box.addView(fieldSizeCard());
-        box.addView(accentCard());
+        box.addView(themeCard(), cardLp());
+        box.addView(fontCard(), cardLp());
+        box.addView(fieldSizeCard(), cardLp());
+        box.addView(accentCard(), cardLp());
     }
 
     public void renderAbout(LinearLayout root) {

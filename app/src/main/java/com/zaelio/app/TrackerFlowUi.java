@@ -987,10 +987,15 @@ public final class TrackerFlowUi {
     private void showTrackerMenu(View anchor, long trackerId, String trackerName) {
         PopupMenu menu = new PopupMenu(activity, anchor, Gravity.END);
         if (trackerId != -1) {
-            menu.getMenu().add(0, 1, 0, "Tracker löschen");
+            menu.getMenu().add(0, 1, 0, "Tracker duplizieren");
+            menu.getMenu().add(0, 2, 1, "Tracker löschen");
         }
         menu.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == 1) {
+                duplicateTracker(trackerId);
+                return true;
+            }
+            if (item.getItemId() == 2) {
                 confirmDeleteTracker(trackerId, trackerName);
                 return true;
             }
@@ -1010,6 +1015,22 @@ public final class TrackerFlowUi {
             return false;
         });
         menu.show();
+    }
+
+    private void duplicateTracker(long trackerId) {
+        try {
+            Tracker tracker = db.readTracker(trackerId);
+            if (tracker == null) {
+                Toast.makeText(activity, "Tracker nicht gefunden", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            JSONObject json = new JSONObject(JsonUtil.trackerToJson(tracker));
+            json.put("name", (tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name) + " Kopie");
+            TrackerJsonRepository.saveTracker(db, -1, json.toString(), true);
+            backToTrackers.run();
+        } catch (Exception e) {
+            Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void confirmDeleteTracker(long trackerId, String trackerName) {

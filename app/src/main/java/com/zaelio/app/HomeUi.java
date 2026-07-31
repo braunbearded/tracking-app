@@ -24,6 +24,8 @@ import com.zaelio.app.ui.AppUi;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import org.json.JSONObject;
+
 public final class HomeUi {
     private static final int DELETE_SWIPE_LEFT_DP = 120;
     private static final int DELETE_SWIPE_RIGHT_DP = 60;
@@ -64,6 +66,7 @@ public final class HomeUi {
                     date(session.createdAt),
                     preview(session.id, tracker),
                     () -> openSession.accept(session.id),
+                    null,
                     restore -> confirmDeleteSession(session, restore),
                     box,
                     () -> db.reorderSessions(childIds(box)));
@@ -89,6 +92,7 @@ public final class HomeUi {
                     null,
                     fieldPreview(tracker),
                     () -> editTracker.accept(tracker.id),
+                    () -> duplicateTracker(tracker),
                     restore -> confirmDeleteTracker(tracker, restore),
                     box,
                     () -> db.reorderTrackers(childIds(box)));
@@ -114,8 +118,8 @@ public final class HomeUi {
     }
 
     private LinearLayout overviewCard(String title, String meta, String previewText, Runnable open,
-                                      Consumer<Runnable> deleteAction, LinearLayout reorderContainer,
-                                      Runnable onReorder) {
+                                      Runnable duplicateAction, Consumer<Runnable> deleteAction,
+                                      LinearLayout reorderContainer, Runnable onReorder) {
         LinearLayout card = createCard();
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
@@ -161,7 +165,7 @@ public final class HomeUi {
         content.addView(preview);
 
         TextView menu = ui.listIcon("...");
-        menu.setOnClickListener(v -> showDeleteMenu(menu, () -> deleteAction.accept(() -> {})));
+        menu.setOnClickListener(v -> showCardMenu(menu, duplicateAction, () -> deleteAction.accept(() -> {})));
 
         TextView arrow = ui.listIcon("›");
         arrow.setOnClickListener(v -> open.run());
@@ -179,11 +183,18 @@ public final class HomeUi {
         return card;
     }
 
-    private void showDeleteMenu(View anchor, Runnable delete) {
+    private void showCardMenu(View anchor, Runnable duplicate, Runnable delete) {
         PopupMenu menu = new PopupMenu(activity, anchor, Gravity.END);
-        menu.getMenu().add("Löschen");
+        if (duplicate != null) {
+            menu.getMenu().add(0, 1, 0, "Duplizieren");
+        }
+        menu.getMenu().add(0, 2, 1, "Löschen");
         menu.setOnMenuItemClickListener(item -> {
-            delete.run();
+            if (item.getItemId() == 1 && duplicate != null) {
+                duplicate.run();
+            } else {
+                delete.run();
+            }
             return true;
         });
         menu.show();
@@ -330,6 +341,16 @@ public final class HomeUi {
         }, restore);
     }
 
+    private void duplicateTracker(Tracker tracker) {
+        try {
+            JSONObject json = new JSONObject(JsonUtil.trackerToJson(tracker));
+            json.put("name", (tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name) + " Kopie");
+            TrackerJsonRepository.saveTracker(db, -1, json.toString(), true);
+            refresh.run();
+        } catch (Exception e) {
+            android.widget.Toast.makeText(activity, e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
 
     private String preview(long sessionId, Tracker tracker) {
         java.util.Map<Long, FieldRecord> records = db.records(sessionId);
