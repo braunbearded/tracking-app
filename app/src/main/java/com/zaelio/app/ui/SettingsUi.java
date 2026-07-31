@@ -70,17 +70,10 @@ public final class SettingsUi {
         row.setGravity(android.view.Gravity.CENTER_VERTICAL);
         row.setPadding(ui.spaceL(), ui.spaceM(), ui.spaceM(), ui.spaceM());
 
-        TextView labelView = new TextView(activity);
-        labelView.setText(label);
-        labelView.setTextSize(ui.sp(15));
-        labelView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        labelView.setTextColor(theme.primaryTextColor());
+        TextView labelView = ui.text(label, 15, theme.primaryTextColor(), true);
         row.addView(labelView, new LinearLayout.LayoutParams(0, -2, 1));
 
-        TextView valueView = new TextView(activity);
-        valueView.setText(value);
-        valueView.setTextSize(ui.sp(13));
-        valueView.setTextColor(theme.mutedTextColor());
+        TextView valueView = ui.metaText(value);
         valueView.setGravity(android.view.Gravity.END);
         row.addView(valueView);
 

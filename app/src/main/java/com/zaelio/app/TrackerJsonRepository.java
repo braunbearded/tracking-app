@@ -7,6 +7,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 final class TrackerJsonRepository {
+    static long duplicateTracker(TrackingDatabase helper, long id) throws JSONException {
+        Tracker tracker = helper.readTracker(id);
+        if (tracker == null) {
+            return -1;
+        }
+        JSONObject json = new JSONObject(JsonUtil.trackerToJson(tracker));
+        json.put("name", (tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name) + " Kopie");
+        return saveTracker(helper, -1, json.toString(), true);
+    }
+
     static void updateTracker(TrackingDatabase helper, long id, String json) throws JSONException {
         saveTracker(helper, id, json, false);
     }

@@ -113,6 +113,19 @@ final class DeleteGestureHelper {
         targetView.animate().alpha(0f).scaleX(0.92f).scaleY(0.92f).translationX(-ui.spaceXl()).setDuration(DELETE_ANIMATION_MS).start();
     }
 
+    static void runDelete(Activity activity, AppUi ui, String title, String message,
+                          Runnable restore, Runnable animateDelete, Runnable deleteNow) {
+        Runnable delete = () -> {
+            animateDelete.run();
+            activity.getWindow().getDecorView().postDelayed(deleteNow, REMOVE_AFTER_DELETE_MS);
+        };
+        if (restore == null) {
+            delete.run();
+            return;
+        }
+        ui.confirmDelete(title, message, delete, restore);
+    }
+
     private static Runnable markDeleteCandidate(Activity activity, ThemeStore theme, AppUi ui, View targetView) {
         Drawable background = targetView.getBackground();
         vibrate(activity, targetView);

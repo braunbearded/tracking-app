@@ -24,6 +24,7 @@ import com.zaelio.app.R;
 import com.zaelio.app.theme.ThemeStore;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 public final class AppUi {
@@ -53,12 +54,41 @@ public final class AppUi {
     }
 
     public TextView tv(String text, float sizeSp) {
+        TextView view = text(text, sizeSp, theme.primaryTextColor(), false);
+        view.setPadding(spaceL(), spaceM(), spaceL(), spaceS());
+        return view;
+    }
+
+    public TextView text(String text, float sizeSp, int color, boolean bold) {
         TextView view = new TextView(activity);
         view.setText(text);
         view.setTextSize(sp(sizeSp));
-        view.setPadding(spaceL(), spaceM(), spaceL(), spaceS());
-        view.setTextColor(theme.primaryTextColor());
+        view.setTextColor(color);
+        view.setTypeface(bold ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
         return view;
+    }
+
+    public TextView titleText(String text) {
+        return text(text, 16, theme.primaryTextColor(), true);
+    }
+
+    public TextView metaText(String text) {
+        return text(text, 13, theme.mutedTextColor(), false);
+    }
+
+    public TextView bodyText(String text) {
+        return text(text, 14, theme.secondaryTextColor(), false);
+    }
+
+    public LinearLayout twoLineText(TextView title, TextView meta) {
+        LinearLayout box = new LinearLayout(activity);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER_VERTICAL);
+        box.addView(title);
+        if (meta != null) {
+            box.addView(meta);
+        }
+        return box;
     }
 
     public Button button(String text, int fillColor, int textColor, int strokeColor) {
@@ -249,6 +279,35 @@ public final class AppUi {
 
     public LinearLayout contentCard() {
         return settingsCard();
+    }
+
+    public LinearLayout compactCard() {
+        LinearLayout card = contentCard();
+        card.setPadding(spaceM(), spaceS(), spaceS(), spaceS());
+        return card;
+    }
+
+    public LinearLayout altCard() {
+        LinearLayout card = new LinearLayout(activity);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(spaceL(), spaceL(), spaceL(), spaceL());
+        card.setBackground(makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
+        return card;
+    }
+
+    public EditText textInput(String label, String value, int inputType) {
+        EditText input = new TextInputEditText(activity);
+        input.setText(value == null ? "" : value);
+        input.setHint(label);
+        input.setInputType(inputType);
+        input.setPadding(spaceM(), spaceM(), spaceM(), spaceM());
+        input.setBackground(makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
+        input.setTextColor(theme.primaryTextColor());
+        input.setHintTextColor(theme.mutedTextColor());
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.bottomMargin = spaceM();
+        input.setLayoutParams(lp);
+        return input;
     }
 
     public LinearLayout screenBody(LinearLayout root, String title, Runnable onBack) {

@@ -13,8 +13,6 @@ import com.zaelio.app.ui.AppUi;
 
 import java.util.function.LongConsumer;
 
-import org.json.JSONObject;
-
 public final class HomeUi {
     private final Activity activity;
     private final TrackingDatabase db;
@@ -121,29 +119,9 @@ public final class HomeUi {
 
         TextView handle = ui.listIcon("⠿");
 
-        LinearLayout content = new LinearLayout(activity);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout content = ui.twoLineText(ui.titleText(title), meta == null || meta.isEmpty() ? null : ui.metaText(meta));
 
-        TextView titleView = new TextView(activity);
-        titleView.setText(title);
-        titleView.setTextSize(ui.sp(16));
-        titleView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        titleView.setTextColor(theme.primaryTextColor());
-        content.addView(titleView);
-
-        if (meta != null && !meta.isEmpty()) {
-            TextView metaView = new TextView(activity);
-            metaView.setText(meta);
-            metaView.setTextSize(ui.sp(13));
-            metaView.setTextColor(theme.mutedTextColor());
-            content.addView(metaView);
-        }
-
-        TextView preview = new TextView(activity);
-        preview.setText(previewText);
-        preview.setTextSize(ui.sp(14));
-        preview.setTextColor(theme.primaryTextColor());
+        TextView preview = ui.text(previewText, 14, theme.primaryTextColor(), false);
         preview.setLineSpacing(0f, 1.15f);
         preview.setMaxLines(2);
         preview.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -161,10 +139,8 @@ public final class HomeUi {
     }
 
     private LinearLayout createCard() {
-        LinearLayout card = new LinearLayout(activity);
-        card.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
+        LinearLayout card = ui.compactCard();
         card.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.accentSoftColor()));
-        card.setElevation(ui.strokeWidth());
         return card;
     }
 
@@ -183,20 +159,14 @@ public final class HomeUi {
     }
 
     private LinearLayout emptyState(String titleText, String bodyText) {
-        LinearLayout empty = new LinearLayout(activity);
-        empty.setOrientation(LinearLayout.VERTICAL);
-        empty.setPadding(ui.spaceL(), ui.spaceL(), ui.spaceL(), ui.spaceL());
-        empty.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
+        LinearLayout empty = ui.altCard();
 
         TextView emptyTitle = ui.tv(titleText, 18);
         emptyTitle.setPadding(0, 0, 0, ui.spaceXs());
         empty.addView(emptyTitle);
 
         if (bodyText != null && !bodyText.isEmpty()) {
-            TextView emptyBody = new TextView(activity);
-            emptyBody.setText(bodyText);
-            emptyBody.setTextSize(ui.sp(14));
-            emptyBody.setTextColor(theme.secondaryTextColor());
+            TextView emptyBody = ui.bodyText(bodyText);
             empty.addView(emptyBody);
         }
 
@@ -222,41 +192,25 @@ public final class HomeUi {
     }
 
     private void confirmDeleteSession(Session session, Runnable restore, Runnable animateDelete) {
-        Runnable delete = () -> {
-            animateDelete.run();
-            activity.getWindow().getDecorView().postDelayed(() -> {
-                db.deleteSession(session.id);
-                refresh.run();
-            }, DeleteGestureHelper.REMOVE_AFTER_DELETE_MS);
-        };
-        if (restore == null) {
-            delete.run();
-            return;
-        }
-        ui.confirmDelete("Session löschen", "Diese Session wirklich löschen?", delete, restore);
+        DeleteGestureHelper.runDelete(activity, ui, "Session löschen", "Diese Session wirklich löschen?",
+                restore, animateDelete, () -> {
+                    db.deleteSession(session.id);
+                    refresh.run();
+                });
     }
 
     private void confirmDeleteTracker(Tracker tracker, Runnable restore, Runnable animateDelete) {
-        Runnable delete = () -> {
-            animateDelete.run();
-            activity.getWindow().getDecorView().postDelayed(() -> {
-                db.deleteTracker(tracker.id);
-                refresh.run();
-            }, DeleteGestureHelper.REMOVE_AFTER_DELETE_MS);
-        };
-        if (restore == null) {
-            delete.run();
-            return;
-        }
         String name = tracker.name == null || tracker.name.trim().isEmpty() ? "Diesen Tracker" : tracker.name;
-        ui.confirmDelete("Tracker löschen", name + " wirklich löschen?", delete, restore);
+        DeleteGestureHelper.runDelete(activity, ui, "Tracker löschen", name + " wirklich löschen?",
+                restore, animateDelete, () -> {
+                    db.deleteTracker(tracker.id);
+                    refresh.run();
+                });
     }
 
     private void duplicateTracker(Tracker tracker) {
         try {
-            JSONObject json = new JSONObject(JsonUtil.trackerToJson(tracker));
-            json.put("name", (tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name) + " Kopie");
-            TrackerJsonRepository.saveTracker(db, -1, json.toString(), true);
+            TrackerJsonRepository.duplicateTracker(db, tracker.id);
             refresh.run();
         } catch (Exception e) {
             android.widget.Toast.makeText(activity, e.getMessage(), android.widget.Toast.LENGTH_LONG).show();

@@ -3,7 +3,6 @@ package com.zaelio.app;
 import android.app.Activity;
 import android.content.res.ColorStateList;
 import android.graphics.Rect;
-import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -29,7 +28,6 @@ import com.zaelio.app.theme.ThemeStore;
 import com.zaelio.app.ui.AppUi;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.text.SimpleDateFormat;
@@ -90,10 +88,7 @@ public final class TrackerFlowUi {
         box.setPadding(ui.spaceL(), ui.spaceM(), ui.spaceL(), ui.spaceL());
         scrollView.addView(box);
 
-        TextView intro = new TextView(activity);
-        intro.setText("Wähle einen Tracker für die neue Session.");
-        intro.setTextSize(ui.sp(14));
-        intro.setTextColor(theme.secondaryTextColor());
+        TextView intro = ui.bodyText("Wähle einen Tracker für die neue Session.");
         intro.setPadding(ui.spaceXs(), ui.spaceXs(), ui.spaceXs(), ui.spaceM());
         box.addView(intro);
 
@@ -123,17 +118,7 @@ public final class TrackerFlowUi {
     }
 
     private View selectionRow(String title) {
-        LinearLayout text = new LinearLayout(activity);
-        text.setOrientation(LinearLayout.VERTICAL);
-
-        TextView rowTitle = new TextView(activity);
-        rowTitle.setText(title);
-        rowTitle.setTextSize(ui.sp(16));
-        rowTitle.setTypeface(Typeface.DEFAULT_BOLD);
-        rowTitle.setTextColor(theme.primaryTextColor());
-        text.addView(rowTitle);
-
-        LinearLayout row = ui.listRow(null, text, ui.listIcon("›"));
+        LinearLayout row = ui.listRow(null, ui.twoLineText(ui.titleText(title), null), ui.listIcon("›"));
         row.setPadding(ui.spaceL(), ui.spaceMl(), ui.spaceL(), ui.spaceMl());
         row.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
         return row;
@@ -189,8 +174,7 @@ public final class TrackerFlowUi {
         scrollView.addView(body);
 
         TrackerEditorForm form = buildTrackerEditorForm(tracker);
-        LinearLayout formCard = ui.contentCard();
-        formCard.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
+        LinearLayout formCard = ui.compactCard();
         ui.addSectionHeader(formCard, "Grunddaten", null);
 
         formCard.addView(outlinedInput("Tracker-Name", form.nameInput));
@@ -205,11 +189,7 @@ public final class TrackerFlowUi {
         fieldsHeader.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
         fieldsHeader.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
 
-        TextView fieldsTitle = new TextView(activity);
-        fieldsTitle.setText("Felder");
-        fieldsTitle.setTextSize(ui.sp(16));
-        fieldsTitle.setTypeface(Typeface.DEFAULT_BOLD);
-        fieldsTitle.setTextColor(theme.primaryTextColor());
+        TextView fieldsTitle = ui.titleText("Felder");
         fieldsHeader.addView(fieldsTitle);
 
         TextView fieldsCount = new TextView(activity);
@@ -324,8 +304,7 @@ public final class TrackerFlowUi {
     }
 
     private LinearLayout fieldsCard(Session session, List<FieldDefinition> fieldDefinitions, Map<String, Object> values, Map<String, View> inputs) {
-        LinearLayout card = ui.contentCard();
-        card.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
+        LinearLayout card = ui.compactCard();
         for (FieldDefinition field : fieldDefinitions) {
             fieldInputUi.fieldControl(card, field, values, inputs, false, () -> saveSessionFields(session, fieldDefinitions, inputs));
         }
@@ -552,19 +531,10 @@ public final class TrackerFlowUi {
         editor.addView(numericRow);
         views.editor = editor;
 
-        LinearLayout row = ui.contentCard();
-        row.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
-        LinearLayout summaryText = new LinearLayout(activity);
-        summaryText.setOrientation(LinearLayout.VERTICAL);
-        views.summaryTitle = new TextView(activity);
-        views.summaryTitle.setTextSize(ui.sp(16));
-        views.summaryTitle.setTypeface(Typeface.DEFAULT_BOLD);
-        views.summaryTitle.setTextColor(theme.primaryTextColor());
-        views.summaryMeta = new TextView(activity);
-        views.summaryMeta.setTextSize(ui.sp(13));
-        views.summaryMeta.setTextColor(theme.secondaryTextColor());
-        summaryText.addView(views.summaryTitle);
-        summaryText.addView(views.summaryMeta);
+        LinearLayout row = ui.compactCard();
+        views.summaryTitle = ui.titleText("");
+        views.summaryMeta = ui.metaText("");
+        LinearLayout summaryText = ui.twoLineText(views.summaryTitle, views.summaryMeta);
         views.summaryText = summaryText;
         views.summaryInput = outlinedInput("Feldname", views.labelInput);
         FrameLayout summarySlot = new FrameLayout(activity);
@@ -633,18 +603,10 @@ public final class TrackerFlowUi {
     }
 
     private void confirmDeleteField(FieldEditorViews views, Runnable restore, Runnable animateDelete, Runnable removeNow) {
-        Runnable delete = () -> {
-            animateDelete.run();
-            activity.getWindow().getDecorView().postDelayed(removeNow, DeleteGestureHelper.REMOVE_AFTER_DELETE_MS);
-        };
-        if (restore == null) {
-            delete.run();
-            return;
-        }
         String label = views.labelInput.getText().toString().trim();
-        ui.confirmDelete("Feld löschen",
+        DeleteGestureHelper.runDelete(activity, ui, "Feld löschen",
                 (label.isEmpty() ? "Dieses Feld" : label) + " wirklich löschen?",
-                delete, restore);
+                restore, animateDelete, removeNow);
     }
 
     private void showFieldMenu(View anchor, Runnable duplicateAction, Runnable removeAction) {
@@ -867,18 +829,7 @@ public final class TrackerFlowUi {
     }
 
     private EditText labeledInput(String label, String value, int inputType) {
-        EditText input = new TextInputEditText(activity);
-        input.setText(value == null ? "" : value);
-        input.setHint(label);
-        input.setInputType(inputType);
-        input.setPadding(ui.spaceM(), ui.spaceM(), ui.spaceM(), ui.spaceM());
-        input.setBackground(ui.makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
-        input.setTextColor(theme.primaryTextColor());
-        input.setHintTextColor(theme.mutedTextColor());
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = ui.spaceM();
-        input.setLayoutParams(lp);
-        return input;
+        return ui.textInput(label, value, inputType);
     }
 
     private String trackerEditorToJson(TrackerEditorForm form) throws Exception {
@@ -1017,14 +968,10 @@ public final class TrackerFlowUi {
 
     private void duplicateTracker(long trackerId) {
         try {
-            Tracker tracker = db.readTracker(trackerId);
-            if (tracker == null) {
+            if (TrackerJsonRepository.duplicateTracker(db, trackerId) == -1) {
                 Toast.makeText(activity, "Tracker nicht gefunden", Toast.LENGTH_SHORT).show();
                 return;
             }
-            JSONObject json = new JSONObject(JsonUtil.trackerToJson(tracker));
-            json.put("name", (tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name) + " Kopie");
-            TrackerJsonRepository.saveTracker(db, -1, json.toString(), true);
             backToTrackers.run();
         } catch (Exception e) {
             Toast.makeText(activity, e.getMessage(), Toast.LENGTH_LONG).show();
