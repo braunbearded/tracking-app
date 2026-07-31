@@ -21,7 +21,6 @@ import android.widget.TextView;
 import com.zaelio.app.theme.ThemeStore;
 import com.zaelio.app.ui.AppUi;
 
-import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import org.json.JSONObject;
@@ -38,6 +37,10 @@ public final class HomeUi {
     private final LongConsumer openSession;
     private final LongConsumer editTracker;
     private final Runnable refresh;
+
+    private interface DeleteAction {
+        void request(Runnable restore, Runnable animateDelete);
+    }
 
     public HomeUi(Activity activity, TrackingDatabase db, ThemeStore theme, AppUi ui,
                   LongConsumer openSession, LongConsumer editTracker, Runnable refresh) {
@@ -67,7 +70,7 @@ public final class HomeUi {
                     preview(session.id, tracker),
                     () -> openSession.accept(session.id),
                     null,
-                    restore -> confirmDeleteSession(session, restore),
+                    (restore, animateDelete) -> confirmDeleteSession(session, restore, animateDelete),
                     box,
                     () -> db.reorderSessions(childIds(box)));
             card.setTag(session.id);
@@ -93,7 +96,7 @@ public final class HomeUi {
                     fieldPreview(tracker),
                     () -> editTracker.accept(tracker.id),
                     () -> duplicateTracker(tracker),
-                    restore -> confirmDeleteTracker(tracker, restore),
+                    (restore, animateDelete) -> confirmDeleteTracker(tracker, restore, animateDelete),
                     box,
                     () -> db.reorderTrackers(childIds(box)));
             card.setTag(tracker.id);
@@ -118,7 +121,7 @@ public final class HomeUi {
     }
 
     private LinearLayout overviewCard(String title, String meta, String previewText, Runnable open,
-                                      Runnable duplicateAction, Consumer<Runnable> deleteAction,
+                                      Runnable duplicateAction, DeleteAction deleteAction,
                                       LinearLayout reorderContainer, Runnable onReorder) {
         LinearLayout card = createCard();
         card.setOrientation(LinearLayout.HORIZONTAL);
@@ -165,7 +168,7 @@ public final class HomeUi {
         content.addView(preview);
 
         TextView menu = ui.listIcon("...");
-        menu.setOnClickListener(v -> showCardMenu(menu, duplicateAction, () -> deleteAction.accept(() -> {})));
+        menu.setOnClickListener(v -> showCardMenu(menu, duplicateAction, () -> deleteAction.request(() -> {}, () -> animateDelete(card))));
 
         TextView arrow = ui.listIcon("›");
         arrow.setOnClickListener(v -> open.run());
@@ -245,13 +248,13 @@ public final class HomeUi {
         return ids;
     }
 
-    private void attachDeleteGestures(View card, Consumer<Runnable> deleteAction, boolean[] skipClick) {
+    private void attachDeleteGestures(View card, DeleteAction deleteAction, boolean[] skipClick) {
         final float[] downX = new float[1];
         final boolean[] dragging = new boolean[1];
         final boolean[] deleteStarted = new boolean[1];
         card.setOnLongClickListener(v -> {
             deleteStarted[0] = true;
-            deleteAction.accept(markDeleteCandidate(card));
+            deleteAction.request(markDeleteCandidate(card), () -> animateDelete(card));
             return true;
         });
         card.setOnTouchListener((v, event) -> {
@@ -272,7 +275,7 @@ public final class HomeUi {
                     skipClick[0] = true;
                     if (!deleteStarted[0] && dx < -ui.px(DELETE_SWIPE_TRIGGER_DP)) {
                         deleteStarted[0] = true;
-                        deleteAction.accept(markDeleteCandidate(card));
+                        deleteAction.request(markDeleteCandidate(card), () -> animateDelete(card));
                     }
                     return true;
                 }
@@ -292,6 +295,10 @@ public final class HomeUi {
             card.setBackground(background);
             card.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(80).start();
         };
+    }
+
+    private void animateDelete(View card) {
+        card.animate().alpha(0f).scaleX(0.92f).scaleY(0.92f).translationX(-ui.spaceXl()).setDuration(160).start();
     }
 
     private void vibrate(View view) {
@@ -326,18 +333,24 @@ public final class HomeUi {
         }
     }
 
-    private void confirmDeleteSession(Session session, Runnable restore) {
+    private void confirmDeleteSession(Session session, Runnable restore, Runnable animateDelete) {
         ui.confirmDelete("Session löschen", "Diese Session wirklich löschen?", () -> {
-            db.deleteSession(session.id);
-            refresh.run();
+            animateDelete.run();
+            activity.getWindow().getDecorView().postDelayed(() -> {
+                db.deleteSession(session.id);
+                refresh.run();
+            }, 170);
         }, restore);
     }
 
-    private void confirmDeleteTracker(Tracker tracker, Runnable restore) {
+    private void confirmDeleteTracker(Tracker tracker, Runnable restore, Runnable animateDelete) {
         String name = tracker.name == null || tracker.name.trim().isEmpty() ? "Diesen Tracker" : tracker.name;
         ui.confirmDelete("Tracker löschen", name + " wirklich löschen?", () -> {
-            db.deleteTracker(tracker.id);
-            refresh.run();
+            animateDelete.run();
+            activity.getWindow().getDecorView().postDelayed(() -> {
+                db.deleteTracker(tracker.id);
+                refresh.run();
+            }, 170);
         }, restore);
     }
 

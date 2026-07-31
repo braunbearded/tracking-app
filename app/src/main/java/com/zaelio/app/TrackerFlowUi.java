@@ -81,7 +81,7 @@ public final class TrackerFlowUi {
         List<Tracker> trackers = db.trackers();
         setBackAction.accept(backToSessions);
         base();
-        root.addView(ui.appBar("Tracker auswählen", true, backToSessions, false, null));
+        root.addView(ui.appBar("Tracker auswählen", false, null, false, null));
 
         ScrollView scrollView = new ScrollView(activity);
         scrollView.setFillViewport(true);
@@ -120,6 +120,7 @@ public final class TrackerFlowUi {
         }
 
         root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
+        root.addView(footerButton("Zurück", backToSessions));
     }
 
     private View selectionRow(String title) {
