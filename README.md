@@ -4,8 +4,8 @@ Eine kleine Android-App zum Erstellen eigener Tracker, Starten von Sessions und 
 
 ## ✨ Features
 
-- Eigene Tracker mit Feldern und Items erstellen; neue Elemente scrollen im Editor automatisch in den sichtbaren Bereich
-- Sessions erfassen und fortsetzen, mit aufklappbaren Item-Karten, großen Plus/Minus-Buttons und Material-Feldern für Text, Zahlen und Timer
+- Eigene Tracker mit global sortierten Feldern erstellen; neue Elemente scrollen im Editor automatisch in den sichtbaren Bereich
+- Sessions erfassen und fortsetzen, mit großen Plus/Minus-Buttons und Material-Feldern für Text, Zahlen und Timer
 - Listen-Einträge per Long-Press, Links-Swipe oder `...`-Menü löschen
 - Sessions und Tracker per Drag-Handle in der Übersicht sortieren
 - Android-Zurück navigiert sinnvoll; auf Home beendet erst ein schneller Doppel-Zurück-Druck die App

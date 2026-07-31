@@ -40,13 +40,8 @@ final class BackupJsonRepository {
             trackerJson.put("updatedAt", tracker.updatedAt);
 
             JSONArray fields = new JSONArray();
-            for (Item item : tracker.items) {
-                for (FieldDefinition field : item.fields) {
-                    JSONObject fieldJson = JsonUtil.fieldToJson(field);
-                    fieldJson.put("itemTitle", item.title == null ? "" : item.title);
-                    fieldJson.put("itemOrder", item.order);
-                    fields.put(fieldJson);
-                }
+            for (FieldDefinition field : tracker.fields) {
+                fields.put(JsonUtil.fieldToJson(field));
             }
             trackerJson.put("fields", fields);
             trackers.put(trackerJson);
@@ -61,7 +56,7 @@ final class BackupJsonRepository {
             sessionJson.put("createdAt", session.createdAt);
             sessionJson.put("updatedAt", session.updatedAt);
             JSONArray records = new JSONArray();
-            for (ItemRecord record : helper.records(session.id).values()) {
+            for (FieldRecord record : helper.records(session.id).values()) {
                 JSONObject recordJson = new JSONObject();
                 recordJson.put("fieldId", record.fieldId);
                 recordJson.put("values", new JSONObject(record.valuesJson));

@@ -332,10 +332,10 @@ public final class HomeUi {
 
 
     private String preview(long sessionId, Tracker tracker) {
-        java.util.Map<Long, ItemRecord> records = db.records(sessionId);
+        java.util.Map<Long, FieldRecord> records = db.records(sessionId);
         StringBuilder builder = new StringBuilder();
         for (FieldDefinition field : tracker.fields) {
-            ItemRecord record = records.get(field.id);
+            FieldRecord record = records.get(field.id);
             if (record == null) {
                 continue;
             }

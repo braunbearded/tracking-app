@@ -75,8 +75,6 @@ final class JsonUtil {
     static ContentValues fieldValuesFromJson(JSONObject field, long trackerId, int fallbackOrder) throws JSONException {
         ContentValues values = new ContentValues();
         values.put("trackerId", trackerId);
-        values.put("itemTitle", field.optString("itemTitle", field.optString("label", field.optString("key", ""))));
-        values.put("itemOrder", field.optInt("itemOrder", fallbackOrder));
         values.put("fieldKey", field.getString("key"));
         values.put("label", field.optString("label", field.getString("key")));
         values.put("type", field.optString("type", "string"));

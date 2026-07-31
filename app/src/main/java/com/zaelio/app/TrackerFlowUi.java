@@ -162,13 +162,13 @@ public final class TrackerFlowUi {
         }
 
         Tracker tracker = db.readTracker(session.trackerId);
-        if (tracker == null || tracker.items.isEmpty()) {
-            Toast.makeText(activity, "Tracker enthält keine Items", Toast.LENGTH_SHORT).show();
+        if (tracker == null || tracker.fields.isEmpty()) {
+            Toast.makeText(activity, "Tracker enthält keine Felder", Toast.LENGTH_SHORT).show();
             backToSessions.run();
             return;
         }
 
-        showItem(session, tracker);
+        showFields(session, tracker);
     }
 
     private void openTrackerEditor(long id, Tracker tracker, boolean isNew) {
@@ -200,57 +200,57 @@ public final class TrackerFlowUi {
         formCard.addView(descriptionInput);
         body.addView(formCard);
 
-        LinearLayout itemsHeader = new LinearLayout(activity);
-        itemsHeader.setOrientation(LinearLayout.HORIZONTAL);
-        itemsHeader.setGravity(Gravity.CENTER_VERTICAL);
-        itemsHeader.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
-        itemsHeader.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
+        LinearLayout fieldsHeader = new LinearLayout(activity);
+        fieldsHeader.setOrientation(LinearLayout.HORIZONTAL);
+        fieldsHeader.setGravity(Gravity.CENTER_VERTICAL);
+        fieldsHeader.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
+        fieldsHeader.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
 
-        TextView itemsTitle = new TextView(activity);
-        itemsTitle.setText("Items");
-        itemsTitle.setTextSize(ui.sp(16));
-        itemsTitle.setTypeface(Typeface.DEFAULT_BOLD);
-        itemsTitle.setTextColor(theme.primaryTextColor());
-        itemsHeader.addView(itemsTitle);
+        TextView fieldsTitle = new TextView(activity);
+        fieldsTitle.setText("Felder");
+        fieldsTitle.setTextSize(ui.sp(16));
+        fieldsTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        fieldsTitle.setTextColor(theme.primaryTextColor());
+        fieldsHeader.addView(fieldsTitle);
 
-        TextView itemsCount = new TextView(activity);
-        itemsCount.setTextSize(ui.sp(12));
-        itemsCount.setTextColor(theme.accentColor());
-        itemsCount.setGravity(Gravity.CENTER);
-        itemsCount.setPadding(ui.spaceS(), ui.focusedStrokeWidth(), ui.spaceS(), ui.focusedStrokeWidth());
-        itemsCount.setBackground(ui.makeRoundedCard(theme.accentSoftColor(), theme.accentSoftColor()));
-        LinearLayout.LayoutParams itemCountLp = new LinearLayout.LayoutParams(-2, -2);
-        itemCountLp.leftMargin = ui.spaceS();
-        itemsHeader.addView(itemsCount, itemCountLp);
-        itemsHeader.addView(new View(activity), new LinearLayout.LayoutParams(0, 1, 1));
+        TextView fieldsCount = new TextView(activity);
+        fieldsCount.setTextSize(ui.sp(12));
+        fieldsCount.setTextColor(theme.accentColor());
+        fieldsCount.setGravity(Gravity.CENTER);
+        fieldsCount.setPadding(ui.spaceS(), ui.focusedStrokeWidth(), ui.spaceS(), ui.focusedStrokeWidth());
+        fieldsCount.setBackground(ui.makeRoundedCard(theme.accentSoftColor(), theme.accentSoftColor()));
+        LinearLayout.LayoutParams fieldCountLp = new LinearLayout.LayoutParams(-2, -2);
+        fieldCountLp.leftMargin = ui.spaceS();
+        fieldsHeader.addView(fieldsCount, fieldCountLp);
+        fieldsHeader.addView(new View(activity), new LinearLayout.LayoutParams(0, 1, 1));
 
-        Button addItem = ui.primaryButton("Item hinzufügen");
-        itemsHeader.addView(addItem, new LinearLayout.LayoutParams(-2, ui.buttonHeight()));
-        LinearLayout.LayoutParams itemsHeaderLp = new LinearLayout.LayoutParams(-1, -2);
-        itemsHeaderLp.topMargin = ui.spaceM();
-        itemsHeaderLp.bottomMargin = ui.spaceM();
-        body.addView(itemsHeader, itemsHeaderLp);
+        Button addField = ui.primaryButton("Feld hinzufügen");
+        fieldsHeader.addView(addField, new LinearLayout.LayoutParams(-2, ui.buttonHeight()));
+        LinearLayout.LayoutParams fieldsHeaderLp = new LinearLayout.LayoutParams(-1, -2);
+        fieldsHeaderLp.topMargin = ui.spaceM();
+        fieldsHeaderLp.bottomMargin = ui.spaceM();
+        body.addView(fieldsHeader, fieldsHeaderLp);
 
-        LinearLayout itemsContainer = new LinearLayout(activity);
-        itemsContainer.setOrientation(LinearLayout.VERTICAL);
-        body.addView(itemsContainer, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout fieldsContainer = new LinearLayout(activity);
+        fieldsContainer.setOrientation(LinearLayout.VERTICAL);
+        body.addView(fieldsContainer, new LinearLayout.LayoutParams(-1, -2));
 
-        final Runnable[] updateItemsHeaderRef = new Runnable[1];
-        updateItemsHeaderRef[0] = () -> {
+        final Runnable[] updateFieldsHeaderRef = new Runnable[1];
+        updateFieldsHeaderRef[0] = () -> {
             int count = 0;
-            for (ItemEditorViews itemViews : form.items) {
-                if (!itemViews.removed) {
+            for (FieldEditorViews fieldViews : form.fields) {
+                if (!fieldViews.removed) {
                     count++;
                 }
             }
-            itemsCount.setText(String.valueOf(count));
+            fieldsCount.setText(String.valueOf(count));
         };
 
         final long[] trackerIdRef = new long[]{id};
         final Runnable[] persistRef = new Runnable[1];
         Runnable scheduleSave = () -> {
-            if (updateItemsHeaderRef[0] != null) {
-                updateItemsHeaderRef[0].run();
+            if (updateFieldsHeaderRef[0] != null) {
+                updateFieldsHeaderRef[0].run();
             }
             if (persistRef[0] != null) {
                 persistRef[0].run();
@@ -272,16 +272,14 @@ public final class TrackerFlowUi {
             }
         };
 
-        if (!tracker.items.isEmpty()) {
-            for (Item item : tracker.items) {
-                addItemEditor(scrollView, itemsContainer, form.items, item, scheduleSave);
-            }
+        for (FieldDefinition field : tracker.fields) {
+            addFieldEditor(scrollView, fieldsContainer, form.fields, field, scheduleSave);
         }
-        updateItemsHeaderRef[0].run();
+        updateFieldsHeaderRef[0].run();
 
-        addItem.setOnClickListener(v -> {
-            ItemEditorViews added = addItemEditor(scrollView, itemsContainer, form.items, null, scheduleSave);
-            scrollIntoView(scrollView, added.card);
+        addField.setOnClickListener(v -> {
+            FieldEditorViews added = addFieldEditor(scrollView, fieldsContainer, form.fields, null, scheduleSave);
+            scrollIntoView(scrollView, added.row);
             scheduleSave.run();
         });
 
@@ -290,9 +288,9 @@ public final class TrackerFlowUi {
         attachTrackerAutosave(form, scheduleSave);
     }
 
-    private void showItem(Session session, Tracker tracker) {
+    private void showFields(Session session, Tracker tracker) {
         base();
-        Map<Long, Map<String, View>> inputsByItem = new LinkedHashMap<>();
+        Map<String, View> inputs = new HashMap<>();
         root.addView(ui.appBar(tracker.name == null || tracker.name.trim().isEmpty() ? "Session" : tracker.name,
                 false, null, true, v -> showSessionMenu(v, session)));
         ScrollView scrollView = new ScrollView(activity);
@@ -301,20 +299,14 @@ public final class TrackerFlowUi {
         box.setPadding(ui.spaceL(), ui.spaceL(), ui.spaceL(), ui.spaceL());
         scrollView.addView(box);
 
-        for (int itemIndex = 0; itemIndex < tracker.items.size(); itemIndex++) {
-            Item item = tracker.items.get(itemIndex);
-            Map<String, Object> values = initialValues(session, item);
-            Map<String, View> inputs = new HashMap<>();
-            inputsByItem.put(item.id, inputs);
-
-            LinearLayout card = sessionItemCard(session, item, values, inputs);
-            LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
-            cardLp.bottomMargin = ui.spaceXl();
-            box.addView(card, cardLp);
-        }
+        Map<String, Object> values = initialValues(session, tracker.fields);
+        LinearLayout card = fieldsCard(session, tracker.fields, values, inputs);
+        LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
+        cardLp.bottomMargin = ui.spaceXl();
+        box.addView(card, cardLp);
 
         Runnable back = () -> {
-            saveSessionItems(session, tracker, inputsByItem);
+            saveSessionFields(session, tracker.fields, inputs);
             clearTimers();
             backToSessions.run();
         };
@@ -323,53 +315,19 @@ public final class TrackerFlowUi {
         root.addView(footerButton("Zurück", back));
     }
 
-    private LinearLayout sessionItemCard(Session session, Item item, Map<String, Object> values, Map<String, View> inputs) {
+    private LinearLayout fieldsCard(Session session, List<FieldDefinition> fieldDefinitions, Map<String, Object> values, Map<String, View> inputs) {
         LinearLayout card = ui.contentCard();
         card.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
-
-        LinearLayout title = new LinearLayout(activity);
-        title.setOrientation(LinearLayout.VERTICAL);
-        TextView titleView = new TextView(activity);
-        titleView.setText(item.title);
-        titleView.setTextSize(ui.sp(16));
-        titleView.setTypeface(Typeface.DEFAULT_BOLD);
-        titleView.setTextColor(theme.primaryTextColor());
-        title.addView(titleView);
-
-        TextView meta = new TextView(activity);
-        meta.setText(item.fields.size() == 1 ? "1 Feld" : item.fields.size() + " Felder");
-        meta.setTextSize(ui.sp(13));
-        meta.setTextColor(theme.secondaryTextColor());
-        title.addView(meta);
-
-        ImageView expand = expandAction();
-        LinearLayout fields = new LinearLayout(activity);
-        fields.setOrientation(LinearLayout.VERTICAL);
-        fields.setPadding(0, ui.spaceM(), 0, 0);
-
-        View.OnClickListener toggle = v -> {
-            boolean expanded = fields.getVisibility() == View.VISIBLE;
-            fields.setVisibility(expanded ? View.GONE : View.VISIBLE);
-            expand.setRotation(expanded ? 0f : 180f);
-        };
-        LinearLayout header = ui.listRow(null, title, expand);
-        header.setOnClickListener(toggle);
-        title.setOnClickListener(toggle);
-        expand.setOnClickListener(toggle);
-        expand.setRotation(180f);
-        card.addView(header);
-
-        for (FieldDefinition field : item.fields) {
-            fieldInputUi.fieldControl(fields, field, values, inputs, false, () -> saveSessionItem(session, item, inputs));
+        for (FieldDefinition field : fieldDefinitions) {
+            fieldInputUi.fieldControl(card, field, values, inputs, false, () -> saveSessionFields(session, fieldDefinitions, inputs));
         }
-        card.addView(fields);
         return card;
     }
 
-    private Map<String, Object> initialValues(Session session, Item item) {
-        Map<Long, ItemRecord> records = db.records(session.id);
+    private Map<String, Object> initialValues(Session session, List<FieldDefinition> fieldDefinitions) {
+        Map<Long, FieldRecord> records = db.records(session.id);
         Map<String, Object> values = new LinkedHashMap<>();
-        for (FieldDefinition field : item.fields) {
+        for (FieldDefinition field : fieldDefinitions) {
             if (records.containsKey(field.id)) {
                 values.putAll(JsonUtil.toMap(records.get(field.id).valuesJson));
                 continue;
@@ -403,9 +361,9 @@ public final class TrackerFlowUi {
         return value;
     }
 
-    private Map<String, Object> readInputs(Item item, Map<String, View> inputs) {
+    private Map<String, Object> readInputs(List<FieldDefinition> fieldDefinitions, Map<String, View> inputs) {
         Map<String, Object> values = new LinkedHashMap<>();
-        for (FieldDefinition field : item.fields) {
+        for (FieldDefinition field : fieldDefinitions) {
             View view = inputs.get(field.key);
             if (view instanceof TextView && view.getTag() instanceof Long) {
                 values.put(field.key, (Long) view.getTag());
@@ -440,9 +398,9 @@ public final class TrackerFlowUi {
     }
 
 
-    private String summaryText(Map<String, Object> values, Item item) {
+    private String summaryText(Map<String, Object> values, List<FieldDefinition> fieldDefinitions) {
         StringBuilder builder = new StringBuilder();
-        for (FieldDefinition field : item.fields) {
+        for (FieldDefinition field : fieldDefinitions) {
             if (builder.length() > 0) {
                 builder.append("\n");
             }
@@ -487,179 +445,6 @@ public final class TrackerFlowUi {
     private void attachTrackerAutosave(TrackerEditorForm form, Runnable scheduleSave) {
         ui.onTextChanged(form.nameInput, scheduleSave);
         ui.onTextChanged(form.descriptionInput, scheduleSave);
-    }
-
-    private ItemEditorViews addItemEditor(ScrollView scrollView, LinearLayout container, List<ItemEditorViews> itemEditors, Item item, Runnable scheduleSave) {
-        ItemEditorViews views = new ItemEditorViews();
-
-        if (itemEditors.isEmpty() && container.getChildCount() == 1) {
-            container.removeAllViews();
-        }
-
-        LinearLayout card = ui.contentCard();
-        card.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
-        View reorder = reorderHandle();
-        TextView menu = iconAction("⋮");
-        ImageView expand = expandAction();
-
-        views.titleInput = labeledInput("Item-Name", item == null ? "" : item.title, InputType.TYPE_CLASS_TEXT);
-
-        LinearLayout summaryText = new LinearLayout(activity);
-        summaryText.setOrientation(LinearLayout.VERTICAL);
-        views.summaryTitle = new TextView(activity);
-        views.summaryTitle.setTextSize(ui.sp(16));
-        views.summaryTitle.setTypeface(Typeface.DEFAULT_BOLD);
-        views.summaryTitle.setTextColor(theme.primaryTextColor());
-        views.summaryMeta = new TextView(activity);
-        views.summaryMeta.setTextSize(ui.sp(13));
-        views.summaryMeta.setTextColor(theme.secondaryTextColor());
-        summaryText.addView(views.summaryTitle);
-        summaryText.addView(views.summaryMeta);
-        views.summaryText = summaryText;
-        views.summaryInput = outlinedInput("Item-Name", views.titleInput);
-        FrameLayout summarySlot = new FrameLayout(activity);
-        summarySlot.addView(summaryText, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_VERTICAL));
-        summarySlot.addView(views.summaryInput, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER_VERTICAL));
-        LinearLayout summaryRow = ui.listRow(reorder, summarySlot, menu, expand);
-        card.addView(summaryRow);
-        expandReorderTouchArea(card, summaryRow, reorder);
-
-        LinearLayout editor = new LinearLayout(activity);
-        editor.setOrientation(LinearLayout.VERTICAL);
-        views.editor = editor;
-
-        LinearLayout fieldsHeader = new LinearLayout(activity);
-        fieldsHeader.setOrientation(LinearLayout.HORIZONTAL);
-        fieldsHeader.setGravity(Gravity.CENTER_VERTICAL);
-        fieldsHeader.setPadding(ui.spaceM(), ui.spaceS(), ui.spaceS(), ui.spaceS());
-        fieldsHeader.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
-
-        TextView fieldsTitle = new TextView(activity);
-        fieldsTitle.setText("Felder");
-        fieldsTitle.setTextSize(ui.sp(16));
-        fieldsTitle.setTypeface(Typeface.DEFAULT_BOLD);
-        fieldsTitle.setTextColor(theme.primaryTextColor());
-        fieldsHeader.addView(fieldsTitle);
-
-        views.fieldsCount = new TextView(activity);
-        views.fieldsCount.setTextSize(ui.sp(12));
-        views.fieldsCount.setTextColor(theme.accentColor());
-        views.fieldsCount.setGravity(Gravity.CENTER);
-        views.fieldsCount.setPadding(ui.spaceS(), ui.focusedStrokeWidth(), ui.spaceS(), ui.focusedStrokeWidth());
-        views.fieldsCount.setBackground(ui.makeRoundedCard(theme.accentSoftColor(), theme.accentSoftColor()));
-        LinearLayout.LayoutParams countLp = new LinearLayout.LayoutParams(-2, -2);
-        countLp.leftMargin = ui.spaceS();
-        fieldsHeader.addView(views.fieldsCount, countLp);
-        fieldsHeader.addView(new View(activity), new LinearLayout.LayoutParams(0, 1, 1));
-
-        Button addField = ui.primaryButton("Feld hinzufügen");
-        fieldsHeader.addView(addField, new LinearLayout.LayoutParams(-2, ui.buttonHeight()));
-        LinearLayout.LayoutParams fieldsHeaderLp = new LinearLayout.LayoutParams(-1, -2);
-        fieldsHeaderLp.topMargin = ui.spaceM();
-        fieldsHeaderLp.bottomMargin = ui.spaceM();
-        editor.addView(fieldsHeader, fieldsHeaderLp);
-
-        LinearLayout fieldsContainer = new LinearLayout(activity);
-        fieldsContainer.setOrientation(LinearLayout.VERTICAL);
-        editor.addView(fieldsContainer);
-        views.fieldsContainer = fieldsContainer;
-        card.addView(editor);
-
-        Runnable itemChanged = () -> {
-            updateItemSummary(views);
-            scheduleSave.run();
-        };
-        if (item != null) {
-            for (FieldDefinition field : item.fields) {
-                addFieldEditor(scrollView, fieldsContainer, views.fields, field, itemChanged);
-            }
-        } else {
-            addFieldEditor(scrollView, fieldsContainer, views.fields, null, itemChanged);
-        }
-
-        ui.onTextChanged(views.titleInput, itemChanged);
-        addField.setOnClickListener(v -> {
-            FieldEditorViews added = addFieldEditor(scrollView, fieldsContainer, views.fields, null, itemChanged);
-            scrollIntoView(scrollView, added.row);
-            itemChanged.run();
-        });
-        final LinearLayout[] shellRef = new LinearLayout[1];
-        Runnable duplicateAction = () -> {
-            ItemEditorViews added = addItemEditor(scrollView, container, itemEditors, itemFromViews(views), scheduleSave);
-            scrollIntoView(scrollView, added.card);
-            scheduleSave.run();
-        };
-        Runnable removeAction = () -> {
-            container.removeView(shellRef[0]);
-            updateChildBottomMargins(container, 12, 4);
-            views.removed = true;
-            scheduleSave.run();
-        };
-        menu.setOnClickListener(v -> showItemMenu(v, duplicateAction, removeAction));
-        View.OnClickListener toggle = v -> toggleItemEditor(views, expand);
-        expand.setOnClickListener(toggle);
-        summaryRow.setOnClickListener(toggle);
-        summarySlot.setOnClickListener(toggle);
-        summaryText.setOnClickListener(toggle);
-        views.summaryTitle.setOnClickListener(toggle);
-        views.summaryMeta.setOnClickListener(toggle);
-        LinearLayout shell = reorderShell(reorder, card);
-        shellRef[0] = shell;
-
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = ui.spaceM();
-        container.addView(shell, lp);
-        updateChildBottomMargins(container, 12, 4);
-        views.card = shell;
-        views.container = container;
-        itemEditors.add(views);
-        shell.setTag(views);
-        attachItemReorder(reorder, container, itemEditors, views, scheduleSave);
-        updateItemSummary(views);
-        setItemExpanded(views, expand, item == null);
-        return views;
-    }
-
-    private void showItemMenu(View anchor, Runnable duplicateAction, Runnable removeAction) {
-        PopupMenu menu = new PopupMenu(activity, anchor);
-        menu.getMenu().add(0, 1, 0, "Kopieren");
-        menu.getMenu().add(0, 2, 1, "Löschen");
-        menu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == 1) {
-                duplicateAction.run();
-            } else if (item.getItemId() == 2) {
-                removeAction.run();
-            }
-            return true;
-        });
-        menu.show();
-    }
-
-    private void toggleItemEditor(ItemEditorViews views, ImageView expand) {
-        setItemExpanded(views, expand, views.editor.getVisibility() != View.VISIBLE);
-    }
-
-    private void setItemExpanded(ItemEditorViews views, ImageView expand, boolean expanded) {
-        views.summaryText.setVisibility(expanded ? View.GONE : View.VISIBLE);
-        views.summaryInput.setVisibility(expanded ? View.VISIBLE : View.GONE);
-        views.editor.setVisibility(expanded ? View.VISIBLE : View.GONE);
-        expand.setRotation(expanded ? 180f : 0f);
-    }
-
-    private void updateItemSummary(ItemEditorViews views) {
-        String title = views.titleInput.getText().toString().trim();
-        views.summaryTitle.setText(title.isEmpty() ? "Neues Item" : title);
-        int count = 0;
-        for (FieldEditorViews fieldViews : views.fields) {
-            if (!fieldViews.removed) {
-                count++;
-            }
-        }
-        String countText = count == 1 ? "1 Feld" : count + " Felder";
-        views.summaryMeta.setText(countText);
-        if (views.fieldsCount != null) {
-            views.fieldsCount.setText(String.valueOf(count));
-        }
     }
 
     private FieldEditorViews addFieldEditor(ScrollView scrollView, LinearLayout container, List<FieldEditorViews> fieldEditors, FieldDefinition field, Runnable scheduleSave) {
@@ -881,17 +666,6 @@ public final class TrackerFlowUi {
         views.summaryMeta.setText(unit.isEmpty() ? typeLabel : typeLabel + " · " + unit);
     }
 
-    private Item itemFromViews(ItemEditorViews views) {
-        Item item = new Item();
-        item.title = views.titleInput.getText().toString();
-        for (FieldEditorViews fieldViews : views.fields) {
-            if (!fieldViews.removed) {
-                item.fields.add(fieldFromViews(fieldViews));
-            }
-        }
-        return item;
-    }
-
     private FieldDefinition fieldFromViews(FieldEditorViews views) {
         FieldDefinition field = new FieldDefinition();
         field.key = views.keyInput.getText().toString();
@@ -944,13 +718,6 @@ public final class TrackerFlowUi {
             rect.bottom = row.getBottom();
             rect.right = Math.max(rect.right, ui.rowHeight());
             parent.setTouchDelegate(new TouchDelegate(rect, handle));
-        });
-    }
-
-    private void attachItemReorder(View handle, LinearLayout container, List<ItemEditorViews> editors, ItemEditorViews views, Runnable onChange) {
-        ReorderHelper.attach(ui, handle, container, views.card, onChange, direction -> {
-            updateChildBottomMargins(container, 12, 4);
-            reorderList(editors, views, direction);
         });
     }
 
@@ -1113,52 +880,37 @@ public final class TrackerFlowUi {
         root.put("name", form.nameInput.getText().toString().trim());
         root.put("description", form.descriptionInput.getText().toString().trim());
 
-        JSONArray items = new JSONArray();
+        JSONArray fields = new JSONArray();
         List<String> usedFieldKeys = new ArrayList<>();
-        int itemOrder = 0;
-        for (ItemEditorViews itemViews : form.items) {
-            if (itemViews.removed) {
+        int fieldOrder = 0;
+        for (FieldEditorViews fieldViews : form.fields) {
+            if (fieldViews.removed) {
                 continue;
             }
 
-            JSONObject item = new JSONObject();
-            item.put("title", itemViews.titleInput.getText().toString().trim());
-            item.put("order", itemOrder++);
-
-            JSONArray fields = new JSONArray();
-            int fieldOrder = 0;
-            for (FieldEditorViews fieldViews : itemViews.fields) {
-                if (fieldViews.removed) {
-                    continue;
-                }
-
-                String itemTitle = itemViews.titleInput.getText().toString().trim();
-                String fieldLabel = fieldViews.labelInput.getText().toString().trim();
-                if (fieldLabel.isEmpty()) {
-                    fieldLabel = itemTitle.isEmpty() ? "Field " + (fieldOrder + 1) : itemTitle;
-                }
-                String fieldKey = uniqueFieldKey(fieldLabel, usedFieldKeys);
-
-                JSONObject field = new JSONObject();
-                field.put("key", fieldKey);
-                field.put("label", fieldLabel);
-                field.put("type", selectedType(fieldViews.typeInput));
-                field.put("order", fieldOrder++);
-
-                String defaultValue = fieldViews.defaultValueInput.getText().toString().trim();
-                field.put("defaultValue", defaultValue.isEmpty() ? JSONObject.NULL : defaultValue);
-                field.put("increment", parseDoubleSafe(fieldViews.incrementInput.getText().toString(), 1));
-                field.put("decimals", parseIntSafe(fieldViews.decimalsInput.getText().toString(), 1));
-                field.put("unit", fieldViews.unitInput.getText().toString().trim());
-                field.put("required", fieldViews.requiredCheck.isChecked());
-                field.put("prefillFromPrevious", fieldViews.prefillCheck.isChecked());
-                fields.put(field);
+            String fieldLabel = fieldViews.labelInput.getText().toString().trim();
+            if (fieldLabel.isEmpty()) {
+                fieldLabel = "Field " + (fieldOrder + 1);
             }
-            item.put("fields", fields);
-            items.put(item);
+            String fieldKey = uniqueFieldKey(fieldLabel, usedFieldKeys);
+
+            JSONObject field = new JSONObject();
+            field.put("key", fieldKey);
+            field.put("label", fieldLabel);
+            field.put("type", selectedType(fieldViews.typeInput));
+            field.put("order", fieldOrder++);
+
+            String defaultValue = fieldViews.defaultValueInput.getText().toString().trim();
+            field.put("defaultValue", defaultValue.isEmpty() ? JSONObject.NULL : defaultValue);
+            field.put("increment", parseDoubleSafe(fieldViews.incrementInput.getText().toString(), 1));
+            field.put("decimals", parseIntSafe(fieldViews.decimalsInput.getText().toString(), 1));
+            field.put("unit", fieldViews.unitInput.getText().toString().trim());
+            field.put("required", fieldViews.requiredCheck.isChecked());
+            field.put("prefillFromPrevious", fieldViews.prefillCheck.isChecked());
+            fields.put(field);
         }
 
-        root.put("items", items);
+        root.put("fields", fields);
         return root.toString(2);
     }
 
@@ -1234,21 +986,12 @@ public final class TrackerFlowUi {
         }
     }
 
-    private void saveSessionItem(Session session, Item item, Map<String, View> inputs) {
-        Map<String, Object> values = readInputs(item, inputs);
-        for (FieldDefinition field : item.fields) {
+    private void saveSessionFields(Session session, List<FieldDefinition> fieldDefinitions, Map<String, View> inputs) {
+        Map<String, Object> values = readInputs(fieldDefinitions, inputs);
+        for (FieldDefinition field : fieldDefinitions) {
             Map<String, Object> fieldValue = new LinkedHashMap<>();
             fieldValue.put(field.key, values.get(field.key));
             db.saveRecord(session, field.id, fieldValue);
-        }
-    }
-
-    private void saveSessionItems(Session session, Tracker tracker, Map<Long, Map<String, View>> inputsByItem) {
-        for (Item item : tracker.items) {
-            Map<String, View> inputs = inputsByItem.get(item.id);
-            if (inputs != null) {
-                saveSessionItem(session, item, inputs);
-            }
         }
     }
 
@@ -1325,22 +1068,7 @@ public final class TrackerFlowUi {
     private static final class TrackerEditorForm {
         EditText nameInput;
         EditText descriptionInput;
-        final List<ItemEditorViews> items = new ArrayList<>();
-    }
-
-    private static final class ItemEditorViews {
-        LinearLayout card;
-        LinearLayout container;
-        EditText titleInput;
-        TextView summaryTitle;
-        TextView summaryMeta;
-        View summaryText;
-        View summaryInput;
-        LinearLayout editor;
-        LinearLayout fieldsContainer;
-        TextView fieldsCount;
         final List<FieldEditorViews> fields = new ArrayList<>();
-        boolean removed;
     }
 
     private static final class FieldEditorViews {

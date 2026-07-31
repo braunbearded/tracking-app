@@ -5,7 +5,7 @@ This is a single-module Android app without Google Play Services.
 
 - `app/src/main/java/com/zaelio/app/` contains app code.
   - `MainActivity.java` owns routing, lifecycle, top app bar actions, and bottom navigation.
-- `TrackingDatabase.java` handles SQLite schema, migrations, seed data, and data access. Current schema version is 6.
+- `TrackingDatabase.java` handles SQLite schema, destructive upgrades, seed data, and data access. Current schema version is 7.
 - `theme/ThemeStore.java` stores theme mode, accent color, font scale, and derived palette values.
 - `ui/AppUi.java` builds shared Material-style widgets.
 - `ui/SettingsUi.java` renders the settings and About screens.
@@ -60,7 +60,7 @@ Unit tests live under `app/src/test/` and use JUnit 4 plus Robolectric for Andro
 
 Prioritize tests for:
 
-- SQLite migrations, especially upgrades from schema versions before 3 and the schema 6 overview-order migration.
+- SQLite schema shape and destructive upgrades, especially keeping removed item tables/columns out.
 - Tracker/session JSON import/export and editor autosave behavior.
 - Session record preservation when tracker definitions are edited or imported.
 - Numeric, duration, and string field parsing and field-size behavior.

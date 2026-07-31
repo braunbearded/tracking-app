@@ -39,29 +39,6 @@ final class TrackerJsonRepository {
             JSONArray fields = root.optJSONArray("fields");
             if (fields == null) {
                 fields = new JSONArray();
-                JSONArray items = root.optJSONArray("items");
-                if (items != null) {
-                    for (int i = 0; i < items.length(); i++) {
-                        JSONObject itemJson = items.getJSONObject(i);
-                        JSONArray itemFields = itemJson.optJSONArray("fields");
-                        if (itemFields == null) {
-                            itemFields = new JSONArray();
-                            itemFields.put(itemJson);
-                        }
-                        for (int j = 0; j < itemFields.length(); j++) {
-                            JSONObject fieldJson = itemFields.getJSONObject(j);
-                            if (!fieldJson.has("label") && itemJson.has("title")) {
-                                fieldJson.put("label", itemJson.optString("title", fieldJson.optString("key", "")));
-                            }
-                            fieldJson.put("itemTitle", itemJson.optString("title", fieldJson.optString("label", fieldJson.optString("key", ""))));
-                            fieldJson.put("itemOrder", itemJson.optInt("order", i));
-                            if (!fieldJson.has("order")) {
-                                fieldJson.put("order", j);
-                            }
-                            fields.put(fieldJson);
-                        }
-                    }
-                }
             }
             for (int i = 0; i < fields.length(); i++) {
                 db.insert("fields", null, JsonUtil.fieldValuesFromJson(fields.getJSONObject(i), trackerId, i));

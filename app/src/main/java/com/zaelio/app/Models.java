@@ -10,7 +10,6 @@ final class Tracker {
     long createdAt;
     long updatedAt;
     List<FieldDefinition> fields = new ArrayList<>();
-    List<Item> items = new ArrayList<>();
 }
 
 final class FieldDefinition {
@@ -28,16 +27,6 @@ final class FieldDefinition {
     boolean prefillFromPrevious;
 }
 
-final class Item {
-    long id;
-    long trackerId;
-    String title;
-    int order;
-    long createdAt;
-    long updatedAt;
-    List<FieldDefinition> fields = new ArrayList<>();
-}
-
 final class Session {
     long id;
     long trackerId;
@@ -45,10 +34,7 @@ final class Session {
     long updatedAt;
 }
 
-final class ItemRecord extends FieldRecord {
-}
-
-class FieldRecord {
+final class FieldRecord {
     long id;
     long sessionId;
     long trackerId;

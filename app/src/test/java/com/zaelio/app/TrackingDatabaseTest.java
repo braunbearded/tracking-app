@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import androidx.test.core.app.ApplicationProvider;
 import java.util.Arrays;
@@ -38,12 +39,11 @@ public class TrackingDatabaseTest {
     }
 
     @Test
-    public void seedCreatesTrainingTrackerWithItems() {
+    public void seedCreatesTrainingTrackerWithFields() {
         Tracker tracker = db.trackers().get(0);
 
         assertEquals("Training", tracker.name);
         assertEquals(4, tracker.fields.size());
-        assertEquals(4, tracker.items.size());
     }
 
     @Test
@@ -109,26 +109,43 @@ public class TrackingDatabaseTest {
     }
 
     @Test
-    public void upgradeFromVersionFiveAddsOverviewOrderAndKeepsOldSort() {
+    public void schemaHasNoItemTablesOrFieldColumns() {
+        SQLiteDatabase sqlite = db.getReadableDatabase();
+        Cursor tables = sqlite.rawQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('items','item_records')", null);
+        try {
+            tables.moveToFirst();
+            assertEquals(0, tables.getInt(0));
+        } finally {
+            tables.close();
+        }
+        Cursor columns = sqlite.rawQuery("PRAGMA table_info(fields)", null);
+        try {
+            while (columns.moveToNext()) {
+                String name = columns.getString(1);
+                assertNotEquals("itemTitle", name);
+                assertNotEquals("itemOrder", name);
+                assertNotEquals("itemId", name);
+            }
+        } finally {
+            columns.close();
+        }
+    }
+
+    @Test
+    public void upgradeDropsOldDatabaseAndSeedsCleanSchema() {
         db.close();
         context.deleteDatabase("tracking.sqlite");
         SQLiteDatabase old = SQLiteDatabase.openOrCreateDatabase(context.getDatabasePath("tracking.sqlite"), null);
         old.execSQL("CREATE TABLE trackers(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,description TEXT,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL)");
-        old.execSQL("CREATE TABLE fields(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,itemTitle TEXT,itemOrder INTEGER NOT NULL DEFAULT 0,fieldKey TEXT NOT NULL,label TEXT NOT NULL,type TEXT NOT NULL,sortOrder INTEGER NOT NULL,defaultValue TEXT,incrementValue REAL,unit TEXT,required INTEGER NOT NULL,prefillFromPrevious INTEGER NOT NULL)");
-        old.execSQL("CREATE TABLE sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL)");
-        old.execSQL("CREATE TABLE field_records(id INTEGER PRIMARY KEY AUTOINCREMENT,sessionId INTEGER NOT NULL,trackerId INTEGER NOT NULL,fieldId INTEGER NOT NULL,fieldKey TEXT NOT NULL,valuesJson TEXT NOT NULL,createdAt INTEGER NOT NULL,updatedAt INTEGER NOT NULL,UNIQUE(sessionId,fieldId))");
+        old.execSQL("CREATE TABLE items(id INTEGER PRIMARY KEY AUTOINCREMENT,trackerId INTEGER NOT NULL,title TEXT NOT NULL,sortOrder INTEGER NOT NULL)");
         old.execSQL("INSERT INTO trackers(id,name,description,createdAt,updatedAt) VALUES(1,'Old','',100,100)");
-        old.execSQL("INSERT INTO trackers(id,name,description,createdAt,updatedAt) VALUES(2,'New','',100,200)");
-        old.execSQL("INSERT INTO sessions(id,trackerId,createdAt,updatedAt) VALUES(1,1,100,100)");
-        old.execSQL("INSERT INTO sessions(id,trackerId,createdAt,updatedAt) VALUES(2,1,200,200)");
-        old.setVersion(5);
+        old.execSQL("INSERT INTO items(id,trackerId,title,sortOrder) VALUES(1,1,'Old item',0)");
+        old.setVersion(6);
         old.close();
 
         db = new TrackingDatabase(context);
 
-        assertEquals(2, db.trackers().get(0).id);
-        assertEquals(1, db.trackers().get(1).id);
-        assertEquals(2, db.sessions().get(0).id);
-        assertEquals(1, db.sessions().get(1).id);
+        assertEquals("Training", db.trackers().get(0).name);
+        assertEquals(4, db.trackers().get(0).fields.size());
     }
 }
