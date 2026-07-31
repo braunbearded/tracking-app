@@ -24,6 +24,7 @@ final class DeleteGestureHelper {
     private static final int SWIPE_RESET_MS = 120;
     private static final int DELETE_ANIMATION_MS = 160;
     private static final int MARK_ANIMATION_MS = 80;
+    private static final int LONG_PRESS_EXTRA_MS = 500;
     static final int REMOVE_AFTER_DELETE_MS = 170;
 
     interface DeleteAction {
@@ -53,14 +54,7 @@ final class DeleteGestureHelper {
         final float[] downY = new float[1];
         final boolean[] dragging = new boolean[1];
         final boolean[] deleteStarted = new boolean[1];
-        touchView.setOnLongClickListener(v -> {
-            if (dragging[0]) {
-                return true;
-            }
-            deleteStarted[0] = true;
-            deleteAction.request(markDeleteCandidate(activity, theme, ui, targetView), () -> animateDelete(ui, targetView));
-            return true;
-        });
+        final Runnable[] pendingLongPress = new Runnable[1];
         touchView.setOnTouchListener((v, event) -> {
             float dx = event.getRawX() - downX[0];
             float dy = event.getRawY() - downY[0];
@@ -69,18 +63,28 @@ final class DeleteGestureHelper {
                 downY[0] = event.getRawY();
                 dragging[0] = false;
                 deleteStarted[0] = false;
-                touchView.setLongClickable(true);
+                pendingLongPress[0] = () -> {
+                    if (!dragging[0] && !deleteStarted[0]) {
+                        deleteStarted[0] = true;
+                        deleteAction.request(markDeleteCandidate(activity, theme, ui, targetView), () -> animateDelete(ui, targetView));
+                    }
+                };
+                touchView.postDelayed(pendingLongPress[0], android.view.ViewConfiguration.getLongPressTimeout() + LONG_PRESS_EXTRA_MS);
             } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
                 if (Math.abs(dx) > ui.spaceS()) {
                     dragging[0] = true;
-                    touchView.setLongClickable(false);
+                    if (pendingLongPress[0] != null) {
+                        touchView.removeCallbacks(pendingLongPress[0]);
+                    }
                     if (touchView.getParent() != null) {
                         touchView.getParent().requestDisallowInterceptTouchEvent(true);
                     }
                     targetView.setTranslationX(Math.max(-ui.px(DELETE_SWIPE_LEFT_DP), Math.min(ui.px(DELETE_SWIPE_RIGHT_DP), dx)));
                 }
             } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                touchView.setLongClickable(true);
+                if (pendingLongPress[0] != null) {
+                    touchView.removeCallbacks(pendingLongPress[0]);
+                }
                 targetView.animate().translationX(0).setDuration(SWIPE_RESET_MS).start();
                 if (dragging[0]) {
                     if (skipClick != null) {
