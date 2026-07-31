@@ -591,12 +591,13 @@ public final class TrackerFlowUi {
             scrollIntoView(scrollView, added.row);
             scheduleSave.run();
         };
-        Runnable removeAction = () -> {
+        Runnable removeNow = () -> {
             container.removeView(shellRef[0]);
             updateChildBottomMargins(container, 12, 4);
             views.removed = true;
             scheduleSave.run();
         };
+        Runnable removeAction = () -> confirmDeleteField(views, () -> {}, () -> DeleteGestureHelper.animateDelete(ui, shellRef[0]), removeNow);
         menu.setOnClickListener(v -> showFieldMenu(v, duplicateAction, removeAction));
         View.OnClickListener toggle = v -> toggleFieldEditor(views, expand);
         expand.setOnClickListener(toggle);
@@ -617,8 +618,25 @@ public final class TrackerFlowUi {
         fieldEditors.add(views);
         shell.setTag(views);
         attachFieldReorder(reorder, container, fieldEditors, views, scheduleSave);
+        DeleteGestureHelper.DeleteAction deleteGesture = (restore, animateDelete) -> confirmDeleteField(views, restore, animateDelete, removeNow);
+        DeleteGestureHelper.attach(activity, theme, ui, shell, shell, deleteGesture, null);
+        DeleteGestureHelper.attach(activity, theme, ui, summaryRow, shell, deleteGesture, null);
+        DeleteGestureHelper.attach(activity, theme, ui, summarySlot, shell, deleteGesture, null);
+        DeleteGestureHelper.attach(activity, theme, ui, summaryText, shell, deleteGesture, null);
+        DeleteGestureHelper.attach(activity, theme, ui, views.summaryTitle, shell, deleteGesture, null);
+        DeleteGestureHelper.attach(activity, theme, ui, views.summaryMeta, shell, deleteGesture, null);
         setFieldExpanded(views, expand, field == null);
         return views;
+    }
+
+    private void confirmDeleteField(FieldEditorViews views, Runnable restore, Runnable animateDelete, Runnable removeNow) {
+        String label = views.labelInput.getText().toString().trim();
+        ui.confirmDelete("Feld löschen",
+                (label.isEmpty() ? "Dieses Feld" : label) + " wirklich löschen?",
+                () -> {
+                    animateDelete.run();
+                    activity.getWindow().getDecorView().postDelayed(removeNow, 170);
+                }, restore);
     }
 
     private void showFieldMenu(View anchor, Runnable duplicateAction, Runnable removeAction) {

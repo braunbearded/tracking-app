@@ -1,18 +1,9 @@
 package com.zaelio.app;
 
 import android.app.Activity;
-import android.content.Context;
-import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
-import android.os.Build;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
-import android.os.VibratorManager;
+
 import android.view.Gravity;
-import android.view.HapticFeedbackConstants;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
@@ -26,10 +17,6 @@ import java.util.function.LongConsumer;
 import org.json.JSONObject;
 
 public final class HomeUi {
-    private static final int DELETE_SWIPE_LEFT_DP = 180;
-    private static final int DELETE_SWIPE_RIGHT_DP = 60;
-    private static final int DELETE_SWIPE_TRIGGER_DP = 140;
-
     private final Activity activity;
     private final TrackingDatabase db;
     private final ThemeStore theme;
@@ -37,10 +24,6 @@ public final class HomeUi {
     private final LongConsumer openSession;
     private final LongConsumer editTracker;
     private final Runnable refresh;
-
-    private interface DeleteAction {
-        void request(Runnable restore, Runnable animateDelete);
-    }
 
     public HomeUi(Activity activity, TrackingDatabase db, ThemeStore theme, AppUi ui,
                   LongConsumer openSession, LongConsumer editTracker, Runnable refresh) {
@@ -121,7 +104,7 @@ public final class HomeUi {
     }
 
     private LinearLayout overviewCard(String title, String meta, String previewText, Runnable open,
-                                      Runnable duplicateAction, DeleteAction deleteAction,
+                                      Runnable duplicateAction, DeleteGestureHelper.DeleteAction deleteAction,
                                       LinearLayout reorderContainer, Runnable onReorder) {
         LinearLayout card = createCard();
         card.setOrientation(LinearLayout.HORIZONTAL);
@@ -135,7 +118,7 @@ public final class HomeUi {
             }
             open.run();
         });
-        attachDeleteGestures(card, deleteAction, skipClick);
+        DeleteGestureHelper.attach(activity, theme, ui, card, card, deleteAction, skipClick);
 
         TextView handle = ui.listIcon("⠿");
 
@@ -168,7 +151,7 @@ public final class HomeUi {
         content.addView(preview);
 
         TextView menu = ui.listIcon("...");
-        menu.setOnClickListener(v -> showCardMenu(menu, duplicateAction, () -> deleteAction.request(() -> {}, () -> animateDelete(card))));
+        menu.setOnClickListener(v -> showCardMenu(menu, duplicateAction, () -> deleteAction.request(() -> {}, () -> DeleteGestureHelper.animateDelete(ui, card))));
 
         TextView arrow = ui.listIcon("›");
         arrow.setOnClickListener(v -> open.run());
@@ -246,100 +229,6 @@ public final class HomeUi {
             }
         }
         return ids;
-    }
-
-    private void attachDeleteGestures(View card, DeleteAction deleteAction, boolean[] skipClick) {
-        final float[] downX = new float[1];
-        final float[] downY = new float[1];
-        final boolean[] dragging = new boolean[1];
-        final boolean[] deleteStarted = new boolean[1];
-        card.setOnLongClickListener(v -> {
-            if (dragging[0]) {
-                return true;
-            }
-            deleteStarted[0] = true;
-            deleteAction.request(markDeleteCandidate(card), () -> animateDelete(card));
-            return true;
-        });
-        card.setOnTouchListener((v, event) -> {
-            float dx = event.getRawX() - downX[0];
-            float dy = event.getRawY() - downY[0];
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                downX[0] = event.getRawX();
-                downY[0] = event.getRawY();
-                dragging[0] = false;
-                deleteStarted[0] = false;
-                card.setLongClickable(true);
-            } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                if (Math.abs(dx) > ui.spaceS()) {
-                    dragging[0] = true;
-                    card.setLongClickable(false);
-                    card.getParent().requestDisallowInterceptTouchEvent(true);
-                    card.setTranslationX(Math.max(-ui.px(DELETE_SWIPE_LEFT_DP), Math.min(ui.px(DELETE_SWIPE_RIGHT_DP), dx)));
-                }
-            } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                card.setLongClickable(true);
-                card.animate().translationX(0).setDuration(120).start();
-                if (dragging[0]) {
-                    skipClick[0] = true;
-                    if (!deleteStarted[0] && dx < -ui.px(DELETE_SWIPE_TRIGGER_DP) && Math.abs(dx) > Math.abs(dy) * 1.5f) {
-                        deleteStarted[0] = true;
-                        deleteAction.request(markDeleteCandidate(card), () -> animateDelete(card));
-                    }
-                    return true;
-                }
-            }
-            return false;
-        });
-    }
-
-    private Runnable markDeleteCandidate(View card) {
-        Drawable background = card.getBackground();
-        vibrate(card);
-        setStrikeThrough(card, true);
-        card.setBackground(ui.makeRoundedCard(theme.cautionFillColor(), theme.cautionStrokeColor()));
-        card.animate().scaleX(0.98f).scaleY(0.98f).alpha(0.9f).setDuration(80).start();
-        return () -> {
-            setStrikeThrough(card, false);
-            card.setBackground(background);
-            card.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(80).start();
-        };
-    }
-
-    private void animateDelete(View card) {
-        card.animate().alpha(0f).scaleX(0.92f).scaleY(0.92f).translationX(-ui.spaceXl()).setDuration(160).start();
-    }
-
-    private void vibrate(View view) {
-        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-        Vibrator vibrator;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            VibratorManager manager = (VibratorManager) activity.getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
-            vibrator = manager == null ? null : manager.getDefaultVibrator();
-        } else {
-            vibrator = (Vibrator) activity.getSystemService(Context.VIBRATOR_SERVICE);
-        }
-        if (vibrator == null || !vibrator.hasVibrator()) {
-            return;
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(60, 180));
-        } else {
-            vibrator.vibrate(60);
-        }
-    }
-
-    private void setStrikeThrough(View view, boolean enabled) {
-        if (view instanceof TextView) {
-            TextView textView = (TextView) view;
-            int flag = Paint.STRIKE_THRU_TEXT_FLAG;
-            textView.setPaintFlags(enabled ? textView.getPaintFlags() | flag : textView.getPaintFlags() & ~flag);
-        } else if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                setStrikeThrough(group.getChildAt(i), enabled);
-            }
-        }
     }
 
     private void confirmDeleteSession(Session session, Runnable restore, Runnable animateDelete) {
