@@ -22,7 +22,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -606,7 +605,7 @@ public final class TrackerFlowUi {
             views.removed = true;
             scheduleSave.run();
         };
-        Runnable removeAction = () -> confirmDeleteField(views, () -> {}, () -> DeleteGestureHelper.animateDelete(ui, shellRef[0]), removeNow);
+        Runnable removeAction = () -> confirmDeleteField(views, null, () -> DeleteGestureHelper.animateDelete(ui, shellRef[0]), removeNow);
         menu.setOnClickListener(v -> showFieldMenu(v, duplicateAction, removeAction));
         View.OnClickListener toggle = v -> toggleFieldEditor(views, expand);
         expand.setOnClickListener(toggle);
@@ -634,28 +633,22 @@ public final class TrackerFlowUi {
     }
 
     private void confirmDeleteField(FieldEditorViews views, Runnable restore, Runnable animateDelete, Runnable removeNow) {
+        Runnable delete = () -> {
+            animateDelete.run();
+            activity.getWindow().getDecorView().postDelayed(removeNow, 170);
+        };
+        if (restore == null) {
+            delete.run();
+            return;
+        }
         String label = views.labelInput.getText().toString().trim();
         ui.confirmDelete("Feld löschen",
                 (label.isEmpty() ? "Dieses Feld" : label) + " wirklich löschen?",
-                () -> {
-                    animateDelete.run();
-                    activity.getWindow().getDecorView().postDelayed(removeNow, 170);
-                }, restore);
+                delete, restore);
     }
 
     private void showFieldMenu(View anchor, Runnable duplicateAction, Runnable removeAction) {
-        PopupMenu menu = new PopupMenu(activity, anchor);
-        menu.getMenu().add(0, 1, 0, "Kopieren");
-        menu.getMenu().add(0, 2, 1, "Löschen");
-        menu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == 1) {
-                duplicateAction.run();
-            } else if (item.getItemId() == 2) {
-                removeAction.run();
-            }
-            return true;
-        });
-        menu.show();
+        ui.showActionMenu("Feld", new String[]{"Kopieren", "Löschen"}, new Runnable[]{duplicateAction, removeAction});
     }
 
     private void toggleFieldEditor(FieldEditorViews views, ImageView expand) {
@@ -1011,36 +1004,14 @@ public final class TrackerFlowUi {
     }
 
     private void showTrackerMenu(View anchor, long trackerId, String trackerName) {
-        PopupMenu menu = new PopupMenu(activity, anchor, Gravity.END);
         if (trackerId != -1) {
-            menu.getMenu().add(0, 1, 0, "Tracker duplizieren");
-            menu.getMenu().add(0, 2, 1, "Tracker löschen");
+            ui.showActionMenu("Tracker", new String[]{"Tracker duplizieren", "Tracker löschen"},
+                    new Runnable[]{() -> duplicateTracker(trackerId), () -> deleteTracker(trackerId)});
         }
-        menu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == 1) {
-                duplicateTracker(trackerId);
-                return true;
-            }
-            if (item.getItemId() == 2) {
-                confirmDeleteTracker(trackerId, trackerName);
-                return true;
-            }
-            return false;
-        });
-        menu.show();
     }
 
     private void showSessionMenu(View anchor, Session session) {
-        PopupMenu menu = new PopupMenu(activity, anchor, Gravity.END);
-        menu.getMenu().add(0, 2, 0, "Session löschen");
-        menu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == 2) {
-                confirmDeleteSession(session.id);
-                return true;
-            }
-            return false;
-        });
-        menu.show();
+        ui.showActionMenu("Session", new String[]{"Session löschen"}, new Runnable[]{() -> deleteSession(session.id)});
     }
 
     private void duplicateTracker(long trackerId) {
@@ -1059,22 +1030,16 @@ public final class TrackerFlowUi {
         }
     }
 
-    private void confirmDeleteTracker(long trackerId, String trackerName) {
-        ui.confirmDelete("Tracker löschen",
-                (trackerName == null || trackerName.trim().isEmpty() ? "Diesen Tracker" : trackerName) + " wirklich löschen?",
-                () -> {
-                    db.deleteTracker(trackerId);
-                    clearTimers();
-                    backToTrackers.run();
-                }, null);
+    private void deleteTracker(long trackerId) {
+        db.deleteTracker(trackerId);
+        clearTimers();
+        backToTrackers.run();
     }
 
-    private void confirmDeleteSession(long sessionId) {
-        ui.confirmDelete("Session löschen", "Diese Session wirklich löschen?", () -> {
-            db.deleteSession(sessionId);
-            clearTimers();
-            backToSessions.run();
-        }, null);
+    private void deleteSession(long sessionId) {
+        db.deleteSession(sessionId);
+        clearTimers();
+        backToSessions.run();
     }
 
     private LinearLayout footerButton(String text, Runnable onClick) {

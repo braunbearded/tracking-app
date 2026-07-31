@@ -6,7 +6,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import com.zaelio.app.theme.ThemeStore;
@@ -151,7 +150,7 @@ public final class HomeUi {
         content.addView(preview);
 
         TextView menu = ui.listIcon("...");
-        menu.setOnClickListener(v -> showCardMenu(menu, duplicateAction, () -> deleteAction.request(() -> {}, () -> DeleteGestureHelper.animateDelete(ui, card))));
+        menu.setOnClickListener(v -> showCardMenu(menu, duplicateAction, () -> deleteAction.request(null, () -> DeleteGestureHelper.animateDelete(ui, card))));
 
         TextView arrow = ui.listIcon("›");
         arrow.setOnClickListener(v -> open.run());
@@ -170,20 +169,11 @@ public final class HomeUi {
     }
 
     private void showCardMenu(View anchor, Runnable duplicate, Runnable delete) {
-        PopupMenu menu = new PopupMenu(activity, anchor, Gravity.END);
-        if (duplicate != null) {
-            menu.getMenu().add(0, 1, 0, "Duplizieren");
+        if (duplicate == null) {
+            ui.showActionMenu("Aktionen", new String[]{"Löschen"}, new Runnable[]{delete});
+            return;
         }
-        menu.getMenu().add(0, 2, 1, "Löschen");
-        menu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == 1 && duplicate != null) {
-                duplicate.run();
-            } else {
-                delete.run();
-            }
-            return true;
-        });
-        menu.show();
+        ui.showActionMenu("Aktionen", new String[]{"Duplizieren", "Löschen"}, new Runnable[]{duplicate, delete});
     }
 
     private LinearLayout.LayoutParams cardLayoutParams() {
@@ -232,24 +222,34 @@ public final class HomeUi {
     }
 
     private void confirmDeleteSession(Session session, Runnable restore, Runnable animateDelete) {
-        ui.confirmDelete("Session löschen", "Diese Session wirklich löschen?", () -> {
+        Runnable delete = () -> {
             animateDelete.run();
             activity.getWindow().getDecorView().postDelayed(() -> {
                 db.deleteSession(session.id);
                 refresh.run();
             }, 170);
-        }, restore);
+        };
+        if (restore == null) {
+            delete.run();
+            return;
+        }
+        ui.confirmDelete("Session löschen", "Diese Session wirklich löschen?", delete, restore);
     }
 
     private void confirmDeleteTracker(Tracker tracker, Runnable restore, Runnable animateDelete) {
-        String name = tracker.name == null || tracker.name.trim().isEmpty() ? "Diesen Tracker" : tracker.name;
-        ui.confirmDelete("Tracker löschen", name + " wirklich löschen?", () -> {
+        Runnable delete = () -> {
             animateDelete.run();
             activity.getWindow().getDecorView().postDelayed(() -> {
                 db.deleteTracker(tracker.id);
                 refresh.run();
             }, 170);
-        }, restore);
+        };
+        if (restore == null) {
+            delete.run();
+            return;
+        }
+        String name = tracker.name == null || tracker.name.trim().isEmpty() ? "Diesen Tracker" : tracker.name;
+        ui.confirmDelete("Tracker löschen", name + " wirklich löschen?", delete, restore);
     }
 
     private void duplicateTracker(Tracker tracker) {

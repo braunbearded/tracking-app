@@ -367,6 +367,27 @@ public final class AppUi {
         return dialog;
     }
 
+    public void showActionMenu(String title, String[] labels, Runnable[] actions) {
+        LinearLayout card = contentCard();
+        card.setPadding(spaceXl(), spaceL(), spaceXl(), spaceL());
+        if (title != null && !title.isEmpty()) {
+            addDialogTitle(card, title);
+        }
+        final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
+        for (int i = 0; i < labels.length; i++) {
+            Button button = labels[i].toLowerCase().contains("löschen") ? dangerButton(labels[i]) : secondaryButton(labels[i]);
+            final int index = i;
+            button.setOnClickListener(v -> {
+                dialog[0].dismiss();
+                actions[index].run();
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+            lp.bottomMargin = i == labels.length - 1 ? 0 : spaceS();
+            card.addView(button, lp);
+        }
+        dialog[0] = showCardDialog(card);
+    }
+
     public void addDialogTitle(LinearLayout card, String text) {
         TextView title = tv(text, 20);
         title.setPadding(0, 0, 0, px(12));
