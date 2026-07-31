@@ -21,6 +21,10 @@ final class DeleteGestureHelper {
     private static final int DELETE_SWIPE_LEFT_DP = 180;
     private static final int DELETE_SWIPE_RIGHT_DP = 60;
     private static final int DELETE_SWIPE_TRIGGER_DP = 140;
+    private static final int SWIPE_RESET_MS = 120;
+    private static final int DELETE_ANIMATION_MS = 160;
+    private static final int MARK_ANIMATION_MS = 80;
+    static final int REMOVE_AFTER_DELETE_MS = 170;
 
     interface DeleteAction {
         void request(Runnable restore, Runnable animateDelete);
@@ -77,7 +81,7 @@ final class DeleteGestureHelper {
                 }
             } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
                 touchView.setLongClickable(true);
-                targetView.animate().translationX(0).setDuration(120).start();
+                targetView.animate().translationX(0).setDuration(SWIPE_RESET_MS).start();
                 if (dragging[0]) {
                     if (skipClick != null) {
                         skipClick[0] = true;
@@ -106,7 +110,7 @@ final class DeleteGestureHelper {
     }
 
     static void animateDelete(AppUi ui, View targetView) {
-        targetView.animate().alpha(0f).scaleX(0.92f).scaleY(0.92f).translationX(-ui.spaceXl()).setDuration(160).start();
+        targetView.animate().alpha(0f).scaleX(0.92f).scaleY(0.92f).translationX(-ui.spaceXl()).setDuration(DELETE_ANIMATION_MS).start();
     }
 
     private static Runnable markDeleteCandidate(Activity activity, ThemeStore theme, AppUi ui, View targetView) {
@@ -114,11 +118,11 @@ final class DeleteGestureHelper {
         vibrate(activity, targetView);
         setStrikeThrough(targetView, true);
         targetView.setBackground(ui.makeRoundedCard(theme.cautionFillColor(), theme.cautionStrokeColor()));
-        targetView.animate().scaleX(0.98f).scaleY(0.98f).alpha(0.9f).setDuration(80).start();
+        targetView.animate().scaleX(0.98f).scaleY(0.98f).alpha(0.9f).setDuration(MARK_ANIMATION_MS).start();
         return () -> {
             setStrikeThrough(targetView, false);
             targetView.setBackground(background);
-            targetView.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(80).start();
+            targetView.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(MARK_ANIMATION_MS).start();
         };
     }
 

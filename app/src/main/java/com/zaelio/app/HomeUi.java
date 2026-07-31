@@ -170,10 +170,10 @@ public final class HomeUi {
 
     private void showCardMenu(View anchor, Runnable duplicate, Runnable delete) {
         if (duplicate == null) {
-            ui.showActionMenu("Aktionen", new String[]{"Löschen"}, new Runnable[]{delete});
+            ui.showActionMenu("Aktionen", ui.action("Löschen", delete));
             return;
         }
-        ui.showActionMenu("Aktionen", new String[]{"Duplizieren", "Löschen"}, new Runnable[]{duplicate, delete});
+        ui.showActionMenu("Aktionen", ui.action("Duplizieren", duplicate), ui.action("Löschen", delete));
     }
 
     private LinearLayout.LayoutParams cardLayoutParams() {
@@ -227,7 +227,7 @@ public final class HomeUi {
             activity.getWindow().getDecorView().postDelayed(() -> {
                 db.deleteSession(session.id);
                 refresh.run();
-            }, 170);
+            }, DeleteGestureHelper.REMOVE_AFTER_DELETE_MS);
         };
         if (restore == null) {
             delete.run();
@@ -242,7 +242,7 @@ public final class HomeUi {
             activity.getWindow().getDecorView().postDelayed(() -> {
                 db.deleteTracker(tracker.id);
                 refresh.run();
-            }, 170);
+            }, DeleteGestureHelper.REMOVE_AFTER_DELETE_MS);
         };
         if (restore == null) {
             delete.run();

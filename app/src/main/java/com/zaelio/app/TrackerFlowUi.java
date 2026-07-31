@@ -601,7 +601,7 @@ public final class TrackerFlowUi {
         };
         Runnable removeNow = () -> {
             container.removeView(shellRef[0]);
-            updateChildBottomMargins(container, 12, 4);
+            updateChildBottomMargins(container);
             views.removed = true;
             scheduleSave.run();
         };
@@ -620,7 +620,7 @@ public final class TrackerFlowUi {
         LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
         rowLp.bottomMargin = ui.spaceM();
         container.addView(shell, rowLp);
-        updateChildBottomMargins(container, 12, 4);
+        updateChildBottomMargins(container);
         views.row = shell;
         views.container = container;
         fieldEditors.add(views);
@@ -635,7 +635,7 @@ public final class TrackerFlowUi {
     private void confirmDeleteField(FieldEditorViews views, Runnable restore, Runnable animateDelete, Runnable removeNow) {
         Runnable delete = () -> {
             animateDelete.run();
-            activity.getWindow().getDecorView().postDelayed(removeNow, 170);
+            activity.getWindow().getDecorView().postDelayed(removeNow, DeleteGestureHelper.REMOVE_AFTER_DELETE_MS);
         };
         if (restore == null) {
             delete.run();
@@ -648,7 +648,7 @@ public final class TrackerFlowUi {
     }
 
     private void showFieldMenu(View anchor, Runnable duplicateAction, Runnable removeAction) {
-        ui.showActionMenu("Feld", new String[]{"Kopieren", "Löschen"}, new Runnable[]{duplicateAction, removeAction});
+        ui.showActionMenu("Feld", ui.action("Kopieren", duplicateAction), ui.action("Löschen", removeAction));
     }
 
     private void toggleFieldEditor(FieldEditorViews views, ImageView expand) {
@@ -729,7 +729,7 @@ public final class TrackerFlowUi {
 
     private void attachFieldReorder(View handle, LinearLayout container, List<FieldEditorViews> editors, FieldEditorViews views, Runnable onChange) {
         ReorderHelper.attach(ui, handle, container, views.row, onChange, direction -> {
-            updateChildBottomMargins(container, 12, 4);
+            updateChildBottomMargins(container);
             reorderList(editors, views, direction);
         });
     }
@@ -758,12 +758,12 @@ public final class TrackerFlowUi {
         }
     }
 
-    private void updateChildBottomMargins(LinearLayout container, int normalDp, int lastDp) {
+    private void updateChildBottomMargins(LinearLayout container) {
         for (int i = 0; i < container.getChildCount(); i++) {
             View child = container.getChildAt(i);
             if (child.getLayoutParams() instanceof LinearLayout.LayoutParams) {
                 LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) child.getLayoutParams();
-                lp.bottomMargin = ui.px(i == container.getChildCount() - 1 ? lastDp : normalDp);
+                lp.bottomMargin = i == container.getChildCount() - 1 ? ui.spaceXs() : ui.spaceM();
                 child.setLayoutParams(lp);
             }
         }
@@ -849,7 +849,7 @@ public final class TrackerFlowUi {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             GradientDrawable cursor = new GradientDrawable();
             cursor.setColor(theme.accentColor());
-            cursor.setSize(ui.focusedStrokeWidth(), ui.px(24));
+            cursor.setSize(ui.focusedStrokeWidth(), ui.rowHeight() / 2);
             input.setTextCursorDrawable(cursor);
         }
     }
@@ -1005,13 +1005,14 @@ public final class TrackerFlowUi {
 
     private void showTrackerMenu(View anchor, long trackerId, String trackerName) {
         if (trackerId != -1) {
-            ui.showActionMenu("Tracker", new String[]{"Tracker duplizieren", "Tracker löschen"},
-                    new Runnable[]{() -> duplicateTracker(trackerId), () -> deleteTracker(trackerId)});
+            ui.showActionMenu("Tracker",
+                    ui.action("Tracker duplizieren", () -> duplicateTracker(trackerId)),
+                    ui.action("Tracker löschen", () -> deleteTracker(trackerId)));
         }
     }
 
     private void showSessionMenu(View anchor, Session session) {
-        ui.showActionMenu("Session", new String[]{"Session löschen"}, new Runnable[]{() -> deleteSession(session.id)});
+        ui.showActionMenu("Session", ui.action("Session löschen", () -> deleteSession(session.id)));
     }
 
     private void duplicateTracker(long trackerId) {

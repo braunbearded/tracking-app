@@ -56,7 +56,7 @@ public final class AppUi {
         TextView view = new TextView(activity);
         view.setText(text);
         view.setTextSize(sp(sizeSp));
-        view.setPadding(px(16), px(12), px(16), px(8));
+        view.setPadding(spaceL(), spaceM(), spaceL(), spaceS());
         view.setTextColor(theme.primaryTextColor());
         return view;
     }
@@ -71,14 +71,14 @@ public final class AppUi {
         button.setCornerRadius(px(CORNER_RADIUS_DP));
         button.setMinHeight(px(BUTTON_HEIGHT_DP));
         button.setMinimumHeight(px(BUTTON_HEIGHT_DP));
-        button.setMinWidth(px(64));
-        button.setPadding(px(16), 0, px(16), 0);
+        button.setMinWidth(rowHeight() + spaceS());
+        button.setPadding(spaceL(), 0, spaceL(), 0);
         button.setInsetTop(0);
         button.setInsetBottom(0);
         button.setGravity(Gravity.CENTER);
         button.setBackgroundTintList(ColorStateList.valueOf(fillColor));
         button.setStrokeColor(ColorStateList.valueOf(strokeColor));
-        button.setStrokeWidth(strokeColor == fillColor ? 0 : px(1));
+        button.setStrokeWidth(strokeColor == fillColor ? 0 : strokeWidth());
         button.setRippleColor(ColorStateList.valueOf(theme.withAlpha(textColor, 0x22)));
         return button;
     }
@@ -104,9 +104,9 @@ public final class AppUi {
         nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                px(68)));
+                buttonHeight() + spaceXl()));
         nav.setBackgroundColor(theme.navigationBarColor());
-        nav.setElevation(px(8));
+        nav.setElevation(spaceS());
         nav.addView(navItem("Sessions", android.R.drawable.ic_menu_agenda, sessionsSelected, onSessions),
                 new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
         nav.addView(navItem("Tracker", android.R.drawable.ic_menu_sort_by_size, !sessionsSelected, onTracker),
@@ -127,7 +127,7 @@ public final class AppUi {
         content.setLayoutParams(new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
-        content.setPadding(0, px(8), 0, px(8));
+        content.setPadding(0, spaceS(), 0, spaceS());
 
         Drawable icon = activity.getDrawable(iconRes);
         if (icon != null) {
@@ -138,7 +138,7 @@ public final class AppUi {
         ImageView iconView = new ImageView(activity);
         iconView.setImageDrawable(icon);
         iconView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(px(20), px(20));
+        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(spaceXl(), spaceXl());
         content.addView(iconView, iconLp);
 
         TextView labelView = new TextView(activity);
@@ -152,7 +152,7 @@ public final class AppUi {
         LinearLayout.LayoutParams labelLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        labelLp.topMargin = px(4);
+        labelLp.topMargin = spaceXs();
         content.addView(labelView, labelLp);
 
         item.addView(content);
@@ -169,15 +169,15 @@ public final class AppUi {
         fab.setCornerRadius(px(CORNER_RADIUS_DP));
         fab.setBackgroundTintList(ColorStateList.valueOf(theme.accentColor()));
         fab.setRippleColor(ColorStateList.valueOf(theme.withAlpha(Color.WHITE, 0x22)));
-        fab.setElevation(px(10));
+        fab.setElevation(spaceSm());
         fab.setMinWidth(px(ICON_BUTTON_SIZE_DP));
         fab.setMinHeight(px(ICON_BUTTON_SIZE_DP));
         fab.setInsetTop(0);
         fab.setInsetBottom(0);
-        fab.setPadding(0, 0, 0, px(4));
+        fab.setPadding(0, 0, 0, spaceXs());
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(px(ICON_BUTTON_SIZE_DP), px(ICON_BUTTON_SIZE_DP), Gravity.END | Gravity.BOTTOM);
-        lp.rightMargin = px(20);
-        lp.bottomMargin = px(20);
+        lp.rightMargin = spaceXl();
+        lp.bottomMargin = spaceXl();
         fab.setLayoutParams(lp);
         fab.setOnClickListener(onClick);
         return fab;
@@ -187,10 +187,10 @@ public final class AppUi {
         LinearLayout bar = new LinearLayout(activity);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setMinimumHeight(px(56));
-        bar.setPadding(px(14), px(12), px(12), px(12));
+        bar.setMinimumHeight(rowHeight());
+        bar.setPadding(spaceMl(), spaceM(), spaceM(), spaceM());
         bar.setBackgroundColor(theme.surfaceColor());
-        bar.setElevation(px(1));
+        bar.setElevation(strokeWidth());
 
         if (showBack) {
             bar.addView(iconButton(R.drawable.ic_arrow_back_24, "Zurück", v -> {
@@ -206,7 +206,7 @@ public final class AppUi {
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setTextColor(theme.primaryTextColor());
         LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(0, -2, 1f);
-        titleLp.leftMargin = showBack ? px(12) : 0;
+        titleLp.leftMargin = showBack ? spaceM() : 0;
         bar.addView(title, titleLp);
 
         if (showOverflow) {
@@ -232,7 +232,7 @@ public final class AppUi {
         button.setMinHeight(px(ICON_BUTTON_SIZE_DP));
         button.setInsetTop(0);
         button.setInsetBottom(0);
-        button.setPadding(px(12), 0, px(12), 0);
+        button.setPadding(spaceM(), 0, spaceM(), 0);
         button.setContentDescription(contentDescription);
         button.setOnClickListener(onClick);
         return button;
@@ -241,9 +241,9 @@ public final class AppUi {
     public LinearLayout settingsCard() {
         LinearLayout card = new LinearLayout(activity);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(px(16), px(16), px(16), px(16));
+        card.setPadding(spaceL(), spaceL(), spaceL(), spaceL());
         card.setBackground(makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
-        card.setElevation(px(2));
+        card.setElevation(focusedStrokeWidth());
         return card;
     }
 
@@ -257,12 +257,12 @@ public final class AppUi {
         scrollView.setFillViewport(true);
         LinearLayout body = new LinearLayout(activity);
         body.setOrientation(LinearLayout.VERTICAL);
-        body.setPadding(px(16), px(16), px(16), px(16));
+        body.setPadding(spaceL(), spaceL(), spaceL(), spaceL());
         scrollView.addView(body);
         root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
         if (onBack != null) {
             LinearLayout footer = new LinearLayout(activity);
-            footer.setPadding(px(16), px(8), px(16), px(16));
+            footer.setPadding(spaceL(), spaceS(), spaceL(), spaceL());
             Button button = secondaryButton("Zurück");
             button.setOnClickListener(v -> onBack.run());
             footer.addView(button, new LinearLayout.LayoutParams(-1, -2));
@@ -367,30 +367,44 @@ public final class AppUi {
         return dialog;
     }
 
-    public void showActionMenu(String title, String[] labels, Runnable[] actions) {
+    public void showActionMenu(String title, ActionItem... items) {
         LinearLayout card = contentCard();
         card.setPadding(spaceXl(), spaceL(), spaceXl(), spaceL());
         if (title != null && !title.isEmpty()) {
             addDialogTitle(card, title);
         }
         final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
-        for (int i = 0; i < labels.length; i++) {
-            Button button = labels[i].toLowerCase().contains("löschen") ? dangerButton(labels[i]) : secondaryButton(labels[i]);
-            final int index = i;
+        for (int i = 0; i < items.length; i++) {
+            ActionItem item = items[i];
+            Button button = item.label.toLowerCase().contains("löschen") ? dangerButton(item.label) : secondaryButton(item.label);
             button.setOnClickListener(v -> {
                 dialog[0].dismiss();
-                actions[index].run();
+                item.action.run();
             });
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-            lp.bottomMargin = i == labels.length - 1 ? 0 : spaceS();
+            lp.bottomMargin = i == items.length - 1 ? 0 : spaceS();
             card.addView(button, lp);
         }
         dialog[0] = showCardDialog(card);
     }
 
+    public ActionItem action(String label, Runnable action) {
+        return new ActionItem(label, action);
+    }
+
+    public static final class ActionItem {
+        final String label;
+        final Runnable action;
+
+        private ActionItem(String label, Runnable action) {
+            this.label = label;
+            this.action = action;
+        }
+    }
+
     public void addDialogTitle(LinearLayout card, String text) {
         TextView title = tv(text, 20);
-        title.setPadding(0, 0, 0, px(12));
+        title.setPadding(0, 0, 0, spaceM());
         card.addView(title);
     }
 
@@ -399,7 +413,7 @@ public final class AppUi {
         message.setText(text);
         message.setTextSize(sp(14));
         message.setTextColor(theme.secondaryTextColor());
-        message.setPadding(0, 0, 0, px(18));
+        message.setPadding(0, 0, 0, px(SPACE_DIALOG_Y_DP));
         card.addView(message);
     }
 
@@ -452,13 +466,13 @@ public final class AppUi {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(fillColor);
         drawable.setCornerRadius(px(CORNER_RADIUS_DP));
-        drawable.setStroke(px(1), strokeColor);
+        drawable.setStroke(strokeWidth(), strokeColor);
         return drawable;
     }
 
     public GradientDrawable dragSelectedCard() {
         GradientDrawable drawable = makeRoundedCard(theme.accentSoftColor(), theme.accentColor());
-        drawable.setStroke(px(2), theme.accentColor());
+        drawable.setStroke(focusedStrokeWidth(), theme.accentColor());
         return drawable;
     }
 

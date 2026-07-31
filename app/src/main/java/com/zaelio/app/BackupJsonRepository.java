@@ -22,7 +22,7 @@ final class BackupJsonRepository {
     }
 
     static String exportSessions(TrackingDatabase helper) throws JSONException {
-        return export(helper, true, true);
+        return exportAll(helper);
     }
 
     private static String export(TrackingDatabase helper, boolean includeTrackers, boolean includeSessions) throws JSONException {
