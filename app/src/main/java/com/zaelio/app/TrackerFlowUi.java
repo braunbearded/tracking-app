@@ -288,10 +288,9 @@ public final class TrackerFlowUi {
         scrollView.addView(box);
 
         Map<String, Object> values = initialValues(session, tracker.fields);
-        LinearLayout card = fieldsCard(session, tracker.fields, values, inputs);
-        LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
-        cardLp.bottomMargin = ui.spaceXl();
-        box.addView(card, cardLp);
+        for (FieldDefinition field : tracker.fields) {
+            fieldInputUi.fieldControl(box, field, values, inputs, false, () -> saveSessionFields(session, tracker.fields, inputs));
+        }
 
         Runnable back = () -> {
             saveSessionFields(session, tracker.fields, inputs);
@@ -301,14 +300,6 @@ public final class TrackerFlowUi {
         setBackAction.accept(back);
         root.addView(scrollView, new LinearLayout.LayoutParams(-1, 0, 1));
         root.addView(footerButton("Zurück", back));
-    }
-
-    private LinearLayout fieldsCard(Session session, List<FieldDefinition> fieldDefinitions, Map<String, Object> values, Map<String, View> inputs) {
-        LinearLayout card = ui.compactCard();
-        for (FieldDefinition field : fieldDefinitions) {
-            fieldInputUi.fieldControl(card, field, values, inputs, false, () -> saveSessionFields(session, fieldDefinitions, inputs));
-        }
-        return card;
     }
 
     private Map<String, Object> initialValues(Session session, List<FieldDefinition> fieldDefinitions) {

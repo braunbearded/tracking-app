@@ -6,6 +6,11 @@ android {
     namespace 'com.zaelio.app'
     compileSdk 36
 
+    def signingReady = System.getenv('ANDROID_KEYSTORE_PATH') &&
+            System.getenv('ANDROID_KEYSTORE_PASSWORD') &&
+            System.getenv('ANDROID_KEY_ALIAS') &&
+            System.getenv('ANDROID_KEY_PASSWORD')
+
     testOptions {
         unitTests.includeAndroidResources = true
     }
@@ -16,6 +21,25 @@ android {
         targetSdk 36
         versionCode 1
         versionName '1.0'
+    }
+
+    signingConfigs {
+        release {
+            if (signingReady) {
+                storeFile file(System.getenv('ANDROID_KEYSTORE_PATH'))
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (signingReady) {
+                signingConfig signingConfigs.release
+            }
+        }
     }
 }
 

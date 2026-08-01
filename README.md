@@ -2,6 +2,8 @@
 
 Eine kleine Android-App zum Erstellen eigener Tracker, Starten von Sessions und Speichern von Messwerten lokal in SQLite.
 
+Lizenz: MIT
+
 ## ✨ Features
 
 - Eigene Tracker mit global sortierten Feldern erstellen; neue Elemente scrollen im Editor automatisch in den sichtbaren Bereich
@@ -75,32 +77,95 @@ app/build/outputs/apk/debug/app-debug.apk
 
 ```gradle
 versionCode 2
-versionName '1.1'
+versionName '1.1.0'
 ```
 
-2. Release bauen:
+2. `CHANGELOG.md` aktualisieren.
+3. Tests laufen lassen:
 
 ```bash
-./gradlew assembleRelease
+./gradlew testDebugUnitTest
 ```
 
-Die unsigned Release-APK liegt danach hier:
+4. Tag erstellen und pushen:
 
-```text
-app/build/outputs/apk/release/app-release-unsigned.apk
+```bash
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
-Für eine installierbare/veröffentlichbare Release-APK brauchst du zusätzlich eine Android-Signierung per Keystore. Diese ist aktuell nicht im Repository konfiguriert.
+Die GitHub Action baut daraus eine signierte Release-APK und hängt sie an den GitHub Release.
 
 ## 🔐 Release signieren
 
 Keystore erstellen:
 
 ```bash
-keytool -genkeypair -v -keystore zaelio.jks -alias zaelio -keyalg RSA -keysize 2048 -validity 10000
+keytool -genkeypair -v -keystore zaelio-release.jks -alias zaelio -keyalg RSA -keysize 4096 -validity 10000
 ```
 
-Danach eine Signing Config in `app/build.gradle` ergänzen oder die APK extern mit `apksigner` signieren. Keystore-Dateien und Passwörter niemals committen.
+Keystore als GitHub Secret ablegen:
+
+```bash
+base64 -w0 zaelio-release.jks
+```
+
+Benötigte GitHub Secrets:
+
+```text
+ANDROID_SIGNING_KEY_BASE64
+ANDROID_KEYSTORE_PASSWORD
+ANDROID_KEY_ALIAS
+ANDROID_KEY_PASSWORD
+```
+
+Lokal kann eine signierte APK mit denselben Umgebungsvariablen gebaut werden:
+
+```bash
+ANDROID_KEYSTORE_PATH=/pfad/zu/zaelio-release.jks \
+ANDROID_KEYSTORE_PASSWORD=... \
+ANDROID_KEY_ALIAS=zaelio \
+ANDROID_KEY_PASSWORD=... \
+./gradlew assembleRelease
+```
+
+Ohne diese Variablen erzeugt Gradle weiterhin nur eine unsigned Release-APK.
+
+## 📦 F-Droid
+
+Vor der Einreichung bei F-Droid:
+
+- `LICENSE` und `CHANGELOG.md` aktuell halten.
+- Screenshots unter `docs/screenshots/` ablegen.
+- Pro Release `versionCode` erhöhen und einen Tag wie `v1.1.0` setzen.
+- Prüfen, ob F-Droid die verwendete Kombination aus Android Gradle Plugin und `compileSdk` bauen kann.
+
+Beispiel-Metadaten für `fdroiddata`:
+
+```yaml
+Categories:
+  - Sports & Health
+License: MIT
+AuthorName: Zaelio
+SourceCode: https://github.com/zaelio/zaelio
+IssueTracker: https://github.com/zaelio/zaelio/issues
+Changelog: https://github.com/zaelio/zaelio/releases
+
+RepoType: git
+Repo: https://github.com/zaelio/zaelio.git
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: v1.0.0
+    gradle:
+      - yes
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1
+```
 
 ## 📁 Projektstruktur
 
@@ -117,7 +182,7 @@ app/src/main/java/com/zaelio/app/
 ├── ReorderHelper.java             # Gemeinsames Drag-Reorder-Verhalten
 ├── TrackerFlowUi.java             # Tracker-Editor und Session-Routing
 ├── FieldInputUi.java              # Eingabefelder, Timer und Zahlensteuerung
-├── theme/ThemeStore.java          # Theme, Akzentfarbe, Schriftgröße
+├── theme/ThemeStore.java          # Theme, Akzentfarbe, Schrift- und Feldgröße
 └── ui/
     ├── AppUi.java                 # Gemeinsame UI-Bausteine
     └── SettingsUi.java            # Einstellungen und Über-Screen
@@ -135,7 +200,7 @@ Aktueller Fokus:
 
 - `JsonUtilTest` prüft JSON-Roundtrips und Tracker-Export.
 - `TrackingDatabaseTest` prüft Seed-Daten, Sessions, Records, Previous Values, Löschlogik, Übersichtssortierung und Migration auf Schema v6.
-- `BackupJsonRepositoryTest` prüft kompletten Export/Import sowie Tracker-only Export.
+- `BackupJsonRepositoryTest` prüft alle Backup-Export/Import-Varianten gegen Beispiel-JSON unter `app/src/test/resources/backup-fixtures/`.
 
 Zusätzlicher Build-Check:
 

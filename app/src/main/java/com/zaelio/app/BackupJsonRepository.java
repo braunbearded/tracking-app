@@ -22,7 +22,7 @@ final class BackupJsonRepository {
     }
 
     static String exportSessions(TrackingDatabase helper) throws JSONException {
-        return exportAll(helper);
+        return export(helper, false, true);
     }
 
     private static String export(TrackingDatabase helper, boolean includeTrackers, boolean includeSessions) throws JSONException {
@@ -80,7 +80,7 @@ final class BackupJsonRepository {
     }
 
     static int importSessions(TrackingDatabase helper, String json) throws JSONException {
-        return importData(helper, json, true, true);
+        return importData(helper, json, false, true);
     }
 
     private static int importData(TrackingDatabase helper, String json, boolean includeTrackers, boolean includeSessions) throws JSONException {
@@ -90,6 +90,27 @@ final class BackupJsonRepository {
         Map<Long, Long> fieldIds = new HashMap<>();
         int imported = 0;
         long now = System.currentTimeMillis();
+
+        if (!includeTrackers) {
+            Cursor trackerCursor = db.rawQuery("SELECT id FROM trackers", null);
+            try {
+                while (trackerCursor.moveToNext()) {
+                    long id = trackerCursor.getLong(0);
+                    trackerIds.put(id, id);
+                }
+            } finally {
+                trackerCursor.close();
+            }
+            Cursor fieldCursor = db.rawQuery("SELECT id FROM fields", null);
+            try {
+                while (fieldCursor.moveToNext()) {
+                    long id = fieldCursor.getLong(0);
+                    fieldIds.put(id, id);
+                }
+            } finally {
+                fieldCursor.close();
+            }
+        }
 
         db.beginTransaction();
         try {
@@ -135,6 +156,9 @@ final class BackupJsonRepository {
                     sessionValues.put("createdAt", session.optLong("createdAt", now));
                     sessionValues.put("updatedAt", session.optLong("updatedAt", now));
                     long newSessionId = db.insert("sessions", null, sessionValues);
+                    if (!includeTrackers) {
+                        imported++;
+                    }
 
                     JSONArray records = session.optJSONArray("records");
                     if (records == null) {

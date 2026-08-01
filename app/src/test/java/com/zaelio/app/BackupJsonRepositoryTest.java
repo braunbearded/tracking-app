@@ -4,7 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import androidx.test.core.app.ApplicationProvider;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.json.JSONObject;
@@ -82,5 +86,58 @@ public class BackupJsonRepositoryTest {
 
         assertEquals(1, export.getJSONArray("trackers").length());
         assertEquals(0, export.getJSONArray("sessions").length());
+    }
+
+    @Test
+    public void exportVariantsMatchExampleJson() throws Exception {
+        resetDb();
+        BackupJsonRepository.importAll(db, fixture("backup-fixtures/all.json"));
+        assertJsonEquals(fixture("backup-fixtures/all.json"), BackupJsonRepository.exportAll(db));
+        assertJsonEquals(fixture("backup-fixtures/trackers.json"), BackupJsonRepository.exportTrackers(db));
+        assertJsonEquals(fixture("backup-fixtures/sessions.json"), BackupJsonRepository.exportSessions(db));
+    }
+
+    @Test
+    public void importVariantsLoadExampleJson() throws Exception {
+        resetDb();
+        assertEquals(1, BackupJsonRepository.importAll(db, fixture("backup-fixtures/all.json")));
+        assertEquals(1, db.trackers().size());
+        assertEquals(1, db.sessions().size());
+        assertEquals(1, db.recordCount(db.sessions().get(0).id));
+
+        resetDb();
+        assertEquals(1, BackupJsonRepository.importTrackers(db, fixture("backup-fixtures/trackers.json")));
+        assertEquals(1, db.trackers().size());
+        assertEquals(0, db.sessions().size());
+
+        resetDb();
+        BackupJsonRepository.importTrackers(db, fixture("backup-fixtures/trackers.json"));
+        assertEquals(1, BackupJsonRepository.importSessions(db, fixture("backup-fixtures/sessions.json")));
+        assertEquals(1, db.trackers().size());
+        assertEquals(1, db.sessions().size());
+        assertEquals(1, db.recordCount(db.sessions().get(0).id));
+    }
+
+    private void resetDb() {
+        SQLiteDatabase writable = db.getWritableDatabase();
+        writable.delete("field_records", null, null);
+        writable.delete("sessions", null, null);
+        writable.delete("fields", null, null);
+        writable.delete("trackers", null, null);
+        writable.delete("sqlite_sequence", null, null);
+    }
+
+    private String fixture(String path) throws Exception {
+        InputStream input = getClass().getClassLoader().getResourceAsStream(path);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        for (int read; (read = input.read(buffer)) != -1; ) {
+            output.write(buffer, 0, read);
+        }
+        return output.toString(StandardCharsets.UTF_8.name());
+    }
+
+    private void assertJsonEquals(String expected, String actual) throws Exception {
+        assertEquals(new JSONObject(expected).toString(), new JSONObject(actual).toString());
     }
 }

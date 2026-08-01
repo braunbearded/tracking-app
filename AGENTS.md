@@ -22,7 +22,7 @@ Use the Gradle wrapper from the repository root.
 
 - `./gradlew assembleDebug` builds a debug APK.
 - `./gradlew testDebugUnitTest` runs local JVM/Robolectric tests. Run this before reporting a completed code change unless the user explicitly asks not to.
-- `./gradlew assembleRelease` builds a release APK if signing is configured.
+- `./gradlew assembleRelease` builds a release APK if signing is configured via `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`; otherwise it writes an unsigned APK.
 - `./gradlew clean` removes build outputs.
 
 After code changes, run `./gradlew testDebugUnitTest` and inspect the output for real failures, warnings, or skipped coverage concerns; do not rely only on the final success line. For UI/build-impacting changes, also run `./gradlew assembleDebug`.
@@ -32,6 +32,7 @@ When behavior, commands, schema, project structure, or user-facing features chan
 Keep the standard Gradle wrapper files committed: `gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar`, and `gradle/wrapper/gradle-wrapper.properties`.
 
 The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
+Release APKs are written under `app/build/outputs/apk/release/`; GitHub tag releases use `.github/workflows/release.yml`.
 
 ## Coding Style & Naming Conventions
 Follow the existing Java style:
@@ -64,6 +65,18 @@ Prioritize tests for:
 - Tracker/session JSON import/export and editor autosave behavior.
 - Session record preservation when tracker definitions are edited or imported.
 - Numeric, duration, and string field parsing and field-size behavior.
+
+## Release & F-Droid Guidelines
+For every new public version:
+
+1. Increase `versionCode` and `versionName` in `app/build.gradle`.
+2. Update `CHANGELOG.md` with user-visible changes.
+3. Run `./gradlew testDebugUnitTest` and, for release-impacting changes, `./gradlew assembleDebug` or `./gradlew assembleRelease`.
+4. Commit the version change, then create a matching git tag such as `v1.1.0`.
+5. Push the tag so `.github/workflows/release.yml` builds and attaches the signed APK to a GitHub Release.
+6. For F-Droid, ensure `LICENSE`, README metadata, screenshots, and changelog are current, then update/submit the `fdroiddata` metadata for the new tag/versionCode.
+
+Before F-Droid submission or dependency/toolchain upgrades, verify F-Droid buildserver support for the current Android Gradle Plugin and `compileSdk`. Keep the app free of proprietary services, trackers, ads, Firebase, and Google Play Services. Do not commit signing keys; GitHub release signing must use repository secrets.
 
 ## Commit & Pull Request Guidelines
 Recent history uses short, imperative commit messages. Keep commits focused and descriptive.

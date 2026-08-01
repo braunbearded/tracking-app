@@ -1,0 +1,38 @@
+{
+  "type": "zaelio-backup",
+  "version": 1,
+  "trackers": [
+    {
+      "id": 1,
+      "name": "Beispiel Tracker",
+      "description": "Export/Import Beispiel",
+      "createdAt": 1000,
+      "updatedAt": 2000,
+      "fields": [
+        {
+          "id": 1,
+          "key": "reps",
+          "label": "Wiederholungen",
+          "type": "int",
+          "order": 0,
+          "defaultValue": "8",
+          "increment": 1,
+          "required": false,
+          "prefillFromPrevious": true
+        },
+        {
+          "id": 2,
+          "key": "note",
+          "label": "Notiz",
+          "type": "string",
+          "order": 1,
+          "defaultValue": "",
+          "increment": 1,
+          "required": false,
+          "prefillFromPrevious": false
+        }
+      ]
+    }
+  ],
+  "sessions": []
+}

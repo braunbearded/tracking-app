@@ -1,0 +1,21 @@
+{
+  "type": "zaelio-backup",
+  "version": 1,
+  "trackers": [],
+  "sessions": [
+    {
+      "id": 1,
+      "trackerId": 1,
+      "createdAt": 3000,
+      "updatedAt": 4000,
+      "records": [
+        {
+          "fieldId": 1,
+          "values": {"reps": 12},
+          "createdAt": 5000,
+          "updatedAt": 6000
+        }
+      ]
+    }
+  ]
+}

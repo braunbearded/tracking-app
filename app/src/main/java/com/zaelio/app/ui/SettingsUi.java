@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.net.Uri;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -107,8 +108,41 @@ public final class SettingsUi {
     }
 
     private View fieldSizeCard() {
-        return choiceCard("Feldgröße", theme.fieldSizeCount(), theme.fieldSizeIndex(), 9200,
+        LinearLayout card = (LinearLayout) choiceCard("Feldgröße", theme.fieldSizeCount(), theme.fieldSizeIndex(), 9200,
                 theme::fieldSizeName, theme::setFieldSizeIndex);
+        card.addView(fieldSizePreview());
+        return card;
+    }
+
+    private View fieldSizePreview() {
+        LinearLayout preview = new LinearLayout(activity);
+        preview.setOrientation(LinearLayout.VERTICAL);
+        preview.setPadding(0, ui.spaceS(), 0, 0);
+
+        String size = theme.fieldSize();
+        int inputHeight = ui.px("large".equals(size) ? 64 : "compact".equals(size) ? 48 : 56);
+        int textLines = "large".equals(size) ? 3 : "compact".equals(size) ? 1 : 2;
+
+        TextView number = previewBox("Zahlfeld: 12", inputHeight);
+        preview.addView(number, new LinearLayout.LayoutParams(-1, inputHeight));
+
+        TextView text = previewBox("Textfeld\n" + (textLines > 1 ? "zweite Zeile\n" : "") + (textLines > 2 ? "dritte Zeile" : ""), -2);
+        text.setMinLines(textLines);
+        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(-1, -2);
+        textLp.topMargin = ui.spaceS();
+        preview.addView(text, textLp);
+        return preview;
+    }
+
+    private TextView previewBox(String text, int height) {
+        TextView view = ui.bodyText(text);
+        view.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+        view.setPadding(ui.spaceM(), 0, ui.spaceM(), 0);
+        view.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
+        if (height > 0) {
+            view.setMinHeight(height);
+        }
+        return view;
     }
 
     private View choiceCard(String title, int count, int selected, int idBase, IntFunction<String> labelAt, IntConsumer selectAt) {
