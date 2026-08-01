@@ -87,14 +87,27 @@ versionName '1.1.0'
 ./gradlew testDebugUnitTest
 ```
 
-4. Tag erstellen und pushen:
+4. Änderungen committen, Tag erstellen und pushen:
 
 ```bash
+git status
+git add app/build.gradle CHANGELOG.md README.md AGENTS.md
+git commit -m "Prepare release 1.1.0"
 git tag v1.1.0
+git push origin main
 git push origin v1.1.0
 ```
 
-Die GitHub Action baut daraus eine signierte Release-APK und hängt sie an den GitHub Release.
+Wenn der Branch nicht `main` heißt, ersetze `main` durch den aktuellen Branch. Die GitHub Action baut aus dem Tag eine signierte Release-APK und hängt sie an den GitHub Release.
+
+Tag prüfen oder bei Fehler löschen:
+
+```bash
+git tag
+git show v1.1.0
+git tag -d v1.1.0
+git push origin :refs/tags/v1.1.0
+```
 
 ## 🔐 Release signieren
 

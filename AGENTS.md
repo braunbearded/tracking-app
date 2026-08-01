@@ -72,8 +72,9 @@ For every new public version:
 1. Increase `versionCode` and `versionName` in `app/build.gradle`.
 2. Update `CHANGELOG.md` with user-visible changes.
 3. Run `./gradlew testDebugUnitTest` and, for release-impacting changes, `./gradlew assembleDebug` or `./gradlew assembleRelease`.
-4. Commit the version change, then create a matching git tag such as `v1.1.0`.
-5. Push the tag so `.github/workflows/release.yml` builds and attaches the signed APK to a GitHub Release.
+4. Commit the version change, then create a matching git tag such as `v1.1.0`:
+   `git tag v1.1.0`.
+5. Push the branch and tag: `git push origin main` and `git push origin v1.1.0`; the tag triggers `.github/workflows/release.yml` to build and attach the signed APK to a GitHub Release. If the branch is not `main`, push the current release branch instead.
 6. For F-Droid, ensure `LICENSE`, README metadata, screenshots, and changelog are current, then update/submit the `fdroiddata` metadata for the new tag/versionCode.
 
 Before F-Droid submission or dependency/toolchain upgrades, verify F-Droid buildserver support for the current Android Gradle Plugin and `compileSdk`. Keep the app free of proprietary services, trackers, ads, Firebase, and Google Play Services. Do not commit signing keys; GitHub release signing must use repository secrets.
