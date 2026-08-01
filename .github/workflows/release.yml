@@ -38,7 +38,7 @@ jobs:
       - name: Publish GitHub Release
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/apk/release/zaelio.apk \
             --title "$GITHUB_REF_NAME" \
             --notes-file CHANGELOG.md
         env:

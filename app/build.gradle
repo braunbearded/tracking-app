@@ -41,6 +41,43 @@ android {
             }
         }
     }
+
+}
+
+tasks.register('copyDebugApk') {
+    doLast {
+        copy {
+            from "$buildDir/outputs/apk/debug/app-debug.apk"
+            into "$buildDir/outputs/apk/debug"
+            rename { 'zaelio-debug.apk' }
+        }
+    }
+}
+
+tasks.register('copyReleaseApk') {
+    doLast {
+        def releaseDir = file("$buildDir/outputs/apk/release")
+        def apk = file("$releaseDir/app-release.apk")
+        if (!apk.exists()) {
+            apk = file("$releaseDir/app-release-unsigned.apk")
+        }
+        if (apk.exists()) {
+            copy {
+                from apk
+                into releaseDir
+                rename { 'zaelio.apk' }
+            }
+        }
+    }
+}
+
+afterEvaluate {
+    tasks.named('assembleDebug') {
+        finalizedBy 'copyDebugApk'
+    }
+    tasks.named('assembleRelease') {
+        finalizedBy 'copyReleaseApk'
+    }
 }
 
 dependencies {

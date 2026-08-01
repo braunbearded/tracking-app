@@ -68,7 +68,7 @@ export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
 Die APK liegt danach hier:
 
 ```text
-app/build/outputs/apk/debug/app-debug.apk
+app/build/outputs/apk/debug/zaelio-debug.apk
 ```
 
 ## 🚀 Release-Version erstellen
@@ -142,7 +142,7 @@ ANDROID_KEY_PASSWORD=... \
 ./gradlew assembleRelease
 ```
 
-Ohne diese Variablen erzeugt Gradle weiterhin nur eine unsigned Release-APK.
+Ohne diese Variablen erzeugt Gradle weiterhin nur eine unsigned Release-APK. Release-Builds heißen `app/build/outputs/apk/release/zaelio.apk`, Debug-Builds `app/build/outputs/apk/debug/zaelio-debug.apk`.
 
 ## 📦 F-Droid
 

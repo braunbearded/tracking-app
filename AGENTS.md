@@ -31,8 +31,8 @@ When behavior, commands, schema, project structure, or user-facing features chan
 
 Keep the standard Gradle wrapper files committed: `gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar`, and `gradle/wrapper/gradle-wrapper.properties`.
 
-The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
-Release APKs are written under `app/build/outputs/apk/release/`; GitHub tag releases use `.github/workflows/release.yml`.
+The debug APK is written to `app/build/outputs/apk/debug/zaelio-debug.apk`.
+Release APKs are written to `app/build/outputs/apk/release/zaelio.apk`; GitHub tag releases use `.github/workflows/release.yml`.
 
 ## Coding Style & Naming Conventions
 Follow the existing Java style:
