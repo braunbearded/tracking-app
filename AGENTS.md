@@ -80,6 +80,8 @@ For every new public version:
 Before F-Droid submission or dependency/toolchain upgrades, verify F-Droid buildserver support for the current Android Gradle Plugin and `compileSdk`. Keep the app free of proprietary services, trackers, ads, Firebase, and Google Play Services. Do not commit signing keys; GitHub release signing must use repository secrets.
 
 ## Commit & Pull Request Guidelines
+Do not create git commits unless the user explicitly asks for a commit. The only routine exception is an explicitly requested release/tagging flow, where the release commit is part of the requested process.
+
 Recent history uses short, imperative commit messages. Keep commits focused and descriptive.
 
 Pull requests should include:
