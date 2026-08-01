@@ -18,7 +18,7 @@ Lizenz: MIT
 
 ## 📱 Screenshots
 
-Noch keine Screenshots im Repository. Lege sie z. B. unter `docs/screenshots/` ab und verlinke sie hier.
+![Session screen](docs/screenshots/session.png)
 
 ## 🧰 Benötigte Abhängigkeiten
 
@@ -149,7 +149,7 @@ Ohne diese Variablen erzeugt Gradle weiterhin nur eine unsigned Release-APK. Rel
 Vor der Einreichung bei F-Droid:
 
 - `LICENSE` und `CHANGELOG.md` aktuell halten.
-- Screenshots unter `docs/screenshots/` ablegen.
+- Screenshots unter `docs/screenshots/` und für F-Droid/Fastlane unter `fastlane/metadata/android/en-US/images/phoneScreenshots/` ablegen.
 - Pro Release `versionCode` erhöhen und einen Tag wie `v1.1.0` setzen.
 - Prüfen, ob F-Droid die verwendete Kombination aus Android Gradle Plugin und `compileSdk` bauen kann.
 
@@ -160,12 +160,12 @@ Categories:
   - Sports & Health
 License: MIT
 AuthorName: Zaelio
-SourceCode: https://github.com/zaelio/zaelio
-IssueTracker: https://github.com/zaelio/zaelio/issues
-Changelog: https://github.com/zaelio/zaelio/releases
+SourceCode: https://github.com/braunbearded/zaelio
+IssueTracker: https://github.com/braunbearded/zaelio/issues
+Changelog: https://github.com/braunbearded/zaelio/releases
 
 RepoType: git
-Repo: https://github.com/zaelio/zaelio.git
+Repo: https://github.com/braunbearded/zaelio.git
 
 Builds:
   - versionName: 1.0.0

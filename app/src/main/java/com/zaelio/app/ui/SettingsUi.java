@@ -60,7 +60,7 @@ public final class SettingsUi {
         ui.addSectionHeader(appCard, "Zaelio", "Offline Tracker ohne Google-Dienste");
         box.addView(appCard, cardLp());
 
-        box.addView(aboutInfoCard("Quellcode", "github.com/zaelio/zaelio", true));
+        box.addView(aboutInfoCard("Quellcode", "github.com/braunbearded/zaelio", true));
         box.addView(aboutInfoCard("Version", versionName, false));
         box.addView(aboutInfoCard("Build", String.valueOf(versionCode), false));
     }
@@ -81,7 +81,7 @@ public final class SettingsUi {
         if (clickable) {
             row.setClickable(true);
             row.setFocusable(true);
-            row.setOnClickListener(v -> openUrl("https://github.com/zaelio/zaelio"));
+            row.setOnClickListener(v -> openUrl("https://github.com/braunbearded/zaelio"));
             row.setBackground(ui.makeRoundedCard(theme.surfaceAltColor(), theme.borderColor()));
         }
 

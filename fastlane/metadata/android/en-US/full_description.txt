@@ -1,0 +1,10 @@
+Zaelio is an offline Android app for creating custom trackers, recording sessions, and storing measurements locally in SQLite.
+
+Features:
+
+* Create custom trackers with number, text, and timer fields
+* Record and continue sessions
+* Sort trackers and sessions locally
+* Import and export trackers, sessions, or full JSON backups
+* Light/dark theme, accent color, font size, and field size settings
+* No Google Play Services, Firebase, ads, tracking, cloud sync, or account required
