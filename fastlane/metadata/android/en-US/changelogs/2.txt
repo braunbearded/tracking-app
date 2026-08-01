@@ -1,0 +1,3 @@
+F-Droid/Fastlane metadata and screenshot added.
+Source links updated to github.com/braunbearded/zaelio.
+Gradle wrapper checksum added for verifiable builds.
