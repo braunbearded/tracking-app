@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Gradle-Konfiguration auf die neue Property-Assignment-Syntax mit `=` aktualisiert.
+
 ## 1.0.1
 
 - F-Droid/Fastlane-Metadaten und Screenshot für die Paketierung ergänzt.
