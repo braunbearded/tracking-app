@@ -1,0 +1,118 @@
+# F-Droid Integration
+
+## Ziel
+
+Zaelio soll über `fdroiddata` in das offizielle F-Droid-Repository aufgenommen werden. Der RFP ist bereits angelegt:
+
+- https://gitlab.com/fdroid/rfp/-/work_items/4205
+
+## Voraussetzungen
+
+- GitLab-Account
+- Fork von https://gitlab.com/fdroid/fdroiddata
+- Python-Umgebung mit `fdroidserver`
+- Android SDK/JDK passend zum Projekt
+
+In einem Arch-Container minimal. Nimm im Container am einfachsten ein SDK im Home-Verzeichnis; `/opt/android-sdk` braucht sonst Root-/Gruppenrechte:
+
+```bash
+pacman -Syu --needed git jdk-openjdk python python-pip unzip wget
+```
+
+Android SDK Command Line Tools installieren und die benötigte Plattform/Build-Tools nachziehen:
+
+```bash
+mkdir -p "$HOME/Android/Sdk/cmdline-tools"
+wget -O /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
+unzip -q /tmp/cmdline-tools.zip -d /tmp/android-cmdline-tools
+mv /tmp/android-cmdline-tools/cmdline-tools "$HOME/Android/Sdk/cmdline-tools/latest"
+export ANDROID_HOME="$HOME/Android/Sdk"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+yes | sdkmanager --licenses
+sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+```
+
+`fdroidserver` am besten in einem bestehenden oder externen Virtualenv installieren, nicht global und nicht im Zaelio-Repo:
+
+```bash
+python3 -m venv venv
+. venv/bin/activate
+pip install git+https://gitlab.com/fdroid/fdroidserver.git
+fdroid --version
+```
+
+## Metadata-Datei
+
+Die aktuelle Metadata-Vorlage liegt hier im Repo:
+
+```text
+docs/fdroiddata/com.zaelio.app.yml
+```
+
+Im `fdroiddata`-Fork nach folgendem Ziel kopieren:
+
+```text
+metadata/com.zaelio.app.yml
+```
+
+Bei jedem Release die Version in der Metadata-Datei mit aktualisieren:
+
+- `Builds[].versionName`
+- `Builds[].versionCode`
+- `Builds[].commit`
+- `CurrentVersion`
+- `CurrentVersionCode`
+
+## Lokal validieren
+
+Im `fdroiddata`-Checkout mit aktiviertem Virtualenv vorher den Android-SDK-Pfad setzen; `fdroid build` baut in einem temporären Checkout und sieht das Zaelio-`local.properties` nicht:
+
+```bash
+export ANDROID_HOME="$HOME/Android/Sdk"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+fdroid readmeta
+fdroid rewritemeta com.zaelio.app
+fdroid lint com.zaelio.app
+fdroid build -v -l com.zaelio.app
+```
+
+Wenn der Build lokal scheitert, zuerst prüfen:
+
+- unterstützt F-Droid-CI die verwendeten Versionen von Android Gradle Plugin, Gradle und `compileSdk`?
+- muss die Build-Recipe um `srclibs`, `prebuild`, `gradleprops` oder `sudo` ergänzt werden?
+- sind alle Dependencies aus erlaubten Maven-Repositories und FLOSS-lizenziert?
+
+## Merge Request
+
+```bash
+git checkout -b com.zaelio.app
+cp /path/to/zaelio/docs/fdroiddata/com.zaelio.app.yml metadata/com.zaelio.app.yml
+git add metadata/com.zaelio.app.yml
+git commit -m "Add Zaelio"
+git push origin com.zaelio.app
+```
+
+Danach einen Merge Request gegen `fdroid/fdroiddata` öffnen und im RFP kommentieren:
+
+```text
+Metadata MR submitted: <MR-Link>
+```
+
+## F-Droid-MR-Checklist
+
+- `make-summary-translatable.py`: kein `Summary:` in `metadata/com.zaelio.app.yml` eintragen; Summary/Description kommen aus dem upstream Fastlane-Verzeichnis `fastlane/metadata/android/en-US/`.
+- Inclusion Criteria: keine proprietären Dienste, kein Tracking, MIT-Lizenz, Quellcode und Dependencies öffentlich.
+- App-Autor: `braunbearded` ist im Metadata-File gesetzt; wenn du den MR selbst öffnest, bist du der Autor.
+- Issues referenzieren: im MR den RFP `https://gitlab.com/fdroid/rfp/-/work_items/4205` verlinken.
+- Build: lokal mit `fdroid build -v -l com.zaelio.app` prüfen.
+- Issue Tracker/Kontakt: GitHub Issues sind in Metadata und README verlinkt.
+- Upstream-Metadaten: `fastlane/metadata/android/en-US/` enthält Titel, Kurzbeschreibung, Beschreibung, Changelogs und Screenshot.
+- Releases/Autoupdate: Releases sind als `vX.Y.Z` getaggt; `UpdateCheckMode: Tags` ist gesetzt.
+- Externe Repos/Submodules: keine.
+- Native Code/Multiple APKs: keine native Codebasis, daher nicht relevant.
+- Reproducible Builds: noch nicht aktiviert; im MR entweder offen lassen oder explizit `No, I don't want this.` eintragen.
+
+## Repomaker
+
+Repomaker ist für die offizielle Aufnahme nicht nötig. Es ist nur sinnvoll, wenn zusätzlich ein eigenes F-Droid-Repository für Zaelio angeboten werden soll.

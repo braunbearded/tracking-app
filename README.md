@@ -4,6 +4,8 @@ Eine kleine Android-App zum Erstellen eigener Tracker, Starten von Sessions und 
 
 Lizenz: MIT
 
+Kontakt/Bugs: https://github.com/braunbearded/zaelio/issues
+
 ## ✨ Features
 
 - Eigene Tracker mit global sortierten Feldern erstellen; neue Elemente scrollen im Editor automatisch in den sichtbaren Bereich
@@ -73,32 +75,11 @@ app/build/outputs/apk/debug/zaelio-debug.apk
 
 ## 🚀 Release-Version erstellen
 
-1. Version in `app/build.gradle` erhöhen:
-
-```gradle
-versionCode 2
-versionName '1.1.0'
-```
-
-2. `CHANGELOG.md` aktualisieren.
-3. Tests laufen lassen:
-
 ```bash
-./gradlew testDebugUnitTest
+./scripts/release.sh
 ```
 
-4. Änderungen committen, Tag erstellen und pushen:
-
-```bash
-git status
-git add app/build.gradle CHANGELOG.md README.md AGENTS.md
-git commit -m "Prepare release 1.1.0"
-git tag v1.1.0
-git push origin main
-git push origin v1.1.0
-```
-
-Wenn der Branch nicht `main` heißt, ersetze `main` durch den aktuellen Branch. Die GitHub Action baut aus dem Tag eine signierte Release-APK und hängt sie an den GitHub Release.
+Das Script aktualisiert Version, Changelog und F-Droid-Metadaten, kann Tests/Release-Build ausführen und Commit/Tag erstellen. Die GitHub Action baut aus dem Tag eine signierte Release-APK und hängt sie an den GitHub Release.
 
 Tag prüfen oder bei Fehler löschen:
 
@@ -148,37 +129,12 @@ Ohne diese Variablen erzeugt Gradle weiterhin nur eine unsigned Release-APK. Rel
 
 Vor der Einreichung bei F-Droid:
 
-- `LICENSE` und `CHANGELOG.md` aktuell halten.
-- Screenshots unter `docs/screenshots/` und für F-Droid/Fastlane unter `fastlane/metadata/android/en-US/images/phoneScreenshots/` ablegen.
+- `LICENSE`, `CHANGELOG.md`, Fastlane-Metadaten und Screenshots aktuell halten.
 - Pro Release `versionCode` erhöhen und einen Tag wie `v1.1.0` setzen.
+- `docs/fdroiddata/com.zaelio.app.yml` für den neuen Tag/versionCode aktualisieren.
 - Prüfen, ob F-Droid die verwendete Kombination aus Android Gradle Plugin und `compileSdk` bauen kann.
 
-Beispiel-Metadaten für `fdroiddata`:
-
-```yaml
-Categories:
-  - Sports & Health
-License: MIT
-AuthorName: Zaelio
-SourceCode: https://github.com/braunbearded/zaelio
-IssueTracker: https://github.com/braunbearded/zaelio/issues
-Changelog: https://github.com/braunbearded/zaelio/releases
-
-RepoType: git
-Repo: https://github.com/braunbearded/zaelio.git
-
-Builds:
-  - versionName: 1.0.1
-    versionCode: 2
-    commit: v1.0.1
-    gradle:
-      - yes
-
-AutoUpdateMode: Version v%v
-UpdateCheckMode: Tags
-CurrentVersion: 1.0.1
-CurrentVersionCode: 2
-```
+Details: `docs/fdroid.md`
 
 ## 📁 Projektstruktur
 
