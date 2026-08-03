@@ -26,7 +26,7 @@ Kontakt/Bugs: https://github.com/braunbearded/zaelio/issues
 
 Zum Bauen brauchst du lokal:
 
-- JDK 17 oder neuer
+- JDK 21 für Release-/F-Droid-Builds; JDK 17+ reicht für lokale Entwicklung
 - Android SDK mit Platform `36`
 - Android Build Tools passend zum SDK
 - Gradle Wrapper aus diesem Repository (`./gradlew`)
@@ -72,6 +72,8 @@ Die APK liegt danach hier:
 ```text
 app/build/outputs/apk/debug/zaelio-debug.apk
 ```
+
+Release-Builds sollten mit JDK 21 laufen, damit GitHub-Release und F-Droid-Buildserver dieselbe Java-Version nutzen.
 
 ## 🚀 Release-Version erstellen
 
@@ -133,6 +135,7 @@ Vor der Einreichung bei F-Droid:
 - Pro Release `versionCode` erhöhen und einen Tag wie `v1.1.0` setzen.
 - `docs/fdroiddata/com.zaelio.app.yml` für die neue Version aktualisieren: voller Commit-Hash, `Binaries`, `AllowedAPKSigningKeys`.
 - Prüfen, ob F-Droid die verwendete Kombination aus Android Gradle Plugin und `compileSdk` bauen kann.
+- Nach dem GitHub-Release lokal prüfen: `FDROIDDATA_DIR=/path/to/fdroiddata ./scripts/check-fdroid-reproducible.sh`
 
 Details: `docs/fdroid.md`
 

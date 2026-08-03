@@ -11,12 +11,12 @@ Zaelio soll über `fdroiddata` in das offizielle F-Droid-Repository aufgenommen 
 - GitLab-Account
 - Fork von https://gitlab.com/fdroid/fdroiddata
 - Python-Umgebung mit `fdroidserver`
-- Android SDK/JDK passend zum Projekt
+- Android SDK und JDK 21 passend zum F-Droid-Buildserver
 
 In einem Arch-Container minimal. Nimm im Container am einfachsten ein SDK im Home-Verzeichnis; `/opt/android-sdk` braucht sonst Root-/Gruppenrechte:
 
 ```bash
-pacman -Syu --needed git jdk-openjdk python python-pip unzip wget
+pacman -Syu --needed git jdk21-openjdk python python-pip unzip wget
 ```
 
 Android SDK Command Line Tools installieren und die benötigte Plattform/Build-Tools nachziehen:
@@ -74,7 +74,15 @@ apksigner verify --print-certs zaelio.apk | grep SHA-256
 
 ## Lokal validieren
 
-Im `fdroiddata`-Checkout mit aktiviertem Virtualenv vorher den Android-SDK-Pfad setzen; `fdroid build` baut in einem temporären Checkout und sieht das Zaelio-`local.properties` nicht:
+Nach dem GitHub-Release kann der F-Droid-Build inklusive Reproducible-Build-Vergleich lokal geprüft werden:
+
+```bash
+FDROIDDATA_DIR=/path/to/fdroiddata ./scripts/check-fdroid-reproducible.sh
+```
+
+Vor dem Tag-Push geht dieser Vergleich nicht vollständig, weil die `Binaries`-Referenz-APK auf GitHub noch nicht existiert.
+
+Manuell im `fdroiddata`-Checkout mit aktiviertem Virtualenv vorher den Android-SDK-Pfad setzen; `fdroid build` baut in einem temporären Checkout und sieht das Zaelio-`local.properties` nicht:
 
 ```bash
 export ANDROID_HOME="$HOME/Android/Sdk"
@@ -124,7 +132,7 @@ Metadata MR submitted: <MR-Link>
 - Releases/Autoupdate: Releases sind als `vX.Y.Z` getaggt; `UpdateCheckMode: Tags` ist gesetzt.
 - Externe Repos/Submodules: keine.
 - Native Code/Multiple APKs: keine native Codebasis, daher nicht relevant.
-- Reproducible Builds: `Binaries` und `AllowedAPKSigningKeys` sind gesetzt; Release-APK muss mit demselben Signing-Key signiert bleiben.
+- Reproducible Builds: `Binaries` und `AllowedAPKSigningKeys` sind gesetzt; Release-APK muss mit JDK 21 gebaut und mit demselben Signing-Key signiert bleiben.
 
 ## Repomaker
 

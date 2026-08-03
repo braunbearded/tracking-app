@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - name: Decode keystore
         run: echo "$ANDROID_SIGNING_KEY_BASE64" | base64 -d > release.jks
