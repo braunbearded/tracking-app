@@ -36,7 +36,7 @@ verify_signing_key() {
     apksigner=$(command -v apksigner || find "$sdk/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n1)
     [[ -n $apksigner ]] || { echo "apksigner not found" >&2; exit 1; }
 
-    expected=$(awk '/AllowedAPKSigningKeys:/{getline; gsub(/^[ -]*/, ""); print; exit}' docs/fdroiddata/com.zaelio.app.yml)
+    expected=$(awk '/AllowedAPKSigningKeys:/ { sub(/.*AllowedAPKSigningKeys:[[:space:]]*/, ""); if ($0 != "") { print; exit } getline; gsub(/^[[:space:]-]*/, ""); print; exit }' docs/fdroiddata/com.zaelio.app.yml)
     actual=$("$apksigner" verify --print-certs "$apk" | sed -n 's/.*SHA-256 digest: //p')
     [[ $actual == "$expected" ]] || { echo "Signing key mismatch: $actual != $expected" >&2; exit 1; }
     echo "APK signing certificate SHA-256: $actual"

@@ -39,7 +39,7 @@ jobs:
         run: |
           apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n1)
           signing_sha256=$("$apksigner" verify --print-certs app/build/outputs/apk/release/zaelio.apk | sed -n 's/.*SHA-256 digest: //p')
-          expected_sha256=$(awk '/AllowedAPKSigningKeys:/{getline; gsub(/^[ -]*/, ""); print; exit}' docs/fdroiddata/com.zaelio.app.yml)
+          expected_sha256=$(awk '/AllowedAPKSigningKeys:/ { sub(/.*AllowedAPKSigningKeys:[[:space:]]*/, ""); if ($0 != "") { print; exit } getline; gsub(/^[[:space:]-]*/, ""); print; exit }' docs/fdroiddata/com.zaelio.app.yml)
           test "$signing_sha256" = "$expected_sha256"
           {
             cat CHANGELOG.md
