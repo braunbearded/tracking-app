@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.5
+
+- Removed Android Gradle dependency metadata from release APKs so F-Droid accepts reproducible-build binaries.
+
 ## 1.0.4
 
 - Release builds now use JDK 21 to match the F-Droid build server. 
