@@ -61,15 +61,6 @@ s = re.sub(r"versionCode = \d+", f"versionCode = {code}", s, count=1)
 s = re.sub(r"versionName = '[^']+'", f"versionName = '{version}'", s, count=1)
 p.write_text(s)
 
-p = Path('docs/fdroiddata/com.zaelio.app.yml')
-s = p.read_text()
-s = re.sub(r"versionName: [^\n]+", f"versionName: {version}", s, count=1)
-s = re.sub(r"versionCode: \d+", f"versionCode: {code}", s, count=1)
-s = re.sub(r"commit: v[^\n]+", f"commit: v{version}", s, count=1)
-s = re.sub(r"CurrentVersion: [^\n]+", f"CurrentVersion: {version}", s, count=1)
-s = re.sub(r"CurrentVersionCode: \d+", f"CurrentVersionCode: {code}", s, count=1)
-p.write_text(s)
-
 p = Path('CHANGELOG.md')
 s = p.read_text()
 entry = f"## {version}\n\n" + ''.join(f"- {e}\n" for e in entries) + "\n"
@@ -86,9 +77,27 @@ if yesno "Build release APK" "y"; then
 fi
 
 if yesno "Commit and tag v$version_name" "y"; then
-    git add app/build.gradle CHANGELOG.md docs/fdroiddata/com.zaelio.app.yml
+    git add app/build.gradle CHANGELOG.md
     git commit -m "Release $version_name"
+    release_commit=$(git rev-parse HEAD)
     git tag "v$version_name"
+
+    python3 - "$version_name" "$version_code" "$release_commit" <<'PY'
+from pathlib import Path
+import re, sys
+version, code, commit = sys.argv[1:]
+
+p = Path('docs/fdroiddata/com.zaelio.app.yml')
+s = p.read_text()
+s = re.sub(r"versionName: [^\n]+", f"versionName: {version}", s, count=1)
+s = re.sub(r"versionCode: \d+", f"versionCode: {code}", s, count=1)
+s = re.sub(r"commit: [^\n]+", f"commit: {commit}", s, count=1)
+s = re.sub(r"CurrentVersion: [^\n]+", f"CurrentVersion: {version}", s, count=1)
+s = re.sub(r"CurrentVersionCode: \d+", f"CurrentVersionCode: {code}", s, count=1)
+p.write_text(s)
+PY
+    git add docs/fdroiddata/com.zaelio.app.yml
+    git commit -m "Update F-Droid metadata for $version_name"
 fi
 
 if yesno "Push branch and tag now" "n"; then

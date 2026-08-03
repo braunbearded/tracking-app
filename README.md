@@ -79,7 +79,7 @@ app/build/outputs/apk/debug/zaelio-debug.apk
 ./scripts/release.sh
 ```
 
-Das Script aktualisiert Version, Changelog und F-Droid-Metadaten, kann Tests/Release-Build ausführen und Commit/Tag erstellen. Die GitHub Action baut aus dem Tag eine signierte Release-APK und hängt sie an den GitHub Release.
+Das Script aktualisiert Version und Changelog, kann Tests/Release-Build ausführen und Commit/Tag erstellen. Danach schreibt es die F-Droid-Metadaten mit dem vollen Release-Commit-Hash in einen zweiten Commit. Die GitHub Action baut aus dem Tag eine signierte Release-APK und hängt sie an den GitHub Release.
 
 Tag prüfen oder bei Fehler löschen:
 
@@ -131,7 +131,7 @@ Vor der Einreichung bei F-Droid:
 
 - `LICENSE`, `CHANGELOG.md`, Fastlane-Metadaten und Screenshots aktuell halten.
 - Pro Release `versionCode` erhöhen und einen Tag wie `v1.1.0` setzen.
-- `docs/fdroiddata/com.zaelio.app.yml` für den neuen Tag/versionCode aktualisieren.
+- `docs/fdroiddata/com.zaelio.app.yml` für die neue Version aktualisieren: voller Commit-Hash, `Binaries`, `AllowedAPKSigningKeys`.
 - Prüfen, ob F-Droid die verwendete Kombination aus Android Gradle Plugin und `compileSdk` bauen kann.
 
 Details: `docs/fdroid.md`

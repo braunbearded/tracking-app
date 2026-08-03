@@ -67,7 +67,7 @@ Prioritize tests for:
 - Numeric, duration, and string field parsing and field-size behavior.
 
 ## Release & F-Droid Guidelines
-For every new public version, prefer `scripts/release.sh`; it prompts for version, changelog, checks, commit/tag, push, and updates F-Droid metadata. Manual flow:
+For every new public version, prefer `scripts/release.sh`; it prompts for version, changelog, checks, commit/tag, push, and updates F-Droid metadata in a second commit with the full release commit hash. Manual flow:
 
 1. Increase `versionCode` and `versionName` in `app/build.gradle`.
 2. Update `CHANGELOG.md` with user-visible changes.
@@ -75,7 +75,7 @@ For every new public version, prefer `scripts/release.sh`; it prompts for versio
 4. Commit the version change, then create a matching git tag such as `v1.1.0`:
    `git tag v1.1.0`.
 5. Push the branch and tag: `git push origin main` and `git push origin v1.1.0`; the tag triggers `.github/workflows/release.yml` to build and attach the signed APK to a GitHub Release. If the branch is not `main`, push the current release branch instead.
-6. For F-Droid, ensure `LICENSE`, README metadata, `fastlane/metadata/android/en-US/`, screenshots, and changelog are current, and always update `docs/fdroiddata/com.zaelio.app.yml` plus submitted `fdroiddata` metadata for the new tag/versionCode.
+6. For F-Droid, ensure `LICENSE`, README metadata, `fastlane/metadata/android/en-US/`, screenshots, and changelog are current, and always update `docs/fdroiddata/com.zaelio.app.yml` plus submitted `fdroiddata` metadata for the new versionCode with a full commit hash, `Binaries`, and `AllowedAPKSigningKeys`.
 
 Before F-Droid submission or dependency/toolchain upgrades, verify F-Droid buildserver support for the current Android Gradle Plugin and `compileSdk`. Keep the app free of proprietary services, trackers, ads, Firebase, and Google Play Services. Do not commit signing keys; GitHub release signing must use repository secrets.
 

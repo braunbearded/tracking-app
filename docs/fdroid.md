@@ -60,9 +60,17 @@ Bei jedem Release die Version in der Metadata-Datei mit aktualisieren:
 
 - `Builds[].versionName`
 - `Builds[].versionCode`
-- `Builds[].commit`
+- `Builds[].commit` als vollen Commit-Hash, nicht als Tag/Branch
 - `CurrentVersion`
 - `CurrentVersionCode`
+- `Binaries`, falls sich der Release-APK-Name oder die URL ändert
+- `AllowedAPKSigningKeys`, falls ein neuer Release-Key verwendet wird
+
+Den Signing-Key-Fingerprint aus der veröffentlichten APK ermitteln:
+
+```bash
+apksigner verify --print-certs zaelio.apk | grep SHA-256
+```
 
 ## Lokal validieren
 
@@ -93,6 +101,10 @@ git commit -m "Add Zaelio"
 git push origin com.zaelio.app
 ```
 
+Nach einem Release erzeugt `scripts/release.sh` absichtlich einen zweiten Commit
+für `docs/fdroiddata/com.zaelio.app.yml`: erst nach dem Release-Commit ist der
+volle Commit-Hash für F-Droid bekannt.
+
 Danach einen Merge Request gegen `fdroid/fdroiddata` öffnen und im RFP kommentieren:
 
 ```text
@@ -111,7 +123,7 @@ Metadata MR submitted: <MR-Link>
 - Releases/Autoupdate: Releases sind als `vX.Y.Z` getaggt; `UpdateCheckMode: Tags` ist gesetzt.
 - Externe Repos/Submodules: keine.
 - Native Code/Multiple APKs: keine native Codebasis, daher nicht relevant.
-- Reproducible Builds: noch nicht aktiviert; im MR entweder offen lassen oder explizit `No, I don't want this.` eintragen.
+- Reproducible Builds: `Binaries` und `AllowedAPKSigningKeys` sind gesetzt; Release-APK muss mit demselben Signing-Key signiert bleiben.
 
 ## Repomaker
 
