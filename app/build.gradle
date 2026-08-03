@@ -15,6 +15,11 @@ android {
         unitTests.includeAndroidResources = true
     }
 
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     defaultConfig {
         applicationId = 'com.zaelio.app'
         minSdk = 23

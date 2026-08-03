@@ -132,7 +132,7 @@ Metadata MR submitted: <MR-Link>
 - Releases/Autoupdate: Releases sind als `vX.Y.Z` getaggt; `UpdateCheckMode: Tags` ist gesetzt.
 - Externe Repos/Submodules: keine.
 - Native Code/Multiple APKs: keine native Codebasis, daher nicht relevant.
-- Reproducible Builds: `Binaries` und `AllowedAPKSigningKeys` sind gesetzt; Release-APK muss mit JDK 21 gebaut und mit demselben Signing-Key signiert bleiben.
+- Reproducible Builds: `Binaries` und `AllowedAPKSigningKeys` sind gesetzt; Release-APK muss mit JDK 21 gebaut und mit demselben Signing-Key signiert bleiben. AGP-Dependency-Metadaten bleiben per `dependenciesInfo` aus der APK, weil F-Droid extra Signing Blocks ablehnt.
 
 ## Repomaker
 
