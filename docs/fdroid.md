@@ -66,7 +66,7 @@ Bei jedem Release die Version in der Metadata-Datei mit aktualisieren:
 - `Binaries`, falls sich der Release-APK-Name oder die URL ändert
 - `AllowedAPKSigningKeys`, falls ein neuer Release-Key verwendet wird
 
-Den Signing-Key-Fingerprint aus der veröffentlichten APK ermitteln:
+Den Signing-Key-Fingerprint aus der veröffentlichten APK ermittelt die Release-Action automatisch und prüft ihn gegen `AllowedAPKSigningKeys`. Lokal geht es so:
 
 ```bash
 apksigner verify --print-certs zaelio.apk | grep SHA-256
@@ -103,7 +103,8 @@ git push origin com.zaelio.app
 
 Nach einem Release erzeugt `scripts/release.sh` absichtlich einen zweiten Commit
 für `docs/fdroiddata/com.zaelio.app.yml`: erst nach dem Release-Commit ist der
-volle Commit-Hash für F-Droid bekannt.
+volle Commit-Hash für F-Droid bekannt. Wenn das Script direkt pusht, prüft es
+vorher den lokalen APK-Signing-Zertifikat-Hash gegen `AllowedAPKSigningKeys`.
 
 Danach einen Merge Request gegen `fdroid/fdroiddata` öffnen und im RFP kommentieren:
 

@@ -27,6 +27,21 @@ yesno() {
     [[ $value =~ ^[YyJj] ]]
 }
 
+verify_signing_key() {
+    local apk=app/build/outputs/apk/release/zaelio.apk
+    local sdk=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-android-sdk}}
+    local apksigner expected actual
+
+    [[ -f $apk ]] || { echo "Release APK missing: $apk" >&2; exit 1; }
+    apksigner=$(command -v apksigner || find "$sdk/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n1)
+    [[ -n $apksigner ]] || { echo "apksigner not found" >&2; exit 1; }
+
+    expected=$(awk '/AllowedAPKSigningKeys:/{getline; gsub(/^[ -]*/, ""); print; exit}' docs/fdroiddata/com.zaelio.app.yml)
+    actual=$("$apksigner" verify --print-certs "$apk" | sed -n 's/.*SHA-256 digest: //p')
+    [[ $actual == "$expected" ]] || { echo "Signing key mismatch: $actual != $expected" >&2; exit 1; }
+    echo "APK signing certificate SHA-256: $actual"
+}
+
 version_name=$(ask "Version name" "$next_name")
 version_code=$(ask "Version code (integer)" "$next_code")
 
@@ -101,6 +116,7 @@ PY
 fi
 
 if yesno "Push branch and tag now" "n"; then
+    verify_signing_key
     branch=$(git branch --show-current)
     git push origin "$branch"
     git push origin "v$version_name"

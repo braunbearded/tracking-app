@@ -79,7 +79,7 @@ app/build/outputs/apk/debug/zaelio-debug.apk
 ./scripts/release.sh
 ```
 
-Das Script aktualisiert Version und Changelog, kann Tests/Release-Build ausführen und Commit/Tag erstellen. Danach schreibt es die F-Droid-Metadaten mit dem vollen Release-Commit-Hash in einen zweiten Commit. Die GitHub Action baut aus dem Tag eine signierte Release-APK und hängt sie an den GitHub Release.
+Das Script aktualisiert Version und Changelog, kann Tests/Release-Build ausführen und Commit/Tag erstellen. Danach schreibt es die F-Droid-Metadaten mit dem vollen Release-Commit-Hash in einen zweiten Commit. Vor einem direkten Push prüft es den lokalen APK-Signing-Zertifikat-Hash. Die GitHub Action baut aus dem Tag eine signierte Release-APK und hängt sie an den GitHub Release.
 
 Tag prüfen oder bei Fehler löschen:
 
@@ -123,7 +123,7 @@ ANDROID_KEY_PASSWORD=... \
 ./gradlew assembleRelease
 ```
 
-Ohne diese Variablen erzeugt Gradle weiterhin nur eine unsigned Release-APK. Release-Builds heißen `app/build/outputs/apk/release/zaelio.apk`, Debug-Builds `app/build/outputs/apk/debug/zaelio-debug.apk`.
+Ohne diese Variablen erzeugt Gradle weiterhin nur eine unsigned Release-APK. Release-Builds heißen `app/build/outputs/apk/release/zaelio.apk`, Debug-Builds `app/build/outputs/apk/debug/zaelio-debug.apk`. Die Release-Action prüft den APK-Signing-Zertifikat-Hash gegen `AllowedAPKSigningKeys` und schreibt ihn in die GitHub-Release-Notes.
 
 ## 📦 F-Droid
 

@@ -35,11 +35,23 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
+      - name: Verify signing key
+        run: |
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n1)
+          signing_sha256=$("$apksigner" verify --print-certs app/build/outputs/apk/release/zaelio.apk | sed -n 's/.*SHA-256 digest: //p')
+          expected_sha256=$(awk '/AllowedAPKSigningKeys:/{getline; gsub(/^[ -]*/, ""); print; exit}' docs/fdroiddata/com.zaelio.app.yml)
+          test "$signing_sha256" = "$expected_sha256"
+          {
+            cat CHANGELOG.md
+            printf '\n## APK signing certificate\n\n```text\n%s\n```\n' "$signing_sha256"
+          } > release-notes.md
+          echo "APK signing certificate SHA-256: $signing_sha256" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Publish GitHub Release
         run: |
           gh release create "$GITHUB_REF_NAME" \
             app/build/outputs/apk/release/zaelio.apk \
             --title "$GITHUB_REF_NAME" \
-            --notes-file CHANGELOG.md
+            --notes-file release-notes.md
         env:
           GH_TOKEN: ${{ github.token }}
