@@ -98,11 +98,11 @@ public final class TrackerFlowUi {
             box.addView(create, new LinearLayout.LayoutParams(-1, -2));
         } else {
             for (Tracker tracker : trackers) {
-                View item = selectionRow(tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name);
+                View item = selectionRow(tracker.name == null || tracker.name.trim().isEmpty() ? ui.t("Unbenannter Tracker") : tracker.name);
                 item.setOnClickListener(v -> {
                     long sessionId = db.createSession(tracker.id);
                     if (sessionId == -1) {
-                        Toast.makeText(activity, "Session konnte nicht angelegt werden", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, ui.t("Session konnte nicht angelegt werden"), Toast.LENGTH_SHORT).show();
                         return;
                     }
                     openSession(sessionId);
@@ -131,7 +131,7 @@ public final class TrackerFlowUi {
     public void editTracker(long id) {
         Tracker tracker = db.readTracker(id);
         if (tracker == null) {
-            Toast.makeText(activity, "Tracker nicht gefunden", Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, ui.t("Tracker nicht gefunden"), Toast.LENGTH_SHORT).show();
             backToTrackers.run();
             return;
         }
@@ -141,14 +141,14 @@ public final class TrackerFlowUi {
     public void openSession(long sessionId) {
         Session session = db.session(sessionId);
         if (session == null) {
-            Toast.makeText(activity, "Session nicht gefunden", Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, ui.t("Session nicht gefunden"), Toast.LENGTH_SHORT).show();
             backToSessions.run();
             return;
         }
 
         Tracker tracker = db.readTracker(session.trackerId);
         if (tracker == null || tracker.fields.isEmpty()) {
-            Toast.makeText(activity, "Tracker enthält keine Felder", Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, ui.t("Tracker enthält keine Felder"), Toast.LENGTH_SHORT).show();
             backToSessions.run();
             return;
         }
@@ -158,7 +158,7 @@ public final class TrackerFlowUi {
 
     private void openTrackerEditor(long id, Tracker tracker, boolean isNew) {
         if (!isNew && db.readTracker(id) == null) {
-            Toast.makeText(activity, "Tracker nicht gefunden", Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, ui.t("Tracker nicht gefunden"), Toast.LENGTH_SHORT).show();
             backToTrackers.run();
             return;
         }
@@ -241,7 +241,7 @@ public final class TrackerFlowUi {
                 if (trackerIdRef[0] == -1) {
                     trackerIdRef[0] = TrackerJsonRepository.saveTracker(db, -1, json, true);
                     if (trackerIdRef[0] == -1) {
-                        throw new IllegalStateException("Tracker konnte nicht gespeichert werden");
+                        throw new IllegalStateException(ui.t("Tracker konnte nicht gespeichert werden"));
                     }
                 } else {
                     TrackerJsonRepository.updateTracker(db, trackerIdRef[0], json);
@@ -437,7 +437,7 @@ public final class TrackerFlowUi {
         views.decimalsInput = labeledInput("Nachkommastellen", field == null ? "1" : String.valueOf(field.decimals), InputType.TYPE_CLASS_NUMBER);
 
         TextInputLayout typeLayout = new TextInputLayout(activity);
-        typeLayout.setHint("Typ");
+        typeLayout.setHint(ui.t("Typ"));
         typeLayout.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
         typeLayout.setBoxBackgroundColor(theme.surfaceColor());
         typeLayout.setBoxStrokeColor(theme.accentColor());
@@ -452,7 +452,7 @@ public final class TrackerFlowUi {
         typeLayout.setLayoutParams(typeLp);
 
         MaterialAutoCompleteTextView typeInput = new MaterialAutoCompleteTextView(activity);
-        String[] typeLabels = {"Text", "Ganzzahl", "Dezimalzahl", "Timer"};
+        String[] typeLabels = {ui.t("Text"), ui.t("Ganzzahl"), ui.t("Dezimalzahl"), ui.t("Timer")};
         ArrayAdapter<String> typeAdapter = new ArrayAdapter<String>(activity, android.R.layout.simple_dropdown_item_1line, typeLabels) {
             private final Filter filter = new Filter() {
                 @Override
@@ -488,13 +488,13 @@ public final class TrackerFlowUi {
         views.typeInput = typeInput;
 
         MaterialCheckBox required = new MaterialCheckBox(activity);
-        required.setText("Pflichtfeld");
+        required.setText(ui.t("Pflichtfeld"));
         required.setChecked(field != null && field.required);
         styleCheckBox(required);
         views.requiredCheck = required;
 
         MaterialCheckBox prefill = new MaterialCheckBox(activity);
-        prefill.setText("Vorherigen Wert übernehmen");
+        prefill.setText(ui.t("Vorherigen Wert übernehmen"));
         prefill.setChecked(field != null && field.prefillFromPrevious);
         styleCheckBox(prefill);
         views.prefillCheck = prefill;
@@ -596,7 +596,7 @@ public final class TrackerFlowUi {
     private void confirmDeleteField(FieldEditorViews views, Runnable restore, Runnable animateDelete, Runnable removeNow) {
         String label = views.labelInput.getText().toString().trim();
         DeleteGestureHelper.runDelete(activity, ui, "Feld löschen",
-                (label.isEmpty() ? "Dieses Feld" : label) + " wirklich löschen?",
+                (label.isEmpty() ? ui.t("Dieses Feld") : label) + ui.t(" wirklich löschen?"),
                 restore, animateDelete, removeNow);
     }
 
@@ -618,12 +618,12 @@ public final class TrackerFlowUi {
     private void updateFieldSummary(FieldEditorViews views) {
         String label = views.labelInput.getText().toString().trim();
         if (label.isEmpty()) {
-            label = "Neues Feld";
+            label = ui.t("Neues Feld");
         }
-        views.summaryTitle.setText(label);
+        views.summaryTitle.setText(ui.t(label));
         String type = selectedType(views.typeInput);
         String typeLabel = "string".equals(type) ? "Text" : "int".equals(type) ? "Ganzzahl" : "float".equals(type) ? "Dezimalzahl" : "Timer";
-        views.summaryMeta.setText(typeLabel);
+        views.summaryMeta.setText(ui.t(typeLabel));
     }
 
     private FieldDefinition fieldFromViews(FieldEditorViews views) {
@@ -649,7 +649,7 @@ public final class TrackerFlowUi {
         handle.setTextSize(ui.sp(24));
         handle.setGravity(Gravity.CENTER);
         handle.setTextColor(theme.mutedTextColor());
-        handle.setContentDescription("Verschieben");
+        handle.setContentDescription(ui.t("Verschieben"));
         handle.setClickable(true);
         handle.setFocusable(true);
         return handle;
@@ -726,7 +726,7 @@ public final class TrackerFlowUi {
         LinearLayout group = new LinearLayout(activity);
         group.setOrientation(LinearLayout.VERTICAL);
         TextView title = new TextView(activity);
-        title.setText(label);
+        title.setText(ui.t(label));
         title.setTextSize(ui.sp(12));
         title.setTextColor(theme.mutedTextColor());
         title.setPadding(0, 0, 0, ui.spaceXs());
@@ -839,7 +839,7 @@ public final class TrackerFlowUi {
             String fieldLabel = fieldViews.labelInput.getText().toString().trim();
             if (fieldLabel.isEmpty()) {
                 if (fieldViews.existing) {
-                    throw new IllegalStateException("Bestehende Felder brauchen einen Namen.");
+                    throw new IllegalStateException(ui.t("Bestehende Felder brauchen einen Namen."));
                 }
                 continue;
             }
@@ -912,13 +912,13 @@ public final class TrackerFlowUi {
 
     private String selectedType(MaterialAutoCompleteTextView input) {
         String value = String.valueOf(input.getText());
-        if ("Ganzzahl".equals(value)) {
+        if (ui.t("Ganzzahl").equals(value)) {
             return "int";
         }
-        if ("Dezimalzahl".equals(value)) {
+        if (ui.t("Dezimalzahl").equals(value)) {
             return "float";
         }
-        if ("Timer".equals(value)) {
+        if (ui.t("Timer").equals(value)) {
             return "duration";
         }
         return "string";
@@ -959,8 +959,8 @@ public final class TrackerFlowUi {
 
     private void duplicateTracker(long trackerId) {
         try {
-            if (TrackerJsonRepository.duplicateTracker(db, trackerId) == -1) {
-                Toast.makeText(activity, "Tracker nicht gefunden", Toast.LENGTH_SHORT).show();
+            if (TrackerJsonRepository.duplicateTracker(db, trackerId, ui.t("Unbenannter Tracker"), ui.t("Kopie")) == -1) {
+                Toast.makeText(activity, ui.t("Tracker nicht gefunden"), Toast.LENGTH_SHORT).show();
                 return;
             }
             backToTrackers.run();

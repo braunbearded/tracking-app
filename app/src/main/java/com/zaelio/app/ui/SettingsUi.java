@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.zaelio.app.I18n;
 import com.zaelio.app.theme.ThemeStore;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -36,6 +37,7 @@ public final class SettingsUi {
     public void render(LinearLayout root) {
         LinearLayout box = ui.screenBody(root, "Einstellungen", backHome);
         box.addView(themeCard(), cardLp());
+        box.addView(languageCard(), cardLp());
         box.addView(fontCard(), cardLp());
         box.addView(fieldSizeCard(), cardLp());
         box.addView(accentCard(), cardLp());
@@ -99,17 +101,24 @@ public final class SettingsUi {
         int[] modes = {ThemeStore.THEME_SYSTEM, ThemeStore.THEME_LIGHT, ThemeStore.THEME_DARK};
         String[] labels = {"System", "Hell", "Dunkel"};
         return choiceCard("Darstellung", modes.length, selectedIndex(modes, theme.themeMode()), 9000,
-                i -> labels[i], i -> theme.setThemeMode(modes[i]));
+                i -> ui.t(labels[i]), i -> theme.setThemeMode(modes[i]));
+    }
+
+    private View languageCard() {
+        String[] languages = {I18n.SYSTEM, I18n.GERMAN, I18n.ENGLISH, I18n.SPANISH};
+        String[] labels = {"System", "Deutsch", "English", "Spanisch"};
+        return choiceCard("Sprache", languages.length, selectedIndex(languages, theme.language()), 9050,
+                i -> ui.t(labels[i]), i -> theme.setLanguage(languages[i]));
     }
 
     private View fontCard() {
         return choiceCard("Schriftgröße", theme.fontScaleCount(), theme.fontScaleIndex(), 9100,
-                theme::fontScaleName, theme::setFontScaleIndex);
+                i -> ui.t(theme.fontScaleName(i)), theme::setFontScaleIndex);
     }
 
     private View fieldSizeCard() {
         LinearLayout card = (LinearLayout) choiceCard("Feldgröße", theme.fieldSizeCount(), theme.fieldSizeIndex(), 9200,
-                theme::fieldSizeName, theme::setFieldSizeIndex);
+                i -> ui.t(theme.fieldSizeName(i)), theme::setFieldSizeIndex);
         card.addView(fieldSizePreview());
         return card;
     }
@@ -123,10 +132,10 @@ public final class SettingsUi {
         int inputHeight = ui.px("large".equals(size) ? 64 : "compact".equals(size) ? 48 : 56);
         int textLines = "large".equals(size) ? 3 : "compact".equals(size) ? 1 : 2;
 
-        TextView number = previewBox("Zahlfeld: 12", inputHeight);
+        TextView number = previewBox(ui.t("Zahlfeld: 12"), inputHeight);
         preview.addView(number, new LinearLayout.LayoutParams(-1, inputHeight));
 
-        TextView text = previewBox("Textfeld\n" + (textLines > 1 ? "zweite Zeile\n" : "") + (textLines > 2 ? "dritte Zeile" : ""), -2);
+        TextView text = previewBox(ui.t("Textfeld") + "\n" + (textLines > 1 ? ui.t("zweite Zeile") + "\n" : "") + (textLines > 2 ? ui.t("dritte Zeile") : ""), -2);
         text.setMinLines(textLines);
         LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(-1, -2);
         textLp.topMargin = ui.spaceS();
@@ -174,6 +183,15 @@ public final class SettingsUi {
         chip.setText(label);
         styleChoiceChip(chip, selected);
         return chip;
+    }
+
+    private int selectedIndex(String[] values, String selected) {
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(selected)) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     private int selectedIndex(int[] values, int selected) {
@@ -248,7 +266,7 @@ public final class SettingsUi {
         try {
             activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception e) {
-            android.widget.Toast.makeText(activity, "Link konnte nicht geöffnet werden", android.widget.Toast.LENGTH_SHORT).show();
+            android.widget.Toast.makeText(activity, ui.t("Link konnte nicht geöffnet werden"), android.widget.Toast.LENGTH_SHORT).show();
         }
     }
 

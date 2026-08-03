@@ -72,18 +72,26 @@ final class BackupJsonRepository {
     }
 
     static int importAll(TrackingDatabase helper, String json) throws JSONException {
-        return importData(helper, json, true, true);
+        return importAll(helper, json, "Importierter Tracker");
+    }
+
+    static int importAll(TrackingDatabase helper, String json, String importedTrackerName) throws JSONException {
+        return importData(helper, json, true, true, importedTrackerName);
     }
 
     static int importTrackers(TrackingDatabase helper, String json) throws JSONException {
-        return importData(helper, json, true, false);
+        return importTrackers(helper, json, "Importierter Tracker");
+    }
+
+    static int importTrackers(TrackingDatabase helper, String json, String importedTrackerName) throws JSONException {
+        return importData(helper, json, true, false, importedTrackerName);
     }
 
     static int importSessions(TrackingDatabase helper, String json) throws JSONException {
-        return importData(helper, json, false, true);
+        return importData(helper, json, false, true, "Importierter Tracker");
     }
 
-    private static int importData(TrackingDatabase helper, String json, boolean includeTrackers, boolean includeSessions) throws JSONException {
+    private static int importData(TrackingDatabase helper, String json, boolean includeTrackers, boolean includeSessions, String importedTrackerName) throws JSONException {
         JSONObject root = new JSONObject(json);
         SQLiteDatabase db = helper.getWritableDatabase();
         Map<Long, Long> trackerIds = new HashMap<>();
@@ -123,7 +131,7 @@ final class BackupJsonRepository {
             if (includeTrackers) for (int i = 0; i < trackers.length(); i++) {
                 JSONObject tracker = trackers.getJSONObject(i);
                 ContentValues trackerValues = new ContentValues();
-                trackerValues.put("name", tracker.optString("name", "Importierter Tracker"));
+                trackerValues.put("name", tracker.optString("name", importedTrackerName));
                 trackerValues.put("description", tracker.optString("description", ""));
                 trackerValues.put("createdAt", tracker.optLong("createdAt", now));
                 trackerValues.put("updatedAt", tracker.optLong("updatedAt", now));

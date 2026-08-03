@@ -20,6 +20,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.zaelio.app.I18n;
 import com.zaelio.app.R;
 import com.zaelio.app.theme.ThemeStore;
 import com.google.android.material.button.MaterialButton;
@@ -53,6 +54,10 @@ public final class AppUi {
         this.theme = theme;
     }
 
+    public String t(String text) {
+        return I18n.translate(text, theme.resolvedLanguage());
+    }
+
     public TextView tv(String text, float sizeSp) {
         TextView view = text(text, sizeSp, theme.primaryTextColor(), false);
         view.setPadding(spaceL(), spaceM(), spaceL(), spaceS());
@@ -61,7 +66,7 @@ public final class AppUi {
 
     public TextView text(String text, float sizeSp, int color, boolean bold) {
         TextView view = new TextView(activity);
-        view.setText(text);
+        view.setText(t(text));
         view.setTextSize(sp(sizeSp));
         view.setTextColor(color);
         view.setTypeface(bold ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
@@ -93,7 +98,7 @@ public final class AppUi {
 
     public Button button(String text, int fillColor, int textColor, int strokeColor) {
         MaterialButton button = new MaterialButton(activity);
-        button.setText(text);
+        button.setText(t(text));
         button.setAllCaps(false);
         button.setTextColor(textColor);
         button.setTextSize(sp(14));
@@ -137,9 +142,9 @@ public final class AppUi {
                 buttonHeight() + spaceXl()));
         nav.setBackgroundColor(theme.navigationBarColor());
         nav.setElevation(spaceS());
-        nav.addView(navItem("Sessions", android.R.drawable.ic_menu_agenda, sessionsSelected, onSessions),
+        nav.addView(navItem(t("Sessions"), android.R.drawable.ic_menu_agenda, sessionsSelected, onSessions),
                 new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
-        nav.addView(navItem("Tracker", android.R.drawable.ic_menu_sort_by_size, !sessionsSelected, onTracker),
+        nav.addView(navItem(t("Tracker"), android.R.drawable.ic_menu_sort_by_size, !sessionsSelected, onTracker),
                 new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f));
         return nav;
     }
@@ -223,7 +228,7 @@ public final class AppUi {
         bar.setElevation(strokeWidth());
 
         if (showBack) {
-            bar.addView(iconButton(R.drawable.ic_arrow_back_24, "Zurück", v -> {
+            bar.addView(iconButton(R.drawable.ic_arrow_back_24, t("Zurück"), v -> {
                 if (onBack != null) {
                     onBack.run();
                 }
@@ -231,7 +236,7 @@ public final class AppUi {
         }
 
         TextView title = new TextView(activity);
-        title.setText(titleText);
+        title.setText(t(titleText));
         title.setTextSize(sp(20));
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setTextColor(theme.primaryTextColor());
@@ -240,7 +245,7 @@ public final class AppUi {
         bar.addView(title, titleLp);
 
         if (showOverflow) {
-            bar.addView(iconButton(R.drawable.ic_more_vert_24, "Menü", overflowClick),
+            bar.addView(iconButton(R.drawable.ic_more_vert_24, t("Menü"), overflowClick),
                     new LinearLayout.LayoutParams(px(ICON_BUTTON_SIZE_DP), px(ICON_BUTTON_SIZE_DP)));
         }
 
@@ -298,7 +303,7 @@ public final class AppUi {
     public EditText textInput(String label, String value, int inputType) {
         EditText input = new TextInputEditText(activity);
         input.setText(value == null ? "" : value);
-        input.setHint(label);
+        input.setHint(t(label));
         input.setInputType(inputType);
         input.setPadding(spaceM(), spaceM(), spaceM(), spaceM());
         input.setBackground(makeRoundedCard(theme.surfaceColor(), theme.borderColor()));
@@ -322,7 +327,7 @@ public final class AppUi {
         if (onBack != null) {
             LinearLayout footer = new LinearLayout(activity);
             footer.setPadding(spaceL(), spaceS(), spaceL(), spaceL());
-            Button button = secondaryButton("Zurück");
+            Button button = secondaryButton(t("Zurück"));
             button.setOnClickListener(v -> onBack.run());
             footer.addView(button, new LinearLayout.LayoutParams(-1, -2));
             root.addView(footer);
@@ -364,7 +369,7 @@ public final class AppUi {
 
     public TextInputLayout outlinedInput(String hint, EditText input) {
         TextInputLayout layout = new TextInputLayout(activity);
-        layout.setHint(hint);
+        layout.setHint(t(hint));
         layout.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
         layout.setBoxBackgroundColor(theme.surfaceColor());
         layout.setBoxStrokeColorStateList(inputBorderStateList());
@@ -435,7 +440,7 @@ public final class AppUi {
         final androidx.appcompat.app.AlertDialog[] dialog = new androidx.appcompat.app.AlertDialog[1];
         for (int i = 0; i < items.length; i++) {
             ActionItem item = items[i];
-            Button button = item.label.toLowerCase().contains("löschen") ? dangerButton(item.label) : secondaryButton(item.label);
+            Button button = item.danger ? dangerButton(item.label) : secondaryButton(item.label);
             button.setOnClickListener(v -> {
                 dialog[0].dismiss();
                 item.action.run();
@@ -448,16 +453,18 @@ public final class AppUi {
     }
 
     public ActionItem action(String label, Runnable action) {
-        return new ActionItem(label, action);
+        return new ActionItem(t(label), action, label.toLowerCase().contains("löschen"));
     }
 
     public static final class ActionItem {
         final String label;
         final Runnable action;
+        final boolean danger;
 
-        private ActionItem(String label, Runnable action) {
+        private ActionItem(String label, Runnable action, boolean danger) {
             this.label = label;
             this.action = action;
+            this.danger = danger;
         }
     }
 
@@ -469,7 +476,7 @@ public final class AppUi {
 
     public void addDialogMessage(LinearLayout card, String text) {
         TextView message = new TextView(activity);
-        message.setText(text);
+        message.setText(t(text));
         message.setTextSize(sp(14));
         message.setTextColor(theme.secondaryTextColor());
         message.setPadding(0, 0, 0, px(SPACE_DIALOG_Y_DP));
@@ -483,7 +490,7 @@ public final class AppUi {
 
         if (subtitleText != null && !subtitleText.isEmpty()) {
             TextView subtitle = new TextView(activity);
-            subtitle.setText(subtitleText);
+            subtitle.setText(t(subtitleText));
             subtitle.setTextSize(sp(14));
             subtitle.setTextColor(theme.secondaryTextColor());
             subtitle.setPadding(0, 0, 0, spaceM());
@@ -499,8 +506,8 @@ public final class AppUi {
 
         LinearLayout buttons = new LinearLayout(activity);
         buttons.setOrientation(LinearLayout.HORIZONTAL);
-        Button cancel = secondaryButton("Abbrechen");
-        Button delete = dangerButton("Löschen");
+        Button cancel = secondaryButton(t("Abbrechen"));
+        Button delete = dangerButton(t("Löschen"));
         buttons.addView(cancel, new LinearLayout.LayoutParams(0, -2, 1));
         LinearLayout.LayoutParams deleteLp = new LinearLayout.LayoutParams(0, -2, 1);
         deleteLp.leftMargin = spaceS();

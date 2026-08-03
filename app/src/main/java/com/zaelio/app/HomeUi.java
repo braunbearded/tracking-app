@@ -71,7 +71,7 @@ public final class HomeUi {
         java.util.List<Tracker> trackers = db.trackers();
         for (Tracker tracker : trackers) {
             LinearLayout card = overviewCard(
-                    tracker.name == null || tracker.name.trim().isEmpty() ? "Unbenannter Tracker" : tracker.name,
+                    tracker.name == null || tracker.name.trim().isEmpty() ? ui.t("Unbenannter Tracker") : tracker.name,
                     null,
                     fieldPreview(tracker),
                     () -> editTracker.accept(tracker.id),
@@ -200,8 +200,8 @@ public final class HomeUi {
     }
 
     private void confirmDeleteTracker(Tracker tracker, Runnable restore, Runnable animateDelete) {
-        String name = tracker.name == null || tracker.name.trim().isEmpty() ? "Diesen Tracker" : tracker.name;
-        DeleteGestureHelper.runDelete(activity, ui, "Tracker löschen", name + " wirklich löschen?",
+        String name = tracker.name == null || tracker.name.trim().isEmpty() ? ui.t("Diesen Tracker") : tracker.name;
+        DeleteGestureHelper.runDelete(activity, ui, "Tracker löschen", name + ui.t(" wirklich löschen?"),
                 restore, animateDelete, () -> {
                     db.deleteTracker(tracker.id);
                     refresh.run();
@@ -210,7 +210,7 @@ public final class HomeUi {
 
     private void duplicateTracker(Tracker tracker) {
         try {
-            TrackerJsonRepository.duplicateTracker(db, tracker.id);
+            TrackerJsonRepository.duplicateTracker(db, tracker.id, ui.t("Unbenannter Tracker"), ui.t("Kopie"));
             refresh.run();
         } catch (Exception e) {
             android.widget.Toast.makeText(activity, e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
@@ -235,14 +235,14 @@ public final class HomeUi {
             if (builder.length() > 0) {
                 builder.append(" · ");
             }
-            builder.append(field.label == null || field.label.trim().isEmpty() ? field.key : field.label)
+            builder.append(field.label == null || field.label.trim().isEmpty() ? field.key : ui.t(field.label))
                     .append(": ")
                     .append(formatValue(field, value));
             if (builder.length() > 110) {
                 break;
             }
         }
-        return builder.length() == 0 ? "Noch keine Werte eingetragen." : builder.toString();
+        return builder.length() == 0 ? ui.t("Noch keine Werte eingetragen.") : builder.toString();
     }
 
     private String formatValue(FieldDefinition field, Object value) {
@@ -267,7 +267,7 @@ public final class HomeUi {
 
     private String fieldPreview(Tracker tracker) {
         if (tracker.fields.isEmpty()) {
-            return "Noch keine Felder angelegt.";
+            return ui.t("Noch keine Felder angelegt.");
         }
 
         StringBuilder builder = new StringBuilder();
@@ -275,7 +275,7 @@ public final class HomeUi {
             if (builder.length() > 0) {
                 builder.append(" · ");
             }
-            builder.append(field.label == null || field.label.trim().isEmpty() ? "Ohne Label" : field.label);
+            builder.append(field.label == null || field.label.trim().isEmpty() ? ui.t("Ohne Label") : ui.t(field.label));
             if (builder.length() > 90) {
                 break;
             }

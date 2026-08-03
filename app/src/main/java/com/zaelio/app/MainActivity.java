@@ -78,7 +78,7 @@ public class MainActivity extends Activity {
             return;
         }
         lastBackPressMs = now;
-        Toast.makeText(this, "Zum Beenden erneut Zurück drücken", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, ui.t("Zum Beenden erneut Zurück drücken"), Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -206,12 +206,12 @@ public class MainActivity extends Activity {
         try (InputStream in = getContentResolver().openInputStream(uri)) {
             String json = readAll(in);
             int count = transferMode == 1
-                    ? BackupJsonRepository.importTrackers(db, json)
-                    : transferMode == 2 ? BackupJsonRepository.importSessions(db, json) : BackupJsonRepository.importAll(db, json);
-            Toast.makeText(this, "Import abgeschlossen (" + count + " Tracker)", Toast.LENGTH_LONG).show();
+                    ? BackupJsonRepository.importTrackers(db, json, ui.t("Importierter Tracker"))
+                    : transferMode == 2 ? BackupJsonRepository.importSessions(db, json) : BackupJsonRepository.importAll(db, json, ui.t("Importierter Tracker"));
+            Toast.makeText(this, ui.t("Import abgeschlossen (") + count + " " + ui.t("Tracker") + ")", Toast.LENGTH_LONG).show();
             refreshHome();
         } catch (Exception e) {
-            Toast.makeText(this, "Import fehlgeschlagen: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, ui.t("Import fehlgeschlagen: ") + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -221,9 +221,9 @@ public class MainActivity extends Activity {
                     ? BackupJsonRepository.exportTrackers(db)
                     : transferMode == 2 ? BackupJsonRepository.exportSessions(db) : BackupJsonRepository.exportAll(db);
             out.write(json.getBytes(StandardCharsets.UTF_8));
-            Toast.makeText(this, "Export gespeichert", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, ui.t("Export gespeichert"), Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Toast.makeText(this, "Export fehlgeschlagen: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, ui.t("Export fehlgeschlagen: ") + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 

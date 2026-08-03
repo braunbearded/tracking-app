@@ -193,7 +193,7 @@ final class FieldInputUi {
     }
 
     private void styleTimerToggle(Button button, boolean running) {
-        button.setText(running ? "Stop" : "Start");
+        button.setText(running ? ui.t("Stop") : ui.t("Start"));
         button.setTextColor(running ? 0xffb42318 : Color.WHITE);
         button.setBackgroundTintList(ColorStateList.valueOf(running ? theme.cautionFillColor() : theme.accentColor()));
     }

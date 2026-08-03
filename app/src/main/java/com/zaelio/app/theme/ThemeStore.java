@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 
+import com.zaelio.app.I18n;
+
 public final class ThemeStore {
     private static final String PREFS_NAME = "app_settings";
     public static final int THEME_SYSTEM = 0;
@@ -15,6 +17,7 @@ public final class ThemeStore {
     private static final String KEY_ACCENT_INDEX = "accent_index";
     private static final String KEY_FONT_SCALE_INDEX = "font_scale_index";
     private static final String KEY_FIELD_SIZE_INDEX = "field_size_index";
+    private static final String KEY_LANGUAGE = "language";
 
     private static final int[] ACCENT_COLORS = {
             0xff2563eb,
@@ -79,6 +82,19 @@ public final class ThemeStore {
 
     public void setThemeMode(int mode) {
         prefs.edit().putInt(KEY_THEME_MODE, mode).apply();
+    }
+
+    public String language() {
+        String value = prefs.getString(KEY_LANGUAGE, I18n.SYSTEM);
+        return I18n.GERMAN.equals(value) || I18n.ENGLISH.equals(value) || I18n.SPANISH.equals(value) ? value : I18n.SYSTEM;
+    }
+
+    public void setLanguage(String language) {
+        prefs.edit().putString(KEY_LANGUAGE, language).apply();
+    }
+
+    public String resolvedLanguage() {
+        return I18n.resolveLanguage(language());
     }
 
     public boolean isSystemDark() {
