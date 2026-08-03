@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.3
+
+- - F-Droid-Metadaten für reproduzierbare Builds ergänzt.
+- - Release-Script aktualisiert, damit F-Droid volle Commit-Hashes statt Tags verwendet.
+- - F-Droid- und Release-Dokumentation präzisiert.
+
 ## 1.0.2
 
 - Gradle-Konfiguration auf die neue Property-Assignment-Syntax mit `=` aktualisiert.
