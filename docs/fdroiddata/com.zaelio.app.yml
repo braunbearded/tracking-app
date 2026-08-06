@@ -10,7 +10,8 @@ AutoName: Zaelio
 
 RepoType: git
 Repo: https://github.com/braunbearded/zaelio.git
-Binaries: https://github.com/braunbearded/zaelio/releases/download/v%v/zaelio.apk
+Binaries:
+  https://github.com/braunbearded/zaelio/releases/download/v%v/zaelio.apk
 
 Builds:
   - versionName: 1.0.5
