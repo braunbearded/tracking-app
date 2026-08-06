@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.6
+
+- Added language selection and multilingual UI support.
+- Added F-Droid Fastlane icon metadata.
+
 ## 1.0.5
 
 - Removed Android Gradle dependency metadata from release APKs so F-Droid accepts reproducible-build binaries.
